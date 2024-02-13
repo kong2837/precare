@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # third-parth app
     'django_extensions',
     'django_bootstrap5',
+    'rest_framework',
     # custom app
     'survey',
     'huami',
