@@ -137,3 +137,10 @@ STATICFILES_DIRS = [BASE_DIR / 'apop2']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_KEY = '1234'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
+}
