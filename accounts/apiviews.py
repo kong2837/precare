@@ -1,7 +1,12 @@
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from accounts.serializers import UserSerializer
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated, BasePermission, IsAdminUser
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
@@ -10,7 +15,7 @@ class IsAdminOrReadOnly(BasePermission):
     """User가 superuser일 때만 list 액션 허용
     """    
     def has_permission(self, request, view):
-        if view.action == 'list':
+        if view.action in ['list', 'update', 'partial_update', 'update_note']:
             return request.user and request.user.is_superuser
 
 
@@ -50,3 +55,17 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'retrieve':
             return [IsAuthenticated(), IsAdminOrOwner()]
         return super().get_permissions()
+    
+    def get_queryset(self):
+        if self.action == 'list':
+            return get_user_model().objects.filter(is_superuser=False)
+        return super().get_queryset()
+    
+    @action(detail=True, methods=['put'])
+    def update_note(self, request, *args, **kwargs):
+        if request.data.get('note') is None:
+            return Response(data={'message': '형식이 옳바르지 않습니다.'}, status=400)
+        user = self.get_object()
+        user.huami.note = request.data['note']
+        user.huami.save()
+        return self.retrieve(request, *args, **kwargs)    
