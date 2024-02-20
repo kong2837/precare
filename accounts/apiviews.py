@@ -23,13 +23,13 @@ def TokenAuthOpenApiParameter():
 
 @extend_schema_view(
     list=extend_schema(
-        description="id와 일치하는 유저의 정보를 제공합니다",
+        description="유저 정보들을 제공합니다.",
         parameters=[
             TokenAuthOpenApiParameter()
         ]
     ),
     retrieve=extend_schema(
-        description="유저 정보들을 제공합니다.",
+        description="id와 일치하는 유저의 정보를 제공합니다",
         parameters=[
             TokenAuthOpenApiParameter()
         ]
