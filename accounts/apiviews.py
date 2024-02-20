@@ -7,12 +7,16 @@ from drf_spectacular.types import OpenApiTypes
 
 
 class IsAdminOrReadOnly(BasePermission):
+    """User가 superuser일 때만 list 액션 허용
+    """    
     def has_permission(self, request, view):
         if view.action == 'list':
             return request.user and request.user.is_superuser
 
 
 class IsAdminOrOwner(BasePermission):
+    """user가 superuser이거나 본인일때만 retrieve 액션 허용
+    """    
     def has_object_permission(self, request, view, obj):
         return request.user and (request.user.is_superuser or obj == request.user)
 
@@ -36,6 +40,8 @@ def TokenAuthOpenApiParameter():
     )
 )
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """유저 리스트 혹은 개별 유저 데이터 반환
+    """    
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdminOrReadOnly]
