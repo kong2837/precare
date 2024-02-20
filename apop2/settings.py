@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'django_extensions',
     'django_bootstrap5',
     'rest_framework',
+    'rest_framework.authtoken',
+    'drf_spectacular',
     # custom app
     'survey',
     'huami',
@@ -138,9 +140,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_KEY = '1234'
 
+# REST FRAMEWORK 관련 설정들
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ]
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    
+}
+
+# API DOCS 
+SPECTACULAR_SETTINGS = {
+    'TITLE': '중견연구 API',
+    'DESCRIPTION': '중견연구 웹 사이트 API 사용을 위한 문서입니다',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # OTHER SETTINGS
 }
