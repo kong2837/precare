@@ -64,6 +64,10 @@ class HealthData(models.Model):
                             help_text="건강상태에 대한 기록을 입력하세요.",
                             default="[비고]")
     
+    @property
+    def info_status(self) -> bool:
+        return self.heart_rate != None and self.stress != None and self.spo2 != None
+    
     @classmethod
     #Code Smell
     def create_from_sync_data(cls, huami_account: HuamiAccount) -> tuple:

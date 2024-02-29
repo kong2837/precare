@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from accounts.serializers import UserSerializer
+from accounts.serializers import NormalUserSerializer, UserSerializer
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, BasePermission, IsAdminUser
@@ -15,7 +15,9 @@ class IsAdminOrReadOnly(BasePermission):
     """User가 superuser일 때만 list 액션 허용
     """    
     def has_permission(self, request, view):
-        if view.action in ['list', 'update', 'partial_update', 'update_note']:
+        if view.action == 'update_note':
+            return request.user.is_superuser
+        if view.action in ['list', 'update', 'partial_update']:
             return request.user and request.user.is_superuser
 
 
@@ -42,6 +44,17 @@ def TokenAuthOpenApiParameter():
         parameters=[
             TokenAuthOpenApiParameter()
         ]
+    ),
+    update_note=extend_schema(
+        description="id와 일치하는 유저의 비고란을 수정합니다.",
+        parameters=[
+            TokenAuthOpenApiParameter()
+        ],
+        request={
+            "body": {
+                "note": "string"
+            }
+        }
     )
 )
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -50,6 +63,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+    def get_serializer(self, *args, **kwargs):
+        if self.action == 'retrieve':
+            return NormalUserSerializer()
+        return super().get_serializer(*args, **kwargs)
 
     def get_permissions(self):
         if self.action == 'retrieve':
