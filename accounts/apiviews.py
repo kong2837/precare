@@ -9,7 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
-
+from huami.models.healthdata import HealthData
+from django.conf import settings
 
 class IsAdminOrReadOnly(BasePermission):
     """User가 superuser일 때만 list 액션 허용
@@ -17,9 +18,10 @@ class IsAdminOrReadOnly(BasePermission):
     def has_permission(self, request, view):
         if view.action == 'update_note':
             return request.user.is_superuser
+        if view.action == 'sync_data':
+            return request.headers.get('auth-key') == settings.AUTH_KEY
         if view.action in ['list', 'update', 'partial_update']:
             return request.user and request.user.is_superuser
-
 
 class IsAdminOrOwner(BasePermission):
     """user가 superuser이거나 본인일때만 retrieve 액션 허용
@@ -87,3 +89,19 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         user.huami.note = request.data['note']
         user.huami.save()
         return self.retrieve(request, *args, **kwargs)    
+    
+    @action(detail=False, methods=["post"])
+    def sync_data(self, request, *args, **kwargs):
+        sucess_users = []
+        failure_users = []
+
+        for user in get_user_model().objects.filter(is_superuser=False):
+            try:
+                HealthData.create_from_sync_data(user.huami)
+                sucess_users.append(user.huami.full_name)
+            except Exception as e:
+                failure_users.append(user.huami.full_name)
+        messages = (len(sucess_users) > 0)  * f"{len(sucess_users)}명이 동기화에 성공했습니다."
+        messages += (len(failure_users) > 0) * f"{len(failure_users)}명이 동기화에 실패했습니다."
+        
+        return JsonResponse({"messages": messages})
