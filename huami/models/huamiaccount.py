@@ -57,6 +57,10 @@ class HuamiAccount(models.Model):
     @property
     def full_name(self) -> str:
         return f"{self.user.last_name} {self.user.first_name}"
+    
+    @property
+    def last_health_info(self):
+        return self.health.last()
 
     def __str__(self) -> str:
         """HuamiAccount 인스턴스 출력 메서드

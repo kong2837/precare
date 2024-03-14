@@ -4,3 +4,5 @@ requests==2.31.0
 django-bootstrap5==23.3
 gunicorn==21.2.0
 mysqlclient==2.2.1
+djangorestframework==3.14.0
+drf-spectacular==0.27.1
