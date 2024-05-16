@@ -1,16 +1,16 @@
 def __make_p_tag(origin: str) -> str:
-    return '<p class="lead">' + origin + "</p>"
+    return '<p class="fs-3"><strong>' + origin + "</strong></p>"
 
 
 def stress_result(scores: tuple) -> str:
     total = sum(scores)
     if total >= 16:
-        return __make_p_tag("심호흡을 한 후 잠깐 걸어 볼까요~ 그럼 이제 마음이 차분해지는 음악을 들어보세요  좋아하는 음악이면 됩니다.")
+        return __make_p_tag("심호흡을 한 후 잠깐 걸어 볼까요~<br>그럼 이제 마음이 차분해지는 음악을 들어보세요<br>좋아하는 음악이면 됩니다.❤️️")
     if total >= 10:
-        return __make_p_tag("오늘 힘드셨군요. 잠시 앉아 심호흡을 해보세요.")
+        return __make_p_tag("오늘 힘드셨군요.<br>잠시 앉아 심호흡을 해보세요.")
     if total >= 6:
         return __make_p_tag("하던 일을 멈추고 심호흡을 해보세요.")
-    return __make_p_tag("스트레스 점수가 낮습니다. 잘하셨어요. 짝짝짝 지금처럼 편안하게 지내세요.")
+    return __make_p_tag("스트레스 점수가 낮습니다. 잘하셨어요.<br>짝짝짝 지금처럼 편안하게 지내세요.")
 
 
 def __check_score(scores: tuple, std: int) -> bool:
