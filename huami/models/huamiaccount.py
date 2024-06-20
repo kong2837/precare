@@ -57,6 +57,10 @@ class HuamiAccount(models.Model):
     @property
     def full_name(self) -> str:
         return f"{self.user.last_name} {self.user.first_name}"
+    
+    @property
+    def last_health_info(self):
+        return self.health.last()
 
     def __str__(self) -> str:
         """HuamiAccount 인스턴스 출력 메서드
@@ -93,9 +97,9 @@ class HuamiAccount(models.Model):
             account.access()
             account.login()
             result['profile'] = account.profile()            
-            result['band'] = account.band_data('2000-01-01', datetime.now().strftime('%Y-%m-%d'))
-            result['stress'] = account.stress('2000-01-01', datetime.now().strftime('%Y-%m-%d'))
-            result['blood'] = account.blood_oxygen('2000-01-01',datetime.now().strftime('%Y-%m-%d'))
+            result['band'] = account.band_data('2023-01-01', datetime.now().strftime('%Y-%m-%d'))
+            result['stress'] = account.stress('2023-01-01', datetime.now().strftime('%Y-%m-%d'))
+            result['blood'] = account.blood_oxygen('2023-01-01',datetime.now().strftime('%Y-%m-%d'))
             account.logout()
         except HTTPError as e:
             raise HTTPError("데이터를 받아오는 과정에서 오류가 발생하였습니다. 오류내용: "+e)
