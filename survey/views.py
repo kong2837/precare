@@ -1,7 +1,10 @@
 from typing import Any
+
+from django.contrib.auth import get_user_model
 from django.db.models.query import QuerySet
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
+from accounts.views import SuperuserRequiredMixin
 from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
 from django.views.generic.edit import ProcessFormView
 from django.shortcuts import render
@@ -29,6 +32,38 @@ class SurveyDetailView(MyLoginRequiredMixin, DetailView):
     template_name='survey/survey_detail.html'
     model=Survey
 
+class UserSurveyListAdminView(SuperuserRequiredMixin, ListView):
+    """다른 유저가 작성한 설문 결과들을 제공하는 클래스 기반 뷰
+    """
+    template_name = 'survey/user_survey_list.html'
+    paginate_by = 5
+    model = UserSurvey
+
+    def get_queryset(self):
+        queryset = UserSurvey.objects.filter(user__pk=self.kwargs['user_pk'],
+                                             survey__pk=self.kwargs['survey_pk']).order_by('create_at')
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['survey'] = Survey.objects.get(pk=self.kwargs['survey_pk'])
+        return context
+
+class SurveyListAdminView(SuperuserRequiredMixin, ListView):
+    """다른 유저가 작성한 설문들에 대한 정보를 제공하는 클래스 기반 뷰
+    """
+    template_name='survey/user_survey_list_admin.html'
+    paginate_by = 5
+    model = Survey
+
+    def get_queryset(self) -> QuerySet[Survey]:
+        queryset = Survey.objects.filter(users__pk=self.kwargs.get('pk'))
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = get_user_model().objects.get(pk=self.kwargs.get('pk'))
+        return context
 
 class UserSurveyListView(MyLoginRequiredMixin, ListView):
     """설문 작성 결과를 제공하는 클래스 기반 뷰

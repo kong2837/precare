@@ -11,6 +11,7 @@
             <p class="mb-1">{{ user.huami.note }}</p>
             <small>마지막 동기화: {{ user.huami.sync_date }}</small>
         </a>
+        <a class="btn btn-primary mb-4" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
         {% endfor %}
     </div>
     <nav aria-label="Page navigation">
