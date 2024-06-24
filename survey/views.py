@@ -104,12 +104,12 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
                                                 survey=Survey.objects.get(**kwargs))
         self._create_replies(user_survey, request.POST)
         result = ""
-        if user_survey.survey_name == "임신스트레스 10문항" or user_survey.survey_name == "조기진통위험 10문항":
+        if "임신스트레스 10문항" in user_survey.survey_name or "조기진통위험 10문항" in user_survey.survey_name:
             replies = Reply.objects.filter(user_survey=user_survey).order_by("survey_question__order")
             scores = []
             for reply in replies:
                 scores.append(Answer.objects.filter(description=reply.content).get().value)
-            if user_survey.survey_name == "임신스트레스 10문항":
+            if "임신스트레스 10문항" in user_survey.survey_name:
                 result = utils.stress_result(tuple(scores))
             else:
                 result = utils.pbras_result(tuple(scores))
