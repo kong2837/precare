@@ -34,6 +34,7 @@ class UserSurveyListView(MyLoginRequiredMixin, ListView):
     """설문 작성 결과를 제공하는 클래스 기반 뷰
     """
     template_name='survey/user_survey_list.html'
+    paginate_by = 5
 
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
