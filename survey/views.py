@@ -44,7 +44,7 @@ class UserSurveyListView(MyLoginRequiredMixin, ListView):
             dict[str, Any]: context_data를 반환
         """
         context = super().get_context_data(**kwargs)
-        context['survey'] = Survey.objects.filter(**kwargs)[0]
+        context['survey'] = Survey.objects.get(**self.kwargs)
         return context
 
     def get_queryset(self) -> QuerySet[UserSurvey]:
