@@ -14,10 +14,7 @@ def stress_result(scores: tuple) -> str:
 
 
 def __check_score(scores: tuple, std: int) -> bool:
-    for score in scores:
-        if score < std:
-            return False
-    return True
+    return sum(scores) >= std
 
 
 def pbras_result(scores: tuple) -> str:
