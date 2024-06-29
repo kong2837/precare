@@ -57,7 +57,7 @@ class SurveyListAdminView(SuperuserRequiredMixin, ListView):
     model = Survey
 
     def get_queryset(self) -> QuerySet[Survey]:
-        queryset = Survey.objects.filter(users__pk=self.kwargs.get('pk'))
+        queryset = Survey.objects.filter(users__pk=self.kwargs.get('pk')).distinct()
         return queryset
 
     def get_context_data(self, **kwargs):
