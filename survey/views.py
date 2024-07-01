@@ -1,10 +1,14 @@
+import csv
 from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.db.models.query import QuerySet
+from django.http import HttpResponse
+from django.views import View
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from accounts.views import SuperuserRequiredMixin
+from huami.models import HuamiAccount
 from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
 from django.views.generic.edit import ProcessFormView
 from django.shortcuts import render
@@ -64,6 +68,32 @@ class SurveyListAdminView(SuperuserRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['user'] = get_user_model().objects.get(pk=self.kwargs.get('pk'))
         return context
+
+class UserSurveyCsvView(SuperuserRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        user_surveys = UserSurvey.objects.filter(user__pk=self.kwargs.get('user_pk'),
+                                                 survey__pk=self.kwargs.get('survey_pk'))
+
+        filename = "-".join((HuamiAccount.objects.get(user_id=self.kwargs.get('user_pk')).full_name
+                    ,Survey.objects.get(pk=self.kwargs.get('survey_pk')).title))
+        response = HttpResponse(headers={
+            'Content-Type':'text/csv',
+            'Content-Disposition': f'attachment; filename="{filename}.csv"'})
+
+        file = csv.writer(response)
+        head_line = ['pk']
+
+        for question in Survey.objects.get(pk=self.kwargs.get('survey_pk')).questions.all():
+            head_line.append(question.title)
+        file.writerow(head_line)
+
+        for user_survey in user_surveys:
+            line = []
+            for reply in user_survey.replies.all():
+                line.append(reply.content)
+            file.writerow(line)
+
+        return response
 
 class UserSurveyListView(MyLoginRequiredMixin, ListView):
     """설문 작성 결과를 제공하는 클래스 기반 뷰

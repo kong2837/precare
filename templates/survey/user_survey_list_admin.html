@@ -20,6 +20,9 @@
                 </div>
             </div>
             </a>
+            <a class="btn btn-primary" href="{% url 'survey:user-survey-csv' survey.pk user.pk %}" >
+                csv 다운로드
+            </a>
         {% endfor %}
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center">
