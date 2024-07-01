@@ -3,7 +3,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.views import LoginView as Login, LogoutView as Logout
 from django.views.generic import View, TemplateView, ListView, DetailView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from accounts.utils import make_csv_response
 from huami.forms import HuamiAccountCreationForm
 from huami.models.healthdata import HealthData
@@ -13,6 +13,13 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib import messages
 from huami.models import HuamiAccount
+
+from accounts.models import Status
+
+from django.utils.dateparse import parse_date
+from django import forms
+from datetime import datetime, timezone, timedelta
+
 
 # Create your views here.
 class LoginView(Login):
@@ -208,4 +215,75 @@ class UserPrimaryKeyAPIView(AuthKeyRequiredMixin, View):
             file.writerow(line)
         
         return response
-    
+
+
+class ClientStatusView(View):
+    """date,time, status 등 환자에 대한 정보 기록
+    """
+    template_name = 'status/status.html'
+
+    def get(self, request, *args, **kwargs):
+
+        """최신 데이터가 위에 표시되게 하며 저장되어 있는 데이터를 가져옴
+        """
+        statuses = Status.objects.all().order_by('-id')
+        """local 시간을 받아올 때 한국 시간이 아닌 영국 시간으로 9시간 차이나게 받아오는 문제가 발생하여 코드 추가
+        """
+        for status in statuses:
+            status.start_datetime = status.start_datetime + timedelta(hours=9)
+            status.end_datetime = status.end_datetime + timedelta(hours=9)
+
+        return render(request, self.template_name, {'statuses': statuses})
+
+    def post(self, request, *args, **kwargs):
+
+        start_datetime = request.POST['startdatetime']
+        end_datetime = request.POST['enddatetime']
+        memo = request.POST['memo']
+
+        """yyyy - mm - dd형식이 되도록 변환
+        """
+        parsed_startdatetime = datetime.fromisoformat(start_datetime)
+        parsed_enddatetime = datetime.fromisoformat(end_datetime)
+
+
+
+
+
+
+        if not parsed_startdatetime:
+            error_message = "날짜 형식이 올바르지 않습니다. yyyy-mm-dd 형식이어야 합니다."
+            statuses = Status.objects.all()
+            print('statuses 문제가 발생')
+            return render(request, self.template_name, {'error_message': error_message,'statuses': statuses})
+
+        """end_datetime이 시작시간보다 빠르지 않도록 설정 
+        """
+        if start_datetime >= end_datetime:
+            error_message = "Start time must be before end time."
+            statuses = Status.objects.all()
+            print('시간 문제가 발생')
+            return render(request, self.template_name, {'error_message': error_message,'statuses': statuses})
+
+
+
+        status = Status.objects.create(
+                            user=request.user,
+                            start_datetime=parsed_startdatetime,
+                            end_datetime= parsed_enddatetime,
+                            memo=memo,
+        )
+
+        status.save()
+        context = {
+            'start_datetime': start_datetime,
+            'end_datetime' : end_datetime,
+            'memo': memo,
+        }
+
+
+        previous_url = request.META.get('HTTP_REFERER')
+
+        # 이전 페이지로 리디렉션
+        return redirect(previous_url)
+
