@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block content %}
+
+
+<!--select data 관련 내용-->
+<link href=
+              "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+      rel="stylesheet">
+
+<div class="container py-4">
+    <form method="post">
+        {% csrf_token %}
+    <h1 class="h3 mb-3 fw-normal">status</h1>
+
+    <div class="row"  style="margin-top:100px">
+        <div class="col">
+            <label for="startdatetime">날짜와 시간을 선택하세요:
+              <input type="datetime-local"
+                 id="startdatetime"
+                 name="startdatetime"
+
+                 required>
+            </label>
+        </div>
+        <div class="col">
+            <label for="enddatetime">날짜와 시간을 선택하세요:
+                <input type="datetime-local"
+                 id="enddatetime"
+                 name="enddatetime"
+
+                 required>
+            </label>
+        </div>
+       <div class="col" style="margin-top:-20px;">
+            <label class="form-label" for="exampleFormControlTextarea1">status</label>
+            <textarea name="memo" class="form-control" data-width="300px" id="exampleFormControlTextarea1" rows="3" ></textarea>
+        </div>
+
+        <div class="col order last">
+            <input class="btn btn-info" type="submit" value="Submit" style="margin-top:20px">
+        </div>
+
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mt-4">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+
+       <!-- Error message -->
+    {% if error_message %}
+        <div class="alert alert-danger mt-4">
+            {{ error_message }}
+        </div>
+    {% endif %}
+
+    <div class="row"  style="margin-top:100px">
+        <div class="row mt-4">
+            <div>
+                <h4> 기록들 </h4>
+            </div>
+            <table class="table text-center">
+                <thead>
+                  <tr>
+                    <th scope="col">start_date</th>
+                    <th scope="col">start_time</th>
+                    <th scope="col">end_date</th>
+                    <th scope="col">end_time</th>
+                    <th scope="col">status</th>
+<!--                    <th scope="col">status 수정</th>-->
+
+
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for status in statuses %}
+                    <tr>
+                        <td scope="col">{{ status.start_datetime.date}}</td>
+                        <td scope="col">{{ status.start_datetime.time }}</td>
+                        <td scope="col">{{ status.end_datetime.date}}</td>
+                        <td scope="col">{{ status.end_datetime.time }}</td>
+                        <td scope="col">{{ status.memo }}</td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+              </table>
+        </div>
+    </div>
+</div>
+
+
+        <!-- jQuery -->
+        <script crossorigin="anonymous"
+                integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+        <!-- Bootstrap JS and Popper.js -->
+        <script crossorigin="anonymous"
+                integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+                src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
+        <!-- Bootstrap Datepicker JS -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+
+
+
+{% endblock content %}
