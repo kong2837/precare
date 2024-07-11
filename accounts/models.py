@@ -21,12 +21,12 @@ class Status(models.Model):
         help_text='상태 변화 시작한 시간과 날짜입니다.'
     )
 
-    end_datetime = models.DateTimeField(
-            db_column='end_datetime',
-            db_comment='status end datetime',
-            null=False,
-            help_text='상태 변화 끝난 시간과 날짜입니다.'
-        )
+    # end_datetime = models.DateTimeField(
+    #         db_column='end_datetime',
+    #         db_comment='status end datetime',
+    #         null=False,
+    #         help_text='상태 변화 끝난 시간과 날짜입니다.'
+    #     )
 
     user = models.ForeignKey(
         to=settings.AUTH_USER_MODEL,

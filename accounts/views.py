@@ -20,6 +20,7 @@ from django.utils.dateparse import parse_date
 from django import forms
 from datetime import datetime, timezone, timedelta
 
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # Create your views here.
 class LoginView(Login):
@@ -217,7 +218,7 @@ class UserPrimaryKeyAPIView(AuthKeyRequiredMixin, View):
         return response
 
 
-class ClientStatusView(View):
+class ClientStatusView(LoginRequiredMixin, View):
     """date,time, status 등 환자에 대한 정보 기록
     """
     template_name = 'status/status.html'
@@ -231,20 +232,20 @@ class ClientStatusView(View):
         """
         for status in statuses:
             status.start_datetime = status.start_datetime + timedelta(hours=9)
-            status.end_datetime = status.end_datetime + timedelta(hours=9)
+            # status.end_datetime = status.end_datetime + timedelta(hours=9)
 
         return render(request, self.template_name, {'statuses': statuses})
 
     def post(self, request, *args, **kwargs):
 
         start_datetime = request.POST['startdatetime']
-        end_datetime = request.POST['enddatetime']
+        # end_datetime = request.POST['enddatetime']
         memo = request.POST['memo']
 
         """yyyy - mm - dd형식이 되도록 변환
         """
         parsed_startdatetime = datetime.fromisoformat(start_datetime)
-        parsed_enddatetime = datetime.fromisoformat(end_datetime)
+        # parsed_enddatetime = datetime.fromisoformat(end_datetime)
 
 
 
@@ -259,25 +260,25 @@ class ClientStatusView(View):
 
         """end_datetime이 시작시간보다 빠르지 않도록 설정 
         """
-        if start_datetime >= end_datetime:
-            error_message = "Start time must be before end time."
-            statuses = Status.objects.all()
-            print('시간 문제가 발생')
-            return render(request, self.template_name, {'error_message': error_message,'statuses': statuses})
-
-
+        # if start_datetime >= end_datetime:
+        #     error_message = "Start time must be before end time."
+        #     statuses = Status.objects.all()
+        #     print('시간 문제가 발생')
+        #     return render(request, self.template_name, {'error_message': error_message,'statuses': statuses})
+        #
+        #
 
         status = Status.objects.create(
                             user=request.user,
                             start_datetime=parsed_startdatetime,
-                            end_datetime= parsed_enddatetime,
+                            # end_datetime= parsed_enddatetime,
                             memo=memo,
         )
 
         status.save()
         context = {
             'start_datetime': start_datetime,
-            'end_datetime' : end_datetime,
+            # 'end_datetime' : end_datetime,
             'memo': memo,
         }
 

@@ -7,8 +7,9 @@
               "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
       rel="stylesheet">
 
-<div class="container py-4">
-    <form method="post">
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div method="post">
         {% csrf_token %}
     <h1 class="h3 mb-3 fw-normal">status</h1>
 
@@ -22,15 +23,16 @@
                  required>
             </label>
         </div>
-        <div class="col">
-            <label for="enddatetime">날짜와 시간을 선택하세요:
-                <input type="datetime-local"
-                 id="enddatetime"
-                 name="enddatetime"
 
-                 required>
-            </label>
-        </div>
+<!--        <div class="col">-->
+<!--            <label for="enddatetime">날짜와 시간을 선택하세요:-->
+<!--                <input type="datetime-local"-->
+<!--                 id="enddatetime"-->
+<!--                 name="enddatetime"-->
+
+<!--                 required>-->
+<!--            </label>-->
+<!--        </div>-->
        <div class="col" style="margin-top:-20px;">
             <label class="form-label" for="exampleFormControlTextarea1">status</label>
             <textarea name="memo" class="form-control" data-width="300px" id="exampleFormControlTextarea1" rows="3" ></textarea>
@@ -39,6 +41,8 @@
         <div class="col order last">
             <input class="btn btn-info" type="submit" value="Submit" style="margin-top:20px">
         </div>
+    </div>
+
 
 
     {% if messages %}
@@ -63,10 +67,10 @@
             <table class="table text-center">
                 <thead>
                   <tr>
-                    <th scope="col">start_date</th>
-                    <th scope="col">start_time</th>
-                    <th scope="col">end_date</th>
-                    <th scope="col">end_time</th>
+                    <th scope="col">date</th>
+                    <th scope="col">time</th>
+<!--                    <th scope="col">end_date</th>-->
+<!--                    <th scope="col">end_time</th>-->
                     <th scope="col">status</th>
 <!--                    <th scope="col">status 수정</th>-->
 
@@ -78,8 +82,8 @@
                     <tr>
                         <td scope="col">{{ status.start_datetime.date}}</td>
                         <td scope="col">{{ status.start_datetime.time }}</td>
-                        <td scope="col">{{ status.end_datetime.date}}</td>
-                        <td scope="col">{{ status.end_datetime.time }}</td>
+<!--                        <td scope="col">{{ status.end_datetime.date}}</td>-->
+<!--                        <td scope="col">{{ status.end_datetime.time }}</td>-->
                         <td scope="col">{{ status.memo }}</td>
 
                     </tr>
@@ -87,6 +91,7 @@
                 </tbody>
               </table>
         </div>
+    </div>
     </div>
 </div>
 
