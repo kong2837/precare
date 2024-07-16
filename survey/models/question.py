@@ -61,13 +61,6 @@ class Question(models.Model):
         default=2
     )
 
-    is_required = models.BooleanField(
-        default=True,
-        db_column="is_required",
-        db_comment="필수 여부",
-        help_text="이 질문이 응답해야 하는 필수 항목인지 여부",
-    )
-
     class Meta:
         db_table = "question"
         verbose_name = "질문"
