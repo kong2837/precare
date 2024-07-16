@@ -29,6 +29,7 @@ class SurveyQuestion(models.Model):
         db_column="is_required",
         db_comment="필수 여부",
         help_text="이 질문이 응답해야 하는 필수 항목인지 여부",
+
     )
 
     def is_mandatory(self):
