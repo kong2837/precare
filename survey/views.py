@@ -9,7 +9,7 @@ from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from accounts.views import SuperuserRequiredMixin
 from huami.models import HuamiAccount
-from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
+from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer, question
 from django.views.generic.edit import ProcessFormView
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -125,6 +125,7 @@ class UserSurveyListView(MyLoginRequiredMixin, ListView):
 
 class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
     """설문조사 폼을 제공하는 클래스 기반 뷰
+
     """
 
     def _create_replies(self, user_survey, post_data):
@@ -145,6 +146,7 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
                                  survey_question=survey_question,
                                  content=','.join(post_data.getlist(key)))
 
+
     def get(self, request, *args, **kwargs):
         """폼 입력 화면
 
@@ -154,7 +156,13 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
         Returns:
             HttpResponse: 렌더링 된 입력 화면 HTML
         """
-        context = {'object': Survey.objects.get(**kwargs)}
+        survey = Survey.objects.get(pk=kwargs['pk'])
+        questions = SurveyQuestion.objects.filter(survey=survey).order_by('order')
+        context = {
+            'object': survey,
+            'survey_questions': questions,
+        }
+
         return render(request, 'survey/user_survey_form.html', context)
 
     def post(self, request, *args, **kwargs):
@@ -166,10 +174,15 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
         Returns:
             HttpResponse: 렌더링 된 완료 화면 HTML
         """
+        survey = Survey.objects.get(pk=kwargs['pk'])
         user_survey = UserSurvey.objects.create(user=request.user,
-                                                survey=Survey.objects.get(**kwargs))
+                                                survey=survey)
+
+
         self._create_replies(user_survey, request.POST)
         result = ""
+
+
         if "임신스트레스 10문항" in user_survey.survey_name or "조기진통위험 10문항" in user_survey.survey_name:
             replies = Reply.objects.filter(user_survey=user_survey).order_by("survey_question__order")
             scores = []
