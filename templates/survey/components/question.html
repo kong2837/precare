@@ -37,7 +37,7 @@
 {# Selection 입력 #}
 {% elif survey_question.question.type_filed == 3 %}
     <select class="form-select" name="{{ survey_question.question.pk }}" aria-label="{{ survey_question.question.pk }}" {% if survey_question.mandatory %}required{% endif %}>
-        {% for answer in survey_question.question.answers.al %}
+        {% for answer in survey_question.question.answers.all %}
             <option value="{{ answer.description }}">{{ answer.description }}</option>
         {% endfor %}
     </select>
