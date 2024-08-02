@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-atqfh&#+x!)pdp=vk(3fzo))nv9%u811p18t2_l3ta9=eqw1ln'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -102,7 +102,7 @@ DATABASES = {
         "NAME": "apopdb",
         "USER": "example-user", 
         "PASSWORD": "example-password", 
-        "HOST": "localhost",
+        "HOST": "mariadb",
         "PORT": "3306"
     },
 }
