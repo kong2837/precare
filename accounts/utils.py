@@ -2,6 +2,8 @@ import csv
 from django.conf import settings
 from django.http import HttpResponse
 import re
+import string
+import random
 
 _PATTERN = re.compile(r'\[(\w+),\s*([0-1]\d|2[0-3]):([0-5]\d)\s*~\s*([0-1]\d|2[0-3]):([0-5]\d)\]')
 
@@ -67,3 +69,11 @@ def make_csv_response(user: settings.AUTH_USER_MODEL, response: HttpResponse) ->
                             ])
     
     return response
+
+
+def generate_verification_code(length=8):
+    """무작위 인증 코드를 생성
+
+    """
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
