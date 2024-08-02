@@ -23,13 +23,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-atqfh&#+x!)pdp=vk(3fzo))nv9%u811p18t2_l3ta9=eqw1ln'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = ['http://*.YOUR_DOMAIN.COM']
 
 # Application definition
+"""인증코드를 보내는 email 관련 정보 
+ """
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.naver.com'  # SMTP 서버 호스트 이름
+EMAIL_PORT = 587  # SMTP 서버 포트
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'pregnancy_re@naver.com'  # 네이버 이메일 주소
+EMAIL_HOST_PASSWORD = 'dailab427!'  # 네이버 이메일 비밀번호
+DEFAULT_FROM_EMAIL = 'pregnancy_re@naver.com'
+
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -91,7 +102,7 @@ DATABASES = {
         "NAME": "apopdb",
         "USER": "example-user", 
         "PASSWORD": "example-password", 
-        "HOST": "mariadb",
+        "HOST": "localhost",
         "PORT": "3306"
     },
 }
