@@ -14,6 +14,23 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib import messages
 from huami.models import HuamiAccount
 
+
+from django.contrib.auth.models import User
+from django.views.generic.edit import FormView
+from django.core.mail import send_mail
+from django.urls import reverse_lazy
+from django.shortcuts import render
+
+from django.contrib.auth import views as auth_views
+from .utils import generate_verification_code
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_str, force_bytes
+from django.contrib.auth import update_session_auth_hash
+from .forms import PasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm
+from .utils import generate_verification_code
+from .models import Profile
+
 # Create your views here.
 class LoginView(Login):
     """로그인을 위한 클래스 기반 뷰
@@ -208,4 +225,165 @@ class UserPrimaryKeyAPIView(AuthKeyRequiredMixin, View):
             file.writerow(line)
         
         return response
-    
+
+
+
+def create_profile_if_not_exists(user):
+    """profile 생성
+     """
+    try:
+        profile = user.profile
+    except Profile.DoesNotExist:
+        Profile.objects.create(user=user)
+def password_reset_request(request):
+    """비밀번호 찾기 시 정보 저장
+     """
+    if request.method == 'POST':
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            username = form.cleaned_data['username']
+            email = form.cleaned_data['email']
+
+            try:
+                user = User.objects.get(username=username, email=email, first_name=name)
+                create_profile_if_not_exists(user)
+                verification_code = generate_verification_code()
+                user.profile.verification_code = verification_code
+                user.profile.save()
+
+                request.session['reset_username'] = username
+
+                send_mail(
+                    'Password Reset Verification Code',
+                    f'Your verification code is {verification_code}',
+                    'pregnancy_re@naver.com',
+                    [email],
+                    fail_silently=False,
+                )
+
+                messages.success(request, 'Verification code sent to your email.')
+                return redirect('accounts:verify_code')
+            except User.DoesNotExist:
+                messages.error(request, 'User not found.')
+    else:
+        form = PasswordResetRequestForm()
+    return render(request, 'accounts/password_reset_request.html', {'form': form})
+
+
+def verify_code(request):
+    """비밀번호 변경 시 인증코드 확인하는 코드
+     """
+    if request.method == 'POST':
+        form = VerifyCodeForm(request.POST)
+        if form.is_valid():
+            username = request.session.get('reset_username')
+            verification_code = form.cleaned_data['verification_code']
+
+            if not username:
+                messages.error(request, 'No username found in session. Please start over.')
+                return redirect('accounts:password_reset_request')
+
+            try:
+                user = User.objects.get(username=username)
+                create_profile_if_not_exists(user)
+                if user.profile.verification_code == verification_code:
+                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+                    token = default_token_generator.make_token(user)
+                    return redirect('accounts:password_reset_confirm', uidb64=uid, token=token)
+                else:
+                    messages.error(request, 'Invalid verification code.')
+            except User.DoesNotExist:
+                messages.error(request, 'User not found.')
+    else:
+        form = VerifyCodeForm()
+    return render(request, 'accounts/verify_code.html', {'form': form})
+
+
+
+def password_reset_confirm(request, uidb64=None, token=None):
+    """새로운 비밀번호 변경 관련 코드
+     """
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            form = SetPasswordForm(user, request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('accounts:password_reset_complete')
+        else:
+            form = SetPasswordForm(user)
+    else:
+        messages.error(request, 'The reset link is no longer valid.')
+        return redirect('accounts:password_reset_request')
+
+    return render(request, 'accounts/password_reset_confirm.html', {'form': form})
+
+
+def password_reset_complete(request):
+    return render(request, 'accounts/password_reset_complete.html')
+
+
+def find_username_request(request):
+    """ID찾기 시 정보 저장
+     """
+    if request.method == 'POST':
+        form = FindUsernameForm(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            email = form.cleaned_data['email']
+
+            try:
+                user = User.objects.get(email=email, first_name=name)
+                create_profile_if_not_exists(user)
+                verification_code = generate_verification_code()
+                user.profile.verification_code = verification_code
+                user.profile.save()
+
+                request.session['reset_email'] = email
+
+                send_mail(
+                    'Username Verification Code',
+                    f'Your verification code is {verification_code}',
+                    'pregnancy_re@naver.com',
+                    [email],
+                    fail_silently=False,
+                )
+
+                messages.success(request, 'Verification code sent to your email.')
+                return redirect('accounts:verify_username_code', email=email)
+            except User.DoesNotExist:
+                messages.error(request, 'User not found.')
+    else:
+        form = FindUsernameForm()
+    return render(request, 'accounts/find_username_request.html', {'form': form})
+
+
+
+
+def verify_username_code(request, email):
+    """ID 찾기 시 인증코드 확인 코드
+     """
+    if request.method == 'POST':
+        verification_code = request.POST.get('verification_code')
+        email = request.session.get('reset_email')
+
+        if not email:
+            messages.error(request, 'No email found in session. Please start over.')
+            return redirect('accounts:find_username_request')
+
+        try:
+            user = User.objects.get(email=email)
+            if user.profile.verification_code == verification_code:
+                return render(request, 'accounts/username_complete.html', {'username': user.username})
+            else:
+                messages.error(request, 'Invalid verification code.')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found.')
+    return render(request, 'accounts/verify_username_code.html', {'email': email})
