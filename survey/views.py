@@ -142,9 +142,27 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
             question = Question.objects.get(pk=int(key))
             survey_question = SurveyQuestion.objects.get(survey=user_survey.survey, 
                                                          question=question)
+            answer_content_list = post_data.getlist(key)
+
+            answer_content = None
+
+            # 기타 옵션 처리
+            if "other" in answer_content_list:
+                other_text_key = f"other_text_{key}"
+                other_text = post_data.get(other_text_key)
+                if other_text:
+                    answer_content = other_text
+                else:
+                    answer_content = ''  # 기타 옵션이 선택되었지만 텍스트가 입력되지 않았을 때 빈 문자열로 설정
+
+            # 기타 옵션이 선택되지 않았을 경우, 다른 답변 처리
+            if answer_content is None or answer_content == '':
+                answer_content = ','.join([item for item in answer_content_list if item != "other"])
+
             Reply.objects.create(user_survey=user_survey,
                                  survey_question=survey_question,
-                                 content=','.join(post_data.getlist(key)))
+                                 content=answer_content)
+                                 # content=','.join(post_data.getlist(key)))
 
 
     def get(self, request, *args, **kwargs):
@@ -178,10 +196,8 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
         user_survey = UserSurvey.objects.create(user=request.user,
                                                 survey=survey)
 
-
         self._create_replies(user_survey, request.POST)
         result = ""
-
 
         if "임신스트레스 10문항" in user_survey.survey_name or "조기진통위험 10문항" in user_survey.survey_name:
             replies = Reply.objects.filter(user_survey=user_survey).order_by("survey_question__order")
