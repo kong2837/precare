@@ -20,13 +20,21 @@
     </div>
 {# Radio 입력 #}
 {% elif survey_question.question.type_filed == 2 %}
-    {% for answer in survey_question.question.answers.all %}
-        <div class="form-check form-check-inline mb-3">
-            <input class="form-check-input" type="radio" name="{{ survey_question.question.pk }}" id="{{ survey_question.question.pk }}" value="{{ answer.description }}"
-                   {% if survey_question.mandatory %}required{% endif %}>
-            <label class="form-check-label" for="{{ survey_question.question.pk }}">{{ answer.description }}</label>
 
-        </div>
+     {% for answer in survey_question.question.answers.all %}
+            <div class="form-check form-check-inline mb-3">
+                <input class="form-check-input" type="radio" name="{{ survey_question.question.pk }}" id="answer_{{ answer.pk }}" value="{{ answer.description }}"
+                       {% if survey_question.mandatory %}required{% endif %}
+                       {% if answer.is_other %}data-is-other="true"{% endif %}>
+                <label class="form-check-label" for="answer_{{ answer.pk }}">{{ answer.description }}</label>
+            </div>
+
+            {# is_other가 True인 답변에 대해 텍스트 입력 필드 표시 #}
+            {% if answer.is_other %}
+                <div id="other_text_div_{{ answer.pk }}" class="mb-3" style="display:none;">
+                    <input type="text" class="form-control" name="other_text_{{ answer.pk }}" id="other_text_{{ answer.pk }}" placeholder="추가 내용을 입력하세요.">
+                </div>
+            {% endif %}
     {% endfor %}
 
 {% if error_message %}
@@ -56,3 +64,23 @@
         <label for="{{ survey_question.question.pk }}" class="form-label"></label>
     </div>
 {% endif %}
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('input[name="{{ survey_question.question.pk }}"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                // 모든 텍스트 입력 필드를 숨김
+                document.querySelectorAll('div[id^="other_text_div_"]').forEach(function (div) {
+                    div.style.display = 'none';
+                    div.querySelector('input').value = '';  // 텍스트 입력 필드 초기화
+                });
+
+                // 선택한 답변이 is_other 옵션인지 확인하고, 해당 필드 표시
+                if (this.dataset.isOther === "true") {
+                    document.getElementById('other_text_div_' + this.id.split('_')[1]).style.display = 'block';
+                }
+            });
+        });
+    });
+</script>
