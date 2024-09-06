@@ -1,6 +1,8 @@
 from django.urls import path
-from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, LoginView, LogoutView, SignUpView, SuccessSignUpView, UserHealthDataSyncView, UserHealthNoteUpdateView, UserInfoView, UserManageView, UserNoteUpdateView, UserPrimaryKeyAPIView, password_reset_request, verify_code, password_reset_confirm, password_reset_complete, find_username_request, verify_username_code
-from django.contrib.auth import views as auth_views
+from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, LoginView, LogoutView, SignUpView, \
+    SuccessSignUpView, UserHealthDataSyncView, UserHealthNoteUpdateView, UserInfoView, UserManageView, \
+    UserNoteUpdateView, UserPrimaryKeyAPIView, password_reset_request, verify_code, password_reset_confirm, \
+    password_reset_complete, find_username_request, verify_username_code, UserProfileView, UserPasswordChangeView
 app_name = 'accounts'
 
 urlpatterns = [
@@ -22,7 +24,8 @@ urlpatterns = [
     path('reset/<uidb64>/<token>/', password_reset_confirm, name='password_reset_confirm'),
     path('reset/done/', password_reset_complete, name='password_reset_complete'),
     path('find_username/', find_username_request, name='find_username_request'),
-    path('verify_username_code/<str:email>/', verify_username_code, name='verify_username_code')
-
+    path('verify_username_code/<str:email>/', verify_username_code, name='verify_username_code'),
+    path('profile/', UserProfileView.as_view(), name='user_profile'),
+    path('profile/password/', UserPasswordChangeView.as_view(), name='user_password'),
 
 ]

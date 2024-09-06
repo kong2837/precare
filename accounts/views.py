@@ -1,32 +1,30 @@
 import csv
+import hashlib
+
+from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib.auth.views import LoginView as Login, LogoutView as Logout
-from django.views.generic import View, TemplateView, ListView, DetailView
-from django.urls import reverse_lazy
+from django.contrib.auth.views import LoginView as Login, LogoutView as Logout, PasswordChangeView
+from django.views.generic import View, TemplateView, ListView, DetailView, CreateView, UpdateView
 from accounts.utils import make_csv_response
 from huami.forms import HuamiAccountCreationForm
 from huami.models.healthdata import HealthData
 from .forms import MyAuthenticationForm
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.mixins import UserPassesTestMixin
+from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.contrib import messages
 from huami.models import HuamiAccount
 
 
 from django.contrib.auth.models import User
-from django.views.generic.edit import FormView
 from django.core.mail import send_mail
 from django.urls import reverse_lazy
 from django.shortcuts import render
 
-from django.contrib.auth import views as auth_views
-from .utils import generate_verification_code
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_str, force_bytes
-from django.contrib.auth import update_session_auth_hash
 from .forms import PasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm
 from .utils import generate_verification_code
 from .models import Profile
@@ -226,7 +224,22 @@ class UserPrimaryKeyAPIView(AuthKeyRequiredMixin, View):
         
         return response
 
+class UserProfileView(LoginRequiredMixin, View):
+    template_name="accounts/myprofile.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['current_user'] = self.request.user
+        context['email_hash'] = hashlib.md5(self.request.user.huami.email.encode('utf-8').strip().lower()).hexdigest()
+        return context
+
+    def get(self, request):
+        return render(request, self.template_name, {'current_user': request.user})
+
+class UserPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    template_name="accounts/change_password.html"
+    form_class = PasswordChangeForm
+    success_url = reverse_lazy('accounts:user_profile')
 
 def create_profile_if_not_exists(user):
     """profile 생성

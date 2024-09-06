@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="container mt-2">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h4>계정 정보</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Profile Picture -->
+{#                            <div class="col-md-4 text-center">#}
+{#                                <img src="https://s.gravatar.com/avatar/{{ email_hash }}?s=80" class="img-fluid rounded-circle mb-3" alt="User Profile Picture">#}
+{#                            </div>#}
+                            <!-- User Info -->
+                            <div class="col-md-8">
+                                <h5>ID: <strong>{{ current_user.username }}</strong></h5>
+                                <p><strong>Email:</strong> {{ current_user.huami.email }}</p>
+                                <p><strong>이름:</strong> {{ current_user.huami.full_name }}</p>
+                                <p><strong>연구 시작일:</strong> {{ current_user.huami.date_started }}</p>
+                                <p><strong>연구 종료일:</strong> {{ current_user.huami.date_ended }}</p>
+                                <a href="{% url 'accounts:user_password' %}" class="btn btn-secondary mt-3">비밀번호 재설정</a>
+                                <a href="#" class="btn btn-secondary mt-3">화웨이 계정 재설정</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted text-center">
+                        데이터 동기화 상태: {{ current_user.huami.status }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
