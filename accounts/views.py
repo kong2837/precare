@@ -247,12 +247,10 @@ class HuamiAccountRecertificationView(LoginRequiredMixin, SignUpView):
     form_class = HuamiAccountCertificationForm
     success_url = reverse_lazy('accounts:user_profile')
 
-    @override
     def get(self, request, *args, **kwargs):
         form = HuamiAccountCertificationForm
         return render(request, self.template_name, {'form': form})
 
-    @override
     def post(self, request, *args, **kwargs):
         form = HuamiAccountCertificationForm(request.POST)
         if form.is_valid():
