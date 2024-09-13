@@ -62,6 +62,14 @@ class HuamiAccount(models.Model):
     def last_health_info(self):
         return self.health.last()
 
+    @property
+    def sync_status(self) -> str:
+        try:
+            HuamiAmazfit.is_valid(self.email, self.password)
+        except Exception as e:
+            return "데이터 동기화가 중단되었습니다! 화웨이 계정 재설정을 진행해 주세요!"
+        return "정상"
+
     def __str__(self) -> str:
         """HuamiAccount 인스턴스 출력 메서드
 
