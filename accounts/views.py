@@ -1,6 +1,5 @@
 import csv
 import hashlib
-from typing import override
 
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpRequest, HttpResponse
