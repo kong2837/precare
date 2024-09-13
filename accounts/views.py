@@ -1,5 +1,6 @@
 import csv
 import hashlib
+from typing import override
 
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpRequest, HttpResponse
@@ -7,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.views import LoginView as Login, LogoutView as Logout, PasswordChangeView
 from django.views.generic import View, TemplateView, ListView, DetailView, CreateView, UpdateView
 from accounts.utils import make_csv_response
-from huami.forms import HuamiAccountCreationForm
+from huami.forms import HuamiAccountCreationForm, HuamiAccountCertificationForm
 from huami.models.healthdata import HealthData
 from .forms import MyAuthenticationForm
 from django.conf import settings
@@ -240,6 +241,30 @@ class UserPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     template_name="accounts/change_password.html"
     form_class = PasswordChangeForm
     success_url = reverse_lazy('accounts:user_profile')
+
+class HuamiAccountRecertificationView(LoginRequiredMixin, SignUpView):
+    template_name = "accounts/recertification.html"
+    form_class = HuamiAccountCertificationForm
+    success_url = reverse_lazy('accounts:user_profile')
+
+    @override
+    def get(self, request, *args, **kwargs):
+        form = HuamiAccountCertificationForm
+        return render(request, self.template_name, {'form': form})
+
+    @override
+    def post(self, request, *args, **kwargs):
+        form = HuamiAccountCertificationForm(request.POST)
+        if form.is_valid():
+            huami_account = HuamiAccount.objects.get(user= request.user)
+            huami_account.email=form.cleaned_data['email']
+            huami_account.password = form.cleaned_data['password']
+            huami_account.save()
+
+            return redirect(reverse_lazy('accounts:user_profile'))
+
+        return render(request, self.template_name, {'form': form})
+
 
 def create_profile_if_not_exists(user):
     """profile 생성
