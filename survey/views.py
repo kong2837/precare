@@ -246,7 +246,7 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
                 ws = wb.create_sheet(title)
                 ws.append(['작성시간', *survey.questions.all().values_list('title', flat=True)])
 
-            ws.append([survey.created_at, *replies])
+            ws.append([user_survey.create_at, *replies])
 
         return wb
 
