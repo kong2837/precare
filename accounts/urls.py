@@ -1,4 +1,6 @@
 from django.urls import path
+
+from survey.views import XlsxDownloadView
 from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, LoginView, LogoutView, SignUpView, \
     SuccessSignUpView, UserHealthDataSyncView, UserHealthNoteUpdateView, UserInfoView, UserManageView, \
     UserNoteUpdateView, UserPrimaryKeyAPIView, password_reset_request, verify_code, password_reset_confirm, \
@@ -30,4 +32,5 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user_profile'),
     path('profile/password/', UserPasswordChangeView.as_view(), name='user_password'),
     path('profile/recertification/', HuamiAccountRecertificationView.as_view(), name ='user_recertification'),
+    path('user/<int:user_id>/surveys/', XlsxDownloadView.as_view(), name='user_survey_download')
 ]

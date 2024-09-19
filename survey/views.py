@@ -1,4 +1,6 @@
 import csv
+import re
+import urllib.parse
 from typing import Any
 
 from django.contrib.auth import get_user_model
@@ -7,6 +9,9 @@ from django.http import HttpResponse
 from django.views import View
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
+from tempfile import NamedTemporaryFile
+from openpyxl import Workbook
+
 from accounts.views import SuperuserRequiredMixin
 from huami.models import HuamiAccount
 from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer, question
@@ -221,3 +226,48 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
             HttpResponse: 렌더링 된 완료 화면 HTML
         """
         return render(request, 'survey/survey_complete.html')
+
+class XlsxDownloadView(SuperuserRequiredMixin, View):
+    def _create_workbook(self, user_surveys, user):
+        pattern = r'\[.*?\]\s*(.*)'
+
+        wb = Workbook()
+        ws = wb.active
+
+        # create main page
+        ws.title = '대상정보'
+        ws.append(['이름', 'ID'])
+        ws.append([user.huami.full_name, user.username])
+
+        for user_survey in user_surveys:
+            survey, replies = user_survey.survey, user_survey.replies.all().values_list('content', flat=True)
+            title = re.search(pattern, survey.title).group(1)
+            if title not in wb.sheetnames:
+                ws = wb.create_sheet(title)
+                ws.append(['작성시간', *survey.questions.all().values_list('title', flat=True)])
+
+            ws.append([survey.created_at, *replies])
+
+        return wb
+
+
+
+    def get(self, request, user_id):
+        user_surveys = UserSurvey.objects.filter(user_id=user_id).order_by('survey_id', 'create_at')
+        user = get_user_model().objects.get(pk=user_id)
+
+        if user is None:
+            # TODO: 유저가 없는 경우 예외처리 필요
+            pass
+
+        wb = self._create_workbook(user_surveys, user)
+
+        with NamedTemporaryFile(suffix='.xlsx') as tmp:
+            wb.save(tmp.name)
+            tmp.seek(0)
+            stream = tmp.read()
+
+        filename = urllib.parse.quote(f"{user.huami.full_name} 설문결과")
+        response = HttpResponse(content=stream, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
+        return response
