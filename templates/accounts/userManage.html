@@ -11,7 +11,8 @@
             <p class="mb-1">{{ user.huami.note }}</p>
             <small>마지막 동기화: {{ user.huami.sync_date }}</small>
         </a>
-        <a class="btn btn-primary mb-4" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
+        <a class="btn btn-primary mb-1" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
+        <a class="btn btn-primary mb-4" href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
         {% endfor %}
     </div>
     <nav aria-label="Page navigation">
