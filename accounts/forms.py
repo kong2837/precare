@@ -13,7 +13,6 @@ class MyAuthenticationForm(UserCreationForm):
 class PasswordResetRequestForm(forms.Form):
     """비밀번호 찾기 시 입력 field
         """
-    name = forms.CharField(max_length=100, label="이름")
     username = forms.CharField(max_length=100, label="아이디")
     email = forms.EmailField(label="이메일")
 

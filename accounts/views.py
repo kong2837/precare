@@ -276,12 +276,13 @@ def password_reset_request(request):
     if request.method == 'POST':
         form = PasswordResetRequestForm(request.POST)
         if form.is_valid():
-            name = form.cleaned_data['name']
+
             username = form.cleaned_data['username']
             email = form.cleaned_data['email']
 
             try:
-                user = User.objects.get(username=username, email=email, first_name=name)
+                huami_account = HuamiAccount.objects.get(email=email)
+                user = User.objects.get(username=username)
                 create_profile_if_not_exists(user)
                 verification_code = generate_verification_code()
                 user.profile.verification_code = verification_code
@@ -293,12 +294,14 @@ def password_reset_request(request):
                     'Password Reset Verification Code',
                     f'Your verification code is {verification_code}',
                     'pregnancy_re@naver.com',
-                    [email],
+                    [huami_account.email],
                     fail_silently=False,
                 )
 
                 messages.success(request, 'Verification code sent to your email.')
                 return redirect('accounts:verify_code')
+            except HuamiAccount.DoesNotExist:
+                messages.error(request, 'Email not found in huami_account.')
             except User.DoesNotExist:
                 messages.error(request, 'User not found.')
     else:
@@ -375,8 +378,12 @@ def find_username_request(request):
             email = form.cleaned_data['email']
 
             try:
-                user = User.objects.get(email=email, first_name=name)
+                huami_account = HuamiAccount.objects.get(email=email)
+
+                user = User.objects.get(first_name=name, id=huami_account.user_id)  # huami_account와 연결된 사용자 찾기
+
                 create_profile_if_not_exists(user)
+
                 verification_code = generate_verification_code()
                 user.profile.verification_code = verification_code
                 user.profile.save()
@@ -393,6 +400,8 @@ def find_username_request(request):
 
                 messages.success(request, 'Verification code sent to your email.')
                 return redirect('accounts:verify_username_code', email=email)
+            except HuamiAccount.DoesNotExist:
+                messages.error(request, 'Email not found in HuamiAccount.')
             except User.DoesNotExist:
                 messages.error(request, 'User not found.')
     else:
@@ -414,11 +423,16 @@ def verify_username_code(request, email):
             return redirect('accounts:find_username_request')
 
         try:
-            user = User.objects.get(email=email)
+            huami_account = HuamiAccount.objects.get(email=email)
+            user = User.objects.get(id=huami_account.user_id)
+
             if user.profile.verification_code == verification_code:
                 return render(request, 'accounts/username_complete.html', {'username': user.username})
             else:
                 messages.error(request, 'Invalid verification code.')
+
+        except HuamiAccount.DoesNotExist:
+            messages.error(request, 'Email not found in HuamiAccount.')
         except User.DoesNotExist:
             messages.error(request, 'User not found.')
     return render(request, 'accounts/verify_username_code.html', {'email': email})
