@@ -325,6 +325,7 @@ def verify_code(request):
             try:
                 user = User.objects.get(username=username)
                 create_profile_if_not_exists(user)
+
                 if user.profile.verification_code == verification_code:
                     uid = urlsafe_base64_encode(force_bytes(user.pk))
                     token = default_token_generator.make_token(user)
