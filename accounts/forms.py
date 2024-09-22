@@ -15,7 +15,8 @@ class PasswordResetRequestForm(forms.Form):
         """
 
     username = forms.CharField(max_length=100, label="아이디")
-    email = forms.EmailField(label="이메일")
+    email = forms.EmailField(label="이메일(Zepp life 계정을 입력해주세요)",
+                             widget=forms.EmailInput(attrs={'placeholder': '이메일'}))
 
 class VerifyCodeForm(forms.Form):
     """인증코드 field
@@ -39,5 +40,8 @@ class SetPasswordForm(DjangoSetPasswordForm):
 class FindUsernameForm(forms.Form):
     """아이디 찾기 시 입력 field
         """
-    name = forms.CharField(max_length=100, label="이름")
-    email = forms.EmailField(label="이메일")
+    name = forms.CharField(max_length=100, label="이름(이름에는 성빼고 입력해주세요)",
+                           widget=forms.TextInput(attrs={'placeholder': '이름'}))
+
+    email = forms.EmailField(label="이메일(Zepp life 계정을 입력해주세요)",
+                             widget=forms.EmailInput(attrs={'placeholder': '이메일'}))

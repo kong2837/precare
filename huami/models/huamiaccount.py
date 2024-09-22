@@ -27,7 +27,7 @@ class HuamiAccount(models.Model):
         null=False,
         blank=False,
         unique=True,
-        help_text="화웨이 계정 이메일"
+        help_text="화웨이(Zepp Life) 계정 이메일"
     )
     password = models.CharField(
         db_column="password",
@@ -35,14 +35,14 @@ class HuamiAccount(models.Model):
         max_length=100,
         null=False,
         blank=False,
-        help_text="화웨이 계정 패스워드"
+        help_text="화웨이(Zepp Life) 계정 패스워드"
     )
     sync_date = models.DateTimeField(
         db_column="sync_date",
         db_comment="huami account sync date",
         null=False,
         blank=False,
-        help_text="화웨이 계정 동기화 날짜",
+        help_text="화웨이(Zepp Life) 계정 동기화 날짜",
         default=default_sny_date,
     )
     note = models.TextField(
