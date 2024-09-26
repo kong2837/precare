@@ -1,3 +1,4 @@
+import datetime
 from typing import Any
 from django.db import models
 from . import HuamiAccount
@@ -95,6 +96,7 @@ class HealthData(models.Model):
             return health, created
         updated_health = []
         result = huami_account.get_data()
+        user_age = int(datetime.datetime.now().year) - int(result['profile']['birth'].split("-")[0])
         
         for date in result['band'].keys():
             health, _ = _get_or_create()
@@ -116,7 +118,7 @@ class HealthData(models.Model):
             health.save()
             updated_health.append(health)
             
-        return set(updated_health)
+        return user_age, set(updated_health)
         
     
     @property

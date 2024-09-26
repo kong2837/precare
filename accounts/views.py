@@ -150,10 +150,12 @@ class UserHealthDataSyncView(SuperuserRequiredMixin, View):
     def get(self, request, pk):
         user = get_object_or_404(get_user_model(), pk=pk)
         try:
-            health_data = HealthData.create_from_sync_data(user.huami)
+            age, health_data = HealthData.create_from_sync_data(user.huami)
+            user.huami.age = age
+            user.huami.save()
             messages.success(request, f"{len(health_data)}일의 데이터가 추가되었습니다.")
         except Exception as e:
-            messages.error(request, "동기화 과정 중 오류가 발생하였습니다.")
+            messages.error(request, "동기화 과정 중 오류가 발생하였습니다."+ e)
             
         return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': pk}))
     
