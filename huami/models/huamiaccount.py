@@ -10,7 +10,12 @@ default_sny_date = datetime(1970, 1, 1)
 
 class HuamiAccount(models.Model):
     """HuamiAccount 모델 클래스
-    """    
+    """
+    RESEARCH_STATUS_CHOICES = [
+        ('ongoing', '진행 중'),
+        ('completed', '종료'),
+        ('preparing', '준비'),
+    ]
     user = models.OneToOneField(
         to=settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -36,6 +41,34 @@ class HuamiAccount(models.Model):
         null=False,
         blank=False,
         help_text="화웨이(Zepp Life) 계정 패스워드"
+    )
+    research_status = models.CharField(
+        db_column="research_status",
+        max_length=10,
+        choices=RESEARCH_STATUS_CHOICES,
+        default='preparing',  # 기본값 설정
+    )
+    join_date = models.DateTimeField(
+        db_column="join_date",
+        null=True,
+        help_text="연구 시작일"
+    )
+    end_date = models.DateTimeField(
+        db_column="end_date",
+        null=True,
+        help_text="연구 종료일"
+    )
+    showed_sync_status = models.BooleanField(
+        db_column="showed_sync_status",
+        null=False,
+        default=True,
+        help_text="동기화 가능 여부"
+    )
+    name = models.CharField(
+        db_column="name",
+        max_length=100,
+        null=True,
+        help_text="사용자 이름"
     )
     sync_date = models.DateTimeField(
         db_column="sync_date",
