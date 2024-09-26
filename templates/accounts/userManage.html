@@ -59,5 +59,13 @@
         </div>
         {% include "components/page_navigation.html" %}
     </div>
-
+    <script>
+    // 행 클릭 이벤트 추가
+    const tableRows = document.querySelectorAll('tbody tr[data-href]');
+    tableRows.forEach(row => {
+        row.addEventListener('click', () => {
+            window.location.href = row.getAttribute('data-href');
+        });
+    });
+    </script>
 {% endblock content %}
