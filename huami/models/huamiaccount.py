@@ -86,6 +86,11 @@ class HuamiAccount(models.Model):
         help_text="사용자에 대한 간략한 설명",
         default="정보를 입력해주세요."
     )
+    age = models.IntegerField(
+        db_column="age",
+        null=True,
+        help_text="사용자의 나이"
+    )
     
     @property
     def full_name(self) -> str:
