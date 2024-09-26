@@ -1,42 +1,63 @@
 {% extends 'base.html' %}
 {% block content %}
+    {% include "styles/table.html" %}
+    <div class="container mt-5">
+        <!-- 검색 입력 -->
+        <div class="mb-3">
+            <label for="searchInput"></label>
+            <input type="text" id="searchInput" class="form-control" placeholder="검색어를 입력하세요">
+        </div>
 
-<div class="container py-4">
-    <div class="list-group mb-4">
-        {% for user in users %}
-        <a href="{% url 'accounts:userInfo' user.pk %}" class="list-group-item list-group-item-action flex-column align-items-start">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ user.huami.full_name }}</h5>
-            </div>
-            <p class="mb-1">{{ user.huami.note }}</p>
-            <small>마지막 동기화: {{ user.huami.sync_date }}</small>
-        </a>
-        <a class="btn btn-primary mb-1" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
-        <a class="btn btn-primary mb-4" href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
-        {% endfor %}
+        <!-- 사용자 테이블 -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">이름</th>
+                    <th scope="col">이메일</th>
+                    <th scope="col">나이</th>
+                    <th scope="col">연구 상태</th>
+                    <th scope="col">연구 시작일</th>
+                    <th scope="col">연구 종료일</th>
+                    <th scope="col">동기화 상태</th>
+                    <th scope="col">노트
+                    </th>
+                    <th scope="col">액션</th> <!-- 새로운 열 추가 -->
+                </tr>
+                </thead>
+                <tbody id="userTable">
+                {% for user in users %}
+                    <tr data-href="{% url 'accounts:userInfo' user.pk %}">
+                        <td>{% if user.huami.name != None %}
+                            {{ user.huami.name }}
+                        {% else %}
+                            {{ user.huami.full_name }}
+                        {% endif %}
+                        </td>
+                        <td>{{ user.huami.email }}</td>
+                        <td>30</td>
+                        <td>{{ user.huami.get_research_status_display }}</td>
+                        <td>{{ user.huami.join_date }}</td>
+                        <td>{{ user.huami.end_date }}</td>
+                        <td>
+                            {% if user.huami.showed_sync_status %}
+                                정상
+                            {% else %}
+                                비정상
+                            {% endif %}
+                        </td>
+                        <td>{{ user.huami.note }}</td>
+                        <td>
+                            <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
+                            <a class="btn btn-primary"
+                               href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
+                        </td> <!-- 버튼 추가 -->
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "components/page_navigation.html" %}
     </div>
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page=1">&laquo; 처음으로</a></li>
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">이전</a>
-            </li>
-            {% endif %}
-            {% for page_num in page_obj.paginator.page_range %}
-                {% if page_obj.number == page_num %}
-                <li class="page-item active">
-                {% else %}
-                <li class="page-item">
-                {% endif %}
-                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-                </li>
-            {% endfor %}
-            {% if page_obj.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">다음</a></li>
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">마지막으로 &raquo;</a></li>
-            {% endif %}
-        </ul>
-    </nav>
-</div>
 
 {% endblock content %}
