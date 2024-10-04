@@ -22,7 +22,7 @@ from accounts.utils import make_csv_response
 from huami.forms import HuamiAccountCreationForm, HuamiAccountCertificationForm
 from huami.models import HuamiAccount
 from huami.models.healthdata import HealthData
-from .forms import MyAuthenticationForm
+from .forms import MyAuthenticationForm, MyLoginForm
 from .forms import PasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm
 from .models import Profile
 from .utils import generate_verification_code
@@ -35,6 +35,7 @@ class LoginView(Login):
     template_name = 'accounts/login.html'
     redirect_field_name = 'redirect_to'
     next_page = reverse_lazy('home')
+    form_class = MyLoginForm
 
 
 class LogoutView(Logout):
@@ -131,7 +132,7 @@ class UserManageView(SuperuserRequiredMixin, ListView):
             query_set = query_set.filter(
                 Q(huami__name__icontains=search_query) | Q(huami__email__icontains=search_query)
             )
-            
+
         order_by = self.request.GET.get('order_by', 'huami__name')
         direction = self.request.GET.get('direction', 'asc')
 
@@ -414,9 +415,7 @@ def find_username_request(request):
             email = form.cleaned_data['email']
 
             try:
-                huami_account = HuamiAccount.objects.get(email=email)
-
-                user = User.objects.get(first_name=name, id=huami_account.user_id)  # huami_account와 연결된 사용자 찾기
+                user = HuamiAccount.objects.get(email=email, name=name).user
 
                 create_profile_if_not_exists(user)
 
@@ -427,19 +426,17 @@ def find_username_request(request):
                 request.session['reset_email'] = email
 
                 send_mail(
-                    'Username Verification Code',
-                    f'Your verification code is {verification_code}',
+                    '진통감지 및 스트레스 완화연구 사이트 인증코드',
+                    f'인증코드는 다음과 같습니다.: {verification_code}',
                     'pregnancy_re@naver.com',
                     [email],
                     fail_silently=False,
                 )
 
-                messages.success(request, 'Verification code sent to your email.')
+                messages.success(request, '이메일로 인증번호를 발송하였습니다')
                 return redirect('accounts:verify_username_code', email=email)
             except HuamiAccount.DoesNotExist:
-                messages.error(request, 'Email not found in HuamiAccount.')
-            except User.DoesNotExist:
-                messages.error(request, 'User not found.')
+                messages.error(request, '이메일과 이름이 일치하지 않습니다!')
     else:
         form = FindUsernameForm()
     return render(request, 'accounts/find_username_request.html', {'form': form})

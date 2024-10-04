@@ -1,6 +1,10 @@
 from django import forms
-from django.contrib.auth.forms import SetPasswordForm as DjangoSetPasswordForm
+from django.contrib.auth.forms import SetPasswordForm as DjangoSetPasswordForm, AuthenticationForm, UsernameField
 from django.contrib.auth.forms import UserCreationForm
+
+
+class MyLoginForm(AuthenticationForm):
+    username = UsernameField(widget=forms.TextInput(attrs={"autofocus": True, "placeholder": "아이디"}), label="아이디")
 
 
 class MyAuthenticationForm(UserCreationForm):
@@ -53,8 +57,8 @@ class SetPasswordForm(DjangoSetPasswordForm):
 class FindUsernameForm(forms.Form):
     """아이디 찾기 시 입력 field
         """
-    name = forms.CharField(max_length=100, label="이름(이름에는 성빼고 입력해주세요)",
-                           widget=forms.TextInput(attrs={'placeholder': '이름'}))
+    name = forms.CharField(max_length=100, label="이름",
+                           widget=forms.TextInput(attrs={'placeholder': '홍길동'}))
 
     email = forms.EmailField(label="이메일(Zepp life 계정을 입력해주세요)",
                              widget=forms.EmailInput(attrs={'placeholder': '이메일'}))
