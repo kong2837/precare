@@ -13,15 +13,14 @@
             <table class="table table-striped">
                 <thead>
                 <tr>
-                    <th scope="col">이름</th>
-                    <th scope="col">이메일</th>
-                    <th scope="col">나이</th>
-                    <th scope="col">연구 상태</th>
-                    <th scope="col">연구 시작일</th>
-                    <th scope="col">연구 종료일</th>
-                    <th scope="col">동기화 상태</th>
-                    <th scope="col">노트
-                    </th>
+                    <th scope="col" data-column="name">이름</th>
+                    <th scope="col" data-column="email">이메일</th>
+                    <th scope="col" data-column="age">나이</th>
+                    <th scope="col" data-column="research_status">연구 상태</th>
+                    <th scope="col" data-column="join_date">연구 시작일</th>
+                    <th scope="col" data-column="end_date">연구 종료일</th>
+                    <th scope="col" data-column="showed_sync_status">동기화 상태</th>
+                    <th scope="col" data-column="note">노트</th>
                     <th scope="col">액션</th> <!-- 새로운 열 추가 -->
                 </tr>
                 </thead>
@@ -31,7 +30,7 @@
                         <td>{% if user.huami.name != None %}
                             {{ user.huami.name }}
                         {% else %}
-                            {{ user.huami.full_name }}
+                            {{ user.huami.fullname }}
                         {% endif %}
                         </td>
                         <td>{{ user.huami.email }}</td>
@@ -60,12 +59,33 @@
         {% include "components/page_navigation.html" %}
     </div>
     <script>
-    // 행 클릭 이벤트 추가
-    const tableRows = document.querySelectorAll('tbody tr[data-href]');
-    tableRows.forEach(row => {
-        row.addEventListener('click', () => {
-            window.location.href = row.getAttribute('data-href');
+        // 행 클릭 이벤트 추가
+        const tableRows = document.querySelectorAll('tbody tr[data-href]');
+        tableRows.forEach(row => {
+            row.addEventListener('click', () => {
+                window.location.href = row.getAttribute('data-href');
+            });
         });
-    });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const headers = document.querySelectorAll('th[data-column]');
+            headers.forEach(header => {
+                header.addEventListener('click', function () {
+                    const column = 'huami__' + this.getAttribute('data-column');
+                    let direction = 'asc';
+
+                    // Check the current sorting direction
+                    const currentDirection = new URLSearchParams(window.location.search).get('direction');
+                    const currentOrderBy = new URLSearchParams(window.location.search).get('order_by');
+
+                    if (currentOrderBy === column && currentDirection === 'asc') {
+                        direction = 'desc';
+                    }
+
+                    // Redirect to the sorted URL
+                    window.location.href = `?order_by=${column}&direction=${direction}`;
+                });
+            });
+        });
     </script>
 {% endblock content %}

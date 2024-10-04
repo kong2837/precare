@@ -1,24 +1,25 @@
 import csv
 import re
 import urllib.parse
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models.query import QuerySet
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.views import View
-from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
-from tempfile import NamedTemporaryFile
+from django.views.generic.edit import ProcessFormView
+from django.views.generic.list import ListView
 from openpyxl import Workbook
 
+import survey.utils as utils
 from accounts.views import SuperuserRequiredMixin
 from huami.models import HuamiAccount
-from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer, question
-from django.views.generic.edit import ProcessFormView
-from django.shortcuts import render
-from django.contrib.auth.mixins import LoginRequiredMixin
-import survey.utils as utils
+from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
+
 
 # Create your views here.
 
@@ -26,10 +27,11 @@ class MyLoginRequiredMixin(LoginRequiredMixin):
     login_url = "/accounts/login/"
     redirect_field_name = "redirect_to"
 
+
 class SurveyListView(MyLoginRequiredMixin, ListView):
     """참여 가능한 설문 목록을 제공하는 클래스 기반 뷰
     """
-    template_name='survey/survey_list.html'
+    template_name = 'survey/survey_list.html'
     model = Survey
     paginate_by = 5
 
@@ -38,8 +40,9 @@ class SurveyDetailView(MyLoginRequiredMixin, DetailView):
     """설문에 대한 구체적인 정보를 제공하는 클래스 기반 뷰
     TODO 구현예정
     """
-    template_name='survey/survey_detail.html'
-    model=Survey
+    template_name = 'survey/survey_detail.html'
+    model = Survey
+
 
 class UserSurveyListAdminView(SuperuserRequiredMixin, ListView):
     """다른 유저가 작성한 설문 결과들을 제공하는 클래스 기반 뷰
@@ -58,10 +61,11 @@ class UserSurveyListAdminView(SuperuserRequiredMixin, ListView):
         context['survey'] = Survey.objects.get(pk=self.kwargs['survey_pk'])
         return context
 
+
 class SurveyListAdminView(SuperuserRequiredMixin, ListView):
     """다른 유저가 작성한 설문들에 대한 정보를 제공하는 클래스 기반 뷰
     """
-    template_name='survey/user_survey_list_admin.html'
+    template_name = 'survey/user_survey_list_admin.html'
     paginate_by = 5
     model = Survey
 
@@ -74,15 +78,16 @@ class SurveyListAdminView(SuperuserRequiredMixin, ListView):
         context['user'] = get_user_model().objects.get(pk=self.kwargs.get('pk'))
         return context
 
+
 class UserSurveyCsvView(SuperuserRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user_surveys = UserSurvey.objects.filter(user__pk=self.kwargs.get('user_pk'),
                                                  survey__pk=self.kwargs.get('survey_pk'))
 
-        filename = "-".join((HuamiAccount.objects.get(user_id=self.kwargs.get('user_pk')).full_name
-                    ,Survey.objects.get(pk=self.kwargs.get('survey_pk')).title))
+        filename = "-".join((HuamiAccount.objects.get(user_id=self.kwargs.get('user_pk')).fullname
+                             , Survey.objects.get(pk=self.kwargs.get('survey_pk')).title))
         response = HttpResponse(headers={
-            'Content-Type':'text/csv',
+            'Content-Type': 'text/csv',
             'Content-Disposition': f'attachment; filename="{filename}.csv"'})
 
         file = csv.writer(response)
@@ -100,12 +105,12 @@ class UserSurveyCsvView(SuperuserRequiredMixin, View):
 
         return response
 
+
 class UserSurveyListView(MyLoginRequiredMixin, ListView):
     """설문 작성 결과를 제공하는 클래스 기반 뷰
     """
-    template_name='survey/user_survey_list.html'
+    template_name = 'survey/user_survey_list.html'
     paginate_by = 5
-
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         """survey 정보를 추가한 context_data 반환
@@ -128,6 +133,7 @@ class UserSurveyListView(MyLoginRequiredMixin, ListView):
                                              survey=survey).order_by('create_at')
         return queryset
 
+
 class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
     """설문조사 폼을 제공하는 클래스 기반 뷰
 
@@ -139,13 +145,13 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
         Args:
             user_survey (UserSurvey): 유저가 실시한 설문조사(새로 만들어진)
             post_data (QueryDict): 폼으로 입력받은 데이터
-        """        
+        """
         for key in post_data.keys():
-            if not key.isdigit(): # for excepting csrf_token
+            if not key.isdigit():  # for excepting csrf_token
                 continue
 
             question = Question.objects.get(pk=int(key))
-            survey_question = SurveyQuestion.objects.get(survey=user_survey.survey, 
+            survey_question = SurveyQuestion.objects.get(survey=user_survey.survey,
                                                          question=question)
             answer_content_list = post_data.getlist(key)
 
@@ -167,8 +173,7 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
             Reply.objects.create(user_survey=user_survey,
                                  survey_question=survey_question,
                                  content=answer_content)
-                                 # content=','.join(post_data.getlist(key)))
-
+            # content=','.join(post_data.getlist(key)))
 
     def get(self, request, *args, **kwargs):
         """폼 입력 화면
@@ -227,6 +232,7 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
         """
         return render(request, 'survey/survey_complete.html')
 
+
 class XlsxDownloadView(SuperuserRequiredMixin, View):
     def _create_workbook(self, user_surveys, user):
         pattern = r'\[.*?\]\s*(.*)'
@@ -237,7 +243,7 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
         # create main page
         ws.title = '대상정보'
         ws.append(['이름', 'ID'])
-        ws.append([user.huami.full_name, user.username])
+        ws.append([user.huami.fullname, user.username])
 
         for user_survey in user_surveys:
             survey, replies = user_survey.survey, user_survey.replies.all().values_list('content', flat=True)
@@ -249,8 +255,6 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
             ws.append([user_survey.create_at, *replies])
 
         return wb
-
-
 
     def get(self, request, user_id):
         user_surveys = UserSurvey.objects.filter(user_id=user_id).order_by('survey_id', 'create_at')
@@ -267,7 +271,8 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
             tmp.seek(0)
             stream = tmp.read()
 
-        filename = urllib.parse.quote(f"{user.huami.full_name} 설문결과")
-        response = HttpResponse(content=stream, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        filename = urllib.parse.quote(f"{user.huami.fullname} 설문결과")
+        response = HttpResponse(content=stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
         return response

@@ -1,20 +1,21 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from accounts.serializers import NormalUserSerializer, UserSerializer
-from rest_framework import viewsets
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, BasePermission, IsAdminUser
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.response import Response
+
+from accounts.serializers import NormalUserSerializer, UserSerializer
 from huami.models.healthdata import HealthData
-from django.conf import settings
+
 
 class IsAdminOrReadOnly(BasePermission):
     """User가 superuser일 때만 list 액션 허용
-    """    
+    """
+
     def has_permission(self, request, view):
         if view.action == 'update_note':
             return request.user.is_superuser
@@ -23,15 +24,18 @@ class IsAdminOrReadOnly(BasePermission):
         if view.action in ['list', 'update', 'partial_update']:
             return request.user and request.user.is_superuser
 
+
 class IsAdminOrOwner(BasePermission):
     """user가 superuser이거나 본인일때만 retrieve 액션 허용
-    """    
+    """
+
     def has_object_permission(self, request, view, obj):
         return request.user and (request.user.is_superuser or obj == request.user)
 
 
 def TokenAuthOpenApiParameter():
-    return OpenApiParameter(name='Authorization', type=OpenApiTypes.STR, location=OpenApiParameter.HEADER, description="토큰을 입력하세요.", required=True, default="Token your-token")
+    return OpenApiParameter(name='Authorization', type=OpenApiTypes.STR, location=OpenApiParameter.HEADER,
+                            description="토큰을 입력하세요.", required=True, default="Token your-token")
 
 
 @extend_schema_view(
@@ -61,7 +65,7 @@ def TokenAuthOpenApiParameter():
 )
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """유저 리스트 혹은 개별 유저 데이터 반환
-    """    
+    """
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -75,12 +79,12 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'retrieve':
             return [IsAuthenticated(), IsAdminOrOwner()]
         return super().get_permissions()
-    
+
     def get_queryset(self):
         if self.action == 'list':
             return get_user_model().objects.filter(is_superuser=False)
         return super().get_queryset()
-    
+
     @action(detail=True, methods=['put'])
     def update_note(self, request, *args, **kwargs):
         if request.data.get('note') is None:
@@ -88,8 +92,8 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.get_object()
         user.huami.note = request.data['note']
         user.huami.save()
-        return self.retrieve(request, *args, **kwargs)    
-    
+        return self.retrieve(request, *args, **kwargs)
+
     @action(detail=False, methods=["post"])
     def sync_data(self, request, *args, **kwargs):
         sucess_users = []
@@ -98,10 +102,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         for user in get_user_model().objects.filter(is_superuser=False):
             try:
                 HealthData.create_from_sync_data(user.huami)
-                sucess_users.append(user.huami.full_name)
+                sucess_users.append(user.huami.fullname)
             except Exception as e:
-                failure_users.append(user.huami.full_name)
-        messages = (len(sucess_users) > 0)  * f"{len(sucess_users)}명이 동기화에 성공했습니다."
+                failure_users.append(user.huami.fullname)
+        messages = (len(sucess_users) > 0) * f"{len(sucess_users)}명이 동기화에 성공했습니다."
         messages += (len(failure_users) > 0) * f"{len(failure_users)}명이 동기화에 실패했습니다."
-        
+
         return JsonResponse({"messages": messages})

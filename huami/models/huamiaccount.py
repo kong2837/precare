@@ -1,12 +1,13 @@
 from datetime import datetime
 
-from django.db import models
 from django.conf import settings
+from django.db import models
 from requests import HTTPError
 
 from huami.utils import HuamiAmazfit
 
 default_sny_date = datetime(1970, 1, 1)
+
 
 class HuamiAccount(models.Model):
     """HuamiAccount 모델 클래스
@@ -91,11 +92,11 @@ class HuamiAccount(models.Model):
         null=True,
         help_text="사용자의 나이"
     )
-    
+
     @property
-    def full_name(self) -> str:
+    def fullname(self) -> str:
         return f"{self.user.last_name} {self.user.first_name}"
-    
+
     @property
     def last_health_info(self):
         return self.health.last()
@@ -113,7 +114,7 @@ class HuamiAccount(models.Model):
 
         Returns:
             str: Huami 계정 이메일
-        """        
+        """
         return self.email
 
     class Meta:
@@ -124,10 +125,10 @@ class HuamiAccount(models.Model):
 
     def reset_sync_date(self) -> None:
         """동기화 시간 초기화
-        """        
+        """
         self.sync_date = default_sny_date
         self.save()
-        
+
     def get_data(self) -> dict:
         """현재 계정 정보로 데이터 수집
 
@@ -136,23 +137,22 @@ class HuamiAccount(models.Model):
 
         Returns:
             dict: 심박수, 스트레스, 걸음 수, 수면 질, SPO2, 무게, 키 에 대한 정보
-        """        
+        """
         result = {}
         account = HuamiAmazfit(email=self.email, password=self.password)
         try:
             account.access()
             account.login()
-            result['profile'] = account.profile()            
+            result['profile'] = account.profile()
             result['band'] = account.band_data('2023-01-01', datetime.now().strftime('%Y-%m-%d'))
             result['stress'] = account.stress('2023-01-01', datetime.now().strftime('%Y-%m-%d'))
-            result['blood'] = account.blood_oxygen('2023-01-01',datetime.now().strftime('%Y-%m-%d'))
+            result['blood'] = account.blood_oxygen('2023-01-01', datetime.now().strftime('%Y-%m-%d'))
             account.logout()
         except HTTPError as e:
-            raise HTTPError("데이터를 받아오는 과정에서 오류가 발생하였습니다. 오류내용: "+e)
+            raise HTTPError("데이터를 받아오는 과정에서 오류가 발생하였습니다. 오류내용: " + e)
         self.sync_date = datetime.now()
         self.save()
-        
-        return result
 
+        return result
 
 # Create your models here.

@@ -1,23 +1,35 @@
-<nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page=1">&laquo; 처음으로</a></li>
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">이전</a>
-            </li>
-        {% endif %}
-        {% for page_num in page_obj.paginator.page_range %}
-            {% if page_obj.number == page_num %}
-                <li class="page-item active">
-                    {% else %}
-                <li class="page-item">
+<div class="container mt-4">
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link"
+                                         href="?page=1&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">&laquo;
+                    처음으로</a></li>
+                <li class="page-item"><a class="page-link"
+                                         href="?page={{ page_obj.previous_page_number }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">이전</a>
+                </li>
             {% endif %}
-        <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-        </li>
-        {% endfor %}
-        {% if page_obj.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">다음</a></li>
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">마지막으로 &raquo;</a>
-            </li>
-        {% endif %}
-    </ul>
-</nav>
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-4' and num < page_obj.number|add:'4' %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ num }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link"
+                                         href="?page={{ page_obj.next_page_number }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">다음</a>
+                </li>
+                <li class="page-item"><a class="page-link"
+                                         href="?page={{ page_obj.paginator.num_pages }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">마지막으로
+                    &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
