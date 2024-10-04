@@ -18,9 +18,9 @@
                             <div class="col-md-8">
                                 <h5>ID: <strong>{{ current_user.username }}</strong></h5>
                                 <p><strong>Email:</strong> {{ current_user.huami.email }}</p>
-                                <p><strong>이름:</strong> {{ current_user.huami.full_name }}</p>
-                                <p><strong>연구 시작일:</strong> {{ current_user.huami.date_started }}</p>
-                                <p><strong>연구 종료일:</strong> {{ current_user.huami.date_ended }}</p>
+                                <p><strong>이름:</strong> {{ current_user.huami.name }}</p>
+                                <p><strong>연구 시작일:</strong> {{ current_user.huami.join_date }}</p>
+                                <p><strong>연구 종료일:</strong> {{ current_user.huami.end_date }}</p>
                                 <a href="{% url 'accounts:user_password' %}" class="btn btn-secondary mt-3">비밀번호 재설정</a>
                                 <a href="{% url 'accounts:user_recertification' %}" class="btn btn-secondary mt-3">화웨이(Zepp Life) 계정 재설정</a>
                             </div>
