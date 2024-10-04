@@ -2,11 +2,21 @@
 {% block content %}
     {% include "styles/table.html" %}
     <div class="container mt-5">
-        <!-- 검색 입력 -->
-        <div class="mb-3">
-            <label for="searchInput"></label>
-            <input type="text" id="searchInput" class="form-control" placeholder="검색어를 입력하세요">
-        </div>
+        <form method="GET"
+              action="{% url 'accounts:userManage' %}?page=1&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}"
+              class="form-inline mb-3 w-100">
+            <div class="input-group w-100">
+                <input type="text" name="search" class="form-control" placeholder="이름이나 이메일을 입력하세요."
+                       value="{{ request.GET.search }}">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="order_by" value="{{ request.GET.order_by }}">
+                <input type="hidden" name="direction" value="{{ request.GET.direction }}">
+
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">검색하기</button>
+                </div>
+            </div>
+        </form>
 
         <!-- 사용자 테이블 -->
         <div class="table-responsive">
@@ -75,15 +85,17 @@
                     let direction = 'asc';
 
                     // Check the current sorting direction
+                    const currentPage = new URLSearchParams(window.location.search).get('page');
                     const currentDirection = new URLSearchParams(window.location.search).get('direction');
                     const currentOrderBy = new URLSearchParams(window.location.search).get('order_by');
+                    const currentSearch = new URLSearchParams(window.location.search).get('search');
 
                     if (currentOrderBy === column && currentDirection === 'asc') {
                         direction = 'desc';
                     }
 
                     // Redirect to the sorted URL
-                    window.location.href = `?order_by=${column}&direction=${direction}`;
+                    window.location.href = `?page=${currentPage}&order_by=${column}&direction=${direction}&search=${currentSearch ? currentSearch : ''}`;
                 });
             });
         });

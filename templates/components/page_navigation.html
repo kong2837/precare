@@ -3,10 +3,10 @@
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
                 <li class="page-item"><a class="page-link"
-                                         href="?page=1&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">&laquo;
+                                         href="?page=1&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}&search={{ request.GET.search }}">&laquo;
                     처음으로</a></li>
                 <li class="page-item"><a class="page-link"
-                                         href="?page={{ page_obj.previous_page_number }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">이전</a>
+                                         href="?page={{ page_obj.previous_page_number }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}&search={{ request.GET.search }}">이전</a>
                 </li>
             {% endif %}
             {% for num in page_obj.paginator.page_range %}
@@ -17,16 +17,16 @@
                 {% elif num > page_obj.number|add:'-4' and num < page_obj.number|add:'4' %}
                     <li class="page-item">
                         <a class="page-link"
-                           href="?page={{ num }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">{{ num }}</a>
+                           href="?page={{ num }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}&search={{ request.GET.search }}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
             {% if page_obj.has_next %}
                 <li class="page-item"><a class="page-link"
-                                         href="?page={{ page_obj.next_page_number }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">다음</a>
+                                         href="?page={{ page_obj.next_page_number }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}&search={{ request.GET.search }}">다음</a>
                 </li>
                 <li class="page-item"><a class="page-link"
-                                         href="?page={{ page_obj.paginator.num_pages }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}">마지막으로
+                                         href="?page={{ page_obj.paginator.num_pages }}&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}&search={{ request.GET.search }}">마지막으로
                     &raquo;</a>
                 </li>
             {% endif %}

@@ -123,6 +123,15 @@ class UserManageView(SuperuserRequiredMixin, ListView):
 
     def get_queryset(self):
         query_set = super().get_queryset()
+
+        search_query = self.request.GET.get('search', '')
+
+        if search_query:
+            from django.db.models import Q
+            query_set = query_set.filter(
+                Q(huami__name__icontains=search_query) | Q(huami__email__icontains=search_query)
+            )
+            
         order_by = self.request.GET.get('order_by', 'huami__name')
         direction = self.request.GET.get('direction', 'asc')
 
