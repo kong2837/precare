@@ -27,7 +27,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-CSRF_TRUSTED_ORIGINS = ['http://*.YOUR_DOMAIN.COM']
+CSRF_TRUSTED_ORIGINS = [os.environ.get('CSRF_TRUSTED_ORIGINS')]
 
 # Application definition
 """인증코드를 보내는 email 관련 정보 
@@ -39,8 +39,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'pregnancy_re@naver.com'  # 네이버 이메일 주소
 EMAIL_HOST_PASSWORD = 'dailab427!'  # 네이버 이메일 비밀번호
 DEFAULT_FROM_EMAIL = 'pregnancy_re@naver.com'
-
-
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -100,8 +98,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "apopdb",
-        "USER": "example-user", 
-        "PASSWORD": "example-password", 
+        "USER": "example-user",
+        "PASSWORD": "example-password",
         "HOST": "mariadb",
         "PORT": "3306"
     },
@@ -150,7 +148,7 @@ STATICFILES_DIRS = [BASE_DIR / 'apop2']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_KEY = '1234'
+AUTH_KEY = os.environ.get('AUTH_KEY')
 
 # REST FRAMEWORK 관련 설정들
 REST_FRAMEWORK = {
