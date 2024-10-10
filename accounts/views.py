@@ -1,5 +1,6 @@
 import csv
 import hashlib
+import json
 
 from django.conf import settings
 from django.contrib import messages
@@ -11,6 +12,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import LoginView as Login, LogoutView as Logout, PasswordChangeView
 from django.core.mail import send_mail
 from django.http import HttpRequest, HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.shortcuts import render
 from django.urls import reverse_lazy
@@ -471,8 +473,6 @@ def verify_username_code(request, email):
 
 class UserResearchStatus(SuperuserRequiredMixin, View):
     def post(self, request):
-        import json
-        from django.http import JsonResponse
         data = json.loads(request.body)
 
         user_id = data.get('user_id')
@@ -483,6 +483,26 @@ class UserResearchStatus(SuperuserRequiredMixin, View):
             user.huami.research_status = new_status
             user.huami.save()
 
+            return JsonResponse({'success': True})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User not found'})
+
+
+class UserResearchDate(SuperuserRequiredMixin, View):
+    def post(self, request):
+        data = json.loads(request.body)
+
+        user_id = data.get('user_id')
+        new_date = data.get('new_date')
+        date_type = data.get('date_type')
+
+        try:
+            user = User.objects.get(pk=user_id)
+            if date_type == 'join-date':
+                user.huami.join_date = new_date
+            else:
+                user.huami.end_date = new_date
+            user.huami.save()
             return JsonResponse({'success': True})
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'User not found'})

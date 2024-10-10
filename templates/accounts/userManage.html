@@ -56,8 +56,16 @@
                                     {% if user.huami.research_status == 'completed' %}selected{% endif %}>완료
                             </option>
                         </select></td>
-                        <td>{{ user.huami.join_date }}</td>
-                        <td>{{ user.huami.end_date }}</td>
+                        <td>
+                            <input type="date" class="form-control start-date"
+                                   data-user-id="{{ user.pk }}"
+                                   value="{{ user.huami.join_date|date:'Y-m-d' }}">
+                        </td>
+                        <td>
+                            <input type="date" class="form-control end-date"
+                                   data-user-id="{{ user.pk }}"
+                                   value="{{ user.huami.end_date|date:'Y-m-d' }}">
+                        </td>
                         <td>
                             {% if user.huami.showed_sync_status %}
                                 정상
@@ -110,7 +118,6 @@
             });
 
             const researchStatusElements = document.querySelectorAll('.research-status');
-
             researchStatusElements.forEach(element => {
                 // 클릭 이벤트 전파 방지
                 element.addEventListener('click', function (event) {
@@ -143,6 +150,47 @@
                         })
                         .catch(error => console.error('Error:', error));
                 })
+            })
+
+            const update_research_date = (element, dateType) => {
+                element.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                })
+
+                element.addEventListener('change', function () {
+                    const userId = this.getAttribute('data-user-id');
+                    const newDate = this.value;
+
+                    fetch("{% url 'accounts:update_research_date' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            new_date: newDate,
+                            date_type: dateType
+                        })
+                    }).then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('성공적으로 업데이트되었습니다.')
+                            } else {
+                                alert('변경에 실패했습니다.')
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                })
+            }
+
+            const startDateElements = document.querySelectorAll('.start-date');
+            startDateElements.forEach(element => {
+                update_research_date(element, 'join-date')
+            })
+            const endDateElements = document.querySelectorAll('.end-date');
+            endDateElements.forEach(element => {
+                update_research_date(element, 'end-date')
             })
         })
 
