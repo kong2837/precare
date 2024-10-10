@@ -45,7 +45,17 @@
                         </td>
                         <td>{{ user.huami.email }}</td>
                         <td>{{ user.huami.age }}</td>
-                        <td>{{ user.huami.get_research_status_display }}</td>
+                        <td><select class="form-control research-status" data-user-id="{{ user.pk }}">
+                            <option value="preparing"
+                                    {% if user.huami.research_status == 'preparing' %}selected{% endif %}>준비
+                            </option>
+                            <option value="ongoing" {% if user.huami.research_status == 'ongoing' %}selected{% endif %}>
+                                진행 중
+                            </option>
+                            <option value="completed"
+                                    {% if user.huami.research_status == 'completed' %}selected{% endif %}>완료
+                            </option>
+                        </select></td>
                         <td>{{ user.huami.join_date }}</td>
                         <td>{{ user.huami.end_date }}</td>
                         <td>
@@ -98,6 +108,43 @@
                     window.location.href = `?page=${currentPage}&order_by=${column}&direction=${direction}&search=${currentSearch ? currentSearch : ''}`;
                 });
             });
-        });
+
+            const researchStatusElements = document.querySelectorAll('.research-status');
+
+            researchStatusElements.forEach(element => {
+                // 클릭 이벤트 전파 방지
+                element.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                });
+
+                // 값이 변경될 때 AJAX 요청 보내기
+                element.addEventListener('change', function () {
+                    const userId = this.getAttribute('data-user-id');
+                    const newStatus = this.value;
+
+                    fetch("{% url 'accounts:update_research_status' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            new_status: newStatus
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('연구 상태가 성공적으로 업데이트되었습니다.');
+                            } else {
+                                alert('연구 상태 업데이트에 실패했습니다.');
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                })
+            })
+        })
+
     </script>
 {% endblock content %}
