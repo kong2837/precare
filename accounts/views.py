@@ -467,3 +467,22 @@ def verify_username_code(request, email):
         except User.DoesNotExist:
             messages.error(request, 'User not found.')
     return render(request, 'accounts/verify_username_code.html', {'email': email})
+
+
+class UserResearchStatus(SuperuserRequiredMixin, View):
+    def post(self, request):
+        import json
+        from django.http import JsonResponse
+        data = json.loads(request.body)
+
+        user_id = data.get('user_id')
+        new_status = data.get('new_status')
+
+        try:
+            user = User.objects.get(pk=user_id)
+            user.huami.research_status = new_status
+            user.huami.save()
+
+            return JsonResponse({'success': True})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User not found'})
