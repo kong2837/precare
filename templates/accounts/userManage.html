@@ -23,6 +23,7 @@
             <table class="table table-striped">
                 <thead>
                 <tr>
+                    <th scope="col">액션</th> <!-- 새로운 열 추가 -->
                     <th scope="col" data-column="name">이름</th>
                     <th scope="col" data-column="email">이메일</th>
                     <th scope="col" data-column="age">나이</th>
@@ -31,11 +32,15 @@
                     <th scope="col" data-column="end_date">연구 종료일</th>
                     <th scope="col" data-column="showed_sync_status">동기화 상태</th>
                     <th scope="col" data-column="note">노트</th>
-                    <th scope="col">액션</th> <!-- 새로운 열 추가 -->
                 </tr>
                 </thead>
                 <tbody id="userTable">
                 {% for user in users %}
+                    <td>
+                        <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
+                        <a class="btn btn-primary"
+                           href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
+                    </td> <!-- 버튼 추가 -->
                     <tr data-href="{% url 'accounts:userInfo' user.pk %}">
                         <td>{% if user.huami.name != None %}
                             {{ user.huami.name }}
@@ -74,11 +79,6 @@
                             {% endif %}
                         </td>
                         <td>{{ user.huami.note }}</td>
-                        <td>
-                            <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
-                            <a class="btn btn-primary"
-                               href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
-                        </td> <!-- 버튼 추가 -->
                     </tr>
                 {% endfor %}
                 </tbody>
