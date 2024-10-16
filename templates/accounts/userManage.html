@@ -36,12 +36,12 @@
                 </thead>
                 <tbody id="userTable">
                 {% for user in users %}
-                    <td>
-                        <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
-                        <a class="btn btn-primary"
-                           href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
-                    </td> <!-- 버튼 추가 -->
                     <tr data-href="{% url 'accounts:userInfo' user.pk %}">
+                        <td>
+                            <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
+                            <a class="btn btn-primary"
+                               href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
+                        </td> <!-- 버튼 추가 -->
                         <td>{% if user.huami.name != None %}
                             {{ user.huami.name }}
                         {% else %}
