@@ -29,15 +29,15 @@
                 <input class="form-check-input" type="radio" id="answer_{{ answer.pk }}"
                        value="{{ answer.description }}"
                        {% if survey_question.mandatory %}required{% endif %}
-                       {% if answer.is_other %}data-is-other="true" {% else %}
-                       name="{{ survey_question.question.pk }}" {% endif %}>
+                       {% if answer.is_other %}data-is-other="true"{% endif %}
+                       name="{{ survey_question.question.pk }}">
                 <label class="form-check-label" for="answer_{{ answer.pk }}">{{ answer.description }}</label>
             </div>
 
             {# is_other가 True인 답변에 대해 텍스트 입력 필드 표시 #}
             {% if answer.is_other %}
                 <div id="other_text_div_{{ answer.pk }}" class="mb-3" style="display:none;">
-                    <input type="text" class="form-control" name="{{ survey_question.question.pk }}"
+                    <input type="text" class="form-control" name="text_{{ survey_question.question.pk }}"
                            id="other_text_{{ answer.pk }}" placeholder="추가 내용을 입력하세요.">
                 </div>
             {% endif %}
@@ -63,14 +63,14 @@
                 <input class="form-check-input" type="checkbox" id="answer_{{ answer.pk }}"
                        value="{{ answer.description }}"
                        {% if survey_question.mandatory %}is-mandatory="true"{% endif %}
-                       {% if answer.is_other %}data-is-other="true" {% else %}
-                       name="{{ survey_question.question.pk }}" {% endif %}>
+                       {% if answer.is_other %}data-is-other="true" {% endif %}
+                       name="{{ survey_question.question.pk }}">
                 <label class="form-check-label" for="answer_{{ answer.pk }}">{{ answer.description }}</label>
             </div>
             {# is_other가 True인 경우, 텍스트 입력 필드 표시 #}
             {% if answer.is_other %}
                 <div id="other_text_div_{{ answer.pk }}" class="mb-3" style="display:none;">
-                    <input type="text" class="form-control" name="{{ survey_question.question.pk }}"
+                    <input type="text" class="form-control" name="text_{{ survey_question.question.pk }}"
                            id="other_text_{{ answer.pk }}" placeholder="기타 내용을 입력하세요.">
                     <label for="other_text_{{ answer.pk }}" class="form-label"></label>
                 </div>

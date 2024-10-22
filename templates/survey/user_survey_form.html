@@ -17,14 +17,14 @@
     </div>
     <script>
         const handleOtherChange = (element) => {
-            const otherTextDiv = document.getElementById('other_text_div_' + element.id.split('_')[1]);
+            const otherTextDiv = document.getElementById(`other_text_div_${element.id.split('_')[1]}`);
             if (element.checked) {
                 otherTextDiv.style.display = "block";  // 텍스트 입력 필드를 표시
                 otherTextDiv.required = true;
             } else {
                 otherTextDiv.style.display = "none";   // 텍스트 입력 필드를 숨김
                 otherTextDiv.required = false;
-                otherTextDiv.value = ''; // 체크 해제 시 입력 필드 초기화
+                otherTextDiv.querySelector('input').value = ''; // 체크 해제 시 입력 필드 초기화
             }
         }
 
@@ -38,12 +38,15 @@
                 return checkbox.name;
             })))
             for (let name of names) {
-                if(!atLeastOneSelect(name)) {
+                if (!atLeastOneSelect(name)) {
                     alert("하나 이상의 옵션을 선택해야 합니다!")
                     document.getElementsByName(name)[0].focus()
                     return false;
                 }
             }
+            document.querySelectorAll('input[data-is-other="true"]').forEach((otherValue) => {
+                otherValue.value = otherValue.checked ? document.getElementById(`other_text_${otherValue.id.split('_')[1]}`).value : otherValue.value;
+            })
             return true;
         }
 
