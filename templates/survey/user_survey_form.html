@@ -15,4 +15,37 @@
         <button type="submit" class="btn btn-primary mt-5">제출하기</button>
     </form>
 </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('input[name="{{ survey_question.question.pk }}"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                // 모든 텍스트 입력 필드를 숨김
+                document.querySelectorAll('div[id^="other_text_div_"]').forEach(function (div) {
+                    div.style.display = 'none';
+                    div.querySelector('input').value = '';  // 텍스트 입력 필드 초기화
+                });
+
+                // 선택한 답변이 is_other 옵션인지 확인하고, 해당 필드 표시
+                if (this.dataset.isOther === "true") {
+                    document.getElementById('other_text_div_' + this.id.split('_')[1]).style.display = 'block';
+                }
+            });
+        });
+    });
+     document.addEventListener('DOMContentLoaded', function () {
+        // 체크박스 처리
+        document.querySelectorAll('input[type="checkbox"][data-is-other="true"]').forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                const otherTextDiv = document.getElementById('other_text_div_' + this.id.split('_')[1]);
+
+                if (checkbox.checked) {
+                    otherTextDiv.style.display = 'block';
+                } else {
+                    otherTextDiv.style.display = 'none';
+                    otherTextDiv.querySelector('input').value = ''; // 체크 해제 시 입력 필드 초기화
+                }
+            });
+        });
+    });
+</script>
 {% endblock content %}
