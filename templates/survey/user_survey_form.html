@@ -1,51 +1,46 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="p-5 mb-4 bg-body-tertiary rounded-3">
-        <h1 class="display-5 fw-bold">{{ object.title }}</h1>
-        <p class="fs-4">{{ object.description }}</p>
+    <div class="container py-4">
+        <div class="p-5 mb-4 bg-body-tertiary rounded-3">
+            <h1 class="display-5 fw-bold">{{ object.title }}</h1>
+            <p class="fs-4">{{ object.description }}</p>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            {% for survey_question in survey_questions %}
+                {% include 'survey/components/question.html' %}
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary mt-5">제출하기</button>
+        </form>
     </div>
-    <form method="post">
-        {% csrf_token %}
-        {% for survey_question in survey_questions %}
-            {% include 'survey/components/question.html' %}
-        {% endfor %}
-
-        <button type="submit" class="btn btn-primary mt-5">제출하기</button>
-    </form>
-</div>
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('input[name="{{ survey_question.question.pk }}"]').forEach(function (radio) {
-            radio.addEventListener('change', function () {
-                // 모든 텍스트 입력 필드를 숨김
-                document.querySelectorAll('div[id^="other_text_div_"]').forEach(function (div) {
-                    div.style.display = 'none';
-                    div.querySelector('input').value = '';  // 텍스트 입력 필드 초기화
-                });
+        const handleOtherChange = (element) => {
+            const otherTextDiv = document.getElementById('other_text_div_' + element.id.split('_')[1]);
+            if (element.checked) {
+                otherTextDiv.style.display = "block";  // 텍스트 입력 필드를 표시
+            } else {
+                otherTextDiv.style.display = "none";   // 텍스트 입력 필드를 숨김
+                otherTextDiv.querySelector('input').value = ''; // 체크 해제 시 입력 필드 초기화
+            }
+        }
 
-                // 선택한 답변이 is_other 옵션인지 확인하고, 해당 필드 표시
-                if (this.dataset.isOther === "true") {
-                    document.getElementById('other_text_div_' + this.id.split('_')[1]).style.display = 'block';
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('input[data-is-other="true"]').forEach((otherSelection) => {
+                if (otherSelection.type === "radio") {
+                    document.querySelectorAll(`input[type="radio"][name="${otherSelection.name}"]:not([data-is-other])`)
+                        .forEach((selection) => {
+                            selection.addEventListener('change', () => {
+                                handleOtherChange(otherSelection);
+                            })
+                        })
                 }
-            });
-        });
-    });
-     document.addEventListener('DOMContentLoaded', function () {
-        // 체크박스 처리
-        document.querySelectorAll('input[type="checkbox"][data-is-other="true"]').forEach(function (checkbox) {
-            checkbox.addEventListener('change', function () {
-                const otherTextDiv = document.getElementById('other_text_div_' + this.id.split('_')[1]);
 
-                if (checkbox.checked) {
-                    otherTextDiv.style.display = 'block';
-                } else {
-                    otherTextDiv.style.display = 'none';
-                    otherTextDiv.querySelector('input').value = ''; // 체크 해제 시 입력 필드 초기화
-                }
-            });
+                otherSelection.addEventListener('change', () => {
+                    handleOtherChange(otherSelection)
+                })
+            })
         });
-    });
-</script>
+    </script>
 {% endblock content %}

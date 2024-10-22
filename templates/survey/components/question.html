@@ -5,8 +5,7 @@
     <figcaption class="blockquote-footer">
         {{ survey_question.question.description }}
     </figcaption>
-</figure>
-{# 텍스트 입력 #}
+    {# 텍스트 입력 #}
 {% if survey_question.question.type_filed == 0 %}
     <div class="mb-3">
         <input type="text" class="form-control" name="{{ survey_question.question.pk }}" id="{{ survey_question.question.pk }}" placeholder="텍스트를 입력하세요." {% if survey_question.mandatory %}required{% endif %}>
@@ -32,7 +31,7 @@
             {# is_other가 True인 답변에 대해 텍스트 입력 필드 표시 #}
             {% if answer.is_other %}
                 <div id="other_text_div_{{ answer.pk }}" class="mb-3" style="display:none;">
-                    <input type="text" class="form-control" name="other_text_{{ answer.pk }}" id="other_text_{{ answer.pk }}" placeholder="추가 내용을 입력하세요.">
+                    <input type="text" class="form-control" name="other_text_{{ survey_question.question.pk }}" id="other_text_{{ answer.pk }}" placeholder="추가 내용을 입력하세요.">
                 </div>
             {% endif %}
     {% endfor %}
@@ -60,7 +59,7 @@
         {# is_other가 True인 경우, 텍스트 입력 필드 표시 #}
         {% if answer.is_other %}
             <div id="other_text_div_{{ answer.pk }}" class="mb-3" style="display:none;">
-                <input type="text" class="form-control" name="other_text_{{ answer.pk }}" id="other_text_{{ answer.pk }}" placeholder="기타 내용을 입력하세요.">
+                <input type="text" class="form-control" name="other_text_{{ survey_question.question.pk }}" id="other_text_{{ answer.pk }}" placeholder="기타 내용을 입력하세요.">
                  <label for="other_text_{{ answer.pk }}" class="form-label"></label>
             </div>
         {% endif %}
@@ -72,3 +71,4 @@
         <label for="{{ survey_question.question.pk }}" class="form-label"></label>
     </div>
 {% endif %}
+</figure>
