@@ -234,24 +234,29 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
 
 
 class XlsxDownloadView(SuperuserRequiredMixin, View):
-    def _create_workbook(self, user_surveys, user):
-        pattern = r'\[.*?\]\s*(.*)'
 
+    def _create_workbook(self, user_surveys: QuerySet, user):
         wb = Workbook()
         ws = wb.active
 
-        # create main page
+        # create main sheet
         ws.title = '대상정보'
         ws.append(['이름', 'ID'])
         ws.append([user.huami.fullname, user.username])
 
-        for user_survey in user_surveys:
-            survey, replies = user_survey.survey, user_survey.replies.all().values_list('content', flat=True)
+        def _select_sheet(survey: Survey):
+            # "[상시] OO 설문조사" 형식으로 되어있음
+            nonlocal ws
+            pattern = r'\[.*?\]\s*(.*)'
             title = re.search(pattern, survey.title).group(1)
             if title not in wb.sheetnames:
-                ws = wb.create_sheet(title)
+                ws = wb.create_sheet(title=title)
                 ws.append(['작성시간', *survey.questions.all().values_list('title', flat=True)])
 
+        for user_survey in user_surveys:
+            _select_sheet(user_survey.survey)
+            reply_dict = {reply.survey_question.question.title: reply.content for reply in user_survey.replies.all()}
+            replies = [reply_dict.get(question.value, '') for question in ws[1][1:]]
             ws.append([user_survey.create_at, *replies])
 
         return wb
@@ -259,10 +264,6 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
     def get(self, request, user_id):
         user_surveys = UserSurvey.objects.filter(user_id=user_id).order_by('survey_id', 'create_at')
         user = get_user_model().objects.get(pk=user_id)
-
-        if user is None:
-            # TODO: 유저가 없는 경우 예외처리 필요
-            pass
 
         wb = self._create_workbook(user_surveys, user)
 
