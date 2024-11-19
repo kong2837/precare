@@ -16,15 +16,25 @@ class HuamiAccountCreationForm(forms.ModelForm):
             'name',
             'email',
             'password',
+            'phone_number',
         )
         labels = {
             "name": "이름",
             "email": "Zepp Life 계정 아이디",
             "password": "Zepp Life 계정 비밀번호",
+            "phone_number": "핸드폰 번호"
+
         }
 
         widgets = {
-            'password': forms.PasswordInput()
+            'password': forms.PasswordInput(),
+            'phone_number': forms.TextInput(attrs={
+                'placeholder': '전화번호 입력',
+                'pattern': '[0-9-]+',  # 숫자와 하이픈 허용하는 패턴 (대시 없음)
+                'maxlength': '11',  # 예시: 최대 11자리 숫자로 제한
+                'required': True
+            }),
+
         }
 
     def __init__(self, *args, **kwargs):
@@ -32,7 +42,7 @@ class HuamiAccountCreationForm(forms.ModelForm):
         self.fields['password'].widget.attrs.update({'class': 'form-control'})
         self.fields['name'].widget.attrs.update({'class': 'form-control', 'placeholder': '홍길동'})
         self.fields['email'].widget.attrs.update({'class': 'form-control'})
-
+        
     def clean(self) -> dict:
         """폼에 들어온 데이터가 유효한지 검증
 

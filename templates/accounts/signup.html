@@ -39,7 +39,7 @@
                                                     <a href="#!" class="text-black"><u>정보 이용 약관</u></a> 에 동의합니다.
                                                 </label>
                                             </div>
-                                            <button type="submit" class="btn btn-light btn-lg"
+                                            <button type="submit" class="btn btn-light btn-lg" id="signup-button"
                                                     data-mdb-ripple-color="dark">회원가입
                                             </button>
                                             <a class="btn btn-secondary btn-lg" href="{% url 'home' %}" role="button">홈으로</a>
@@ -53,4 +53,19 @@
             </div>
         </div>
     </section>
+    <script>
+        document.getElementById('id_phone_number').addEventListener('blur', function (e) {
+            let phoneNumberField = document.getElementById('id_phone_number');
+            phoneNumberField.value = phoneNumberField.value.replace(/\D/g, ''); // 숫자만 남김
+
+            var x = e.target.value.replace(/\D/g, '').match(/(\d{3})(\d{3,4})(\d{4})/);
+            if (x) {
+                e.target.value = x[1] + '-' + x[2] + '-' + x[3];
+            }
+        });
+
+
+    </script>
+
 {% endblock content %}
+
