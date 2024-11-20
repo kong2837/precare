@@ -62,3 +62,17 @@ class FindUsernameForm(forms.Form):
 
     email = forms.EmailField(label="이메일(Zepp life 계정을 입력해주세요)",
                              widget=forms.EmailInput(attrs={'placeholder': '이메일'}))
+
+
+class PhoneNumberChangeForm(forms.Form):
+    phone_number = forms.CharField(
+        max_length=15,
+        label="새로운 전화번호",
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "전화번호 입력. 숫자만 입력해 주세요",
+            'pattern': '[0-9-]+',  # 숫자와 하이픈 허용하는 패턴 (대시 없음)
+            'maxlength': '11',  # 예시: 최대 11자리 숫자로 제한
+            'required': True
+        })
+    )

@@ -24,7 +24,7 @@ from accounts.utils import make_csv_response
 from huami.forms import HuamiAccountCreationForm, HuamiAccountCertificationForm
 from huami.models import HuamiAccount
 from huami.models.healthdata import HealthData
-from .forms import MyAuthenticationForm, MyLoginForm
+from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
 from .forms import PasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm
 from .models import Profile
 from .utils import generate_verification_code
@@ -276,6 +276,28 @@ class UserPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     template_name = "accounts/change_password.html"
     form_class = PasswordChangeForm
     success_url = reverse_lazy('accounts:user_profile')
+
+
+class UserPhoneNumberChangeView(LoginRequiredMixin, View):
+    # 전화전호 수정 뷰 로직
+    template_name = "accounts/change_phone_number.html"
+    form_class = PhoneNumberChangeForm
+
+    def get(self, request):
+        form = PhoneNumberChangeForm
+        return render(request, self.template_name, {'current_user': request.user, 'form': form})
+
+    success_url = reverse_lazy('accounts:user_profile')
+
+    def post(self, request, *args, **kwargs):
+        form = PhoneNumberChangeForm(request.POST)
+        if form.is_valid():
+            huami_account = HuamiAccount.objects.get(user=request.user)
+            huami_account.phone_number = form.cleaned_data['phone_number']
+            huami_account.save()
+
+            return redirect(reverse_lazy('accounts:user_profile'))
+        return render(request, self.template_name, {'current_user': request.user, 'form': form})
 
 
 class HuamiAccountRecertificationView(LoginRequiredMixin, SignUpView):
