@@ -24,7 +24,7 @@ from accounts.utils import make_csv_response
 from huami.forms import HuamiAccountCreationForm, HuamiAccountCertificationForm
 from huami.models import HuamiAccount
 from huami.models.healthdata import HealthData
-from .forms import MyAuthenticationForm, MyLoginForm
+from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
 from .forms import PasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm
 from .models import Profile
 from .utils import generate_verification_code
@@ -275,6 +275,14 @@ class UserProfileView(LoginRequiredMixin, View):
 class UserPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     template_name = "accounts/change_password.html"
     form_class = PasswordChangeForm
+    success_url = reverse_lazy('accounts:user_profile')
+
+
+class UserPhoneNumberChangeView(LoginRequiredMixin, View):
+    # 전화전호 수정 뷰 로직
+    template_name = "accounts/change_phone_number.html"
+    
+    form_class = PhoneNumberChangeForm()
     success_url = reverse_lazy('accounts:user_profile')
 
 

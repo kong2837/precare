@@ -62,3 +62,11 @@ class FindUsernameForm(forms.Form):
 
     email = forms.EmailField(label="이메일(Zepp life 계정을 입력해주세요)",
                              widget=forms.EmailInput(attrs={'placeholder': '이메일'}))
+
+
+class PhoneNumberChangeForm(forms.Form):
+    phone_number = forms.CharField(
+        max_length=15,
+        label="기존 전화번호",
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "전화번호 입력"})
+    )
