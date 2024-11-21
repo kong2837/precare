@@ -24,8 +24,8 @@ from accounts.utils import make_csv_response
 from huami.forms import HuamiAccountCreationForm, HuamiAccountCertificationForm
 from huami.models import HuamiAccount
 from huami.models.healthdata import HealthData
-from .forms import MyAuthenticationForm, MyLoginForm
-from .forms import PasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm
+from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
+from .forms import EmailPasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm,PhoneNumberPasswordResetRequestForm
 from .models import Profile
 from .utils import generate_verification_code
 
@@ -278,6 +278,28 @@ class UserPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     success_url = reverse_lazy('accounts:user_profile')
 
 
+class UserPhoneNumberChangeView(LoginRequiredMixin, View):
+    # 전화전호 수정 뷰 로직
+    template_name = "accounts/change_phone_number.html"
+    form_class = PhoneNumberChangeForm
+
+    def get(self, request):
+        form = PhoneNumberChangeForm
+        return render(request, self.template_name, {'current_user': request.user, 'form': form})
+
+    success_url = reverse_lazy('accounts:user_profile')
+
+    def post(self, request, *args, **kwargs):
+        form = PhoneNumberChangeForm(request.POST)
+        if form.is_valid():
+            huami_account = HuamiAccount.objects.get(user=request.user)
+            huami_account.phone_number = form.cleaned_data['phone_number']
+            huami_account.save()
+
+            return redirect(reverse_lazy('accounts:user_profile'))
+        return render(request, self.template_name, {'current_user': request.user, 'form': form})
+
+
 class HuamiAccountRecertificationView(LoginRequiredMixin, SignUpView):
     template_name = "accounts/recertification.html"
     form_class = HuamiAccountCertificationForm
@@ -308,12 +330,15 @@ def create_profile_if_not_exists(user):
     except Profile.DoesNotExist:
         Profile.objects.create(user=user)
 
+def select_password_reset_request(request):
+    return render(request, "accounts/select_reset_password.html")
 
-def password_reset_request(request):
+
+def email_password_reset_request(request):
     """비밀번호 찾기 시 정보 저장
      """
     if request.method == 'POST':
-        form = PasswordResetRequestForm(request.POST)
+        form = EmailPasswordResetRequestForm(request.POST)
         if form.is_valid():
 
             username = form.cleaned_data['username']
@@ -340,12 +365,37 @@ def password_reset_request(request):
                 messages.success(request, 'Verification code sent to your email.')
                 return redirect('accounts:verify_code')
             except HuamiAccount.DoesNotExist:
-                messages.error(request, 'Email not found in huami_account.')
+                messages.error(request, '등록되지 않은 이메일입니다.')
             except User.DoesNotExist:
-                messages.error(request, 'User not found.')
+                messages.error(request, '아이디가 존재하지 않습니다.')
     else:
-        form = PasswordResetRequestForm()
-    return render(request, 'accounts/password_reset_request.html', {'form': form})
+        form = EmailPasswordResetRequestForm()
+    return render(request, "accounts/email_password_reset_request.html", {"form": form})
+
+def phone_number_password_reset_request(request):
+    """비밀번호 찾기 시 정보 저장
+     """
+    if request.method == 'POST':
+        form = PhoneNumberPasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            phone_number = form.cleaned_data['phone_number']
+            """유저의 핸드폰, 이름 아이디 확인"""
+            try:
+                user = User.objects.get(username=username)
+                create_profile_if_not_exists(user)
+                huami_account = HuamiAccount.objects.get(user=user)
+                if phone_number == huami_account.phone_number :
+                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+                    token = default_token_generator.make_token(user)
+                    return redirect('accounts:password_reset_confirm', uidb64=uid, token=token)
+                else:
+                    messages.error(request, '전화번호가 일치하지 않습니다.')
+            except User.DoesNotExist:
+                messages.error(request, '아이디가 존재하지 않습니다.')
+    else:
+        form = PhoneNumberPasswordResetRequestForm()
+    return render(request, "accounts/phone_number_password_reset_request.html", {"form": form})
 
 
 def verify_code(request):
@@ -359,7 +409,7 @@ def verify_code(request):
 
             if not username:
                 messages.error(request, 'No username found in session. Please start over.')
-                return redirect('accounts:password_reset_request')
+                return redirect('accounts:email_password_reset_request')
 
             try:
                 user = User.objects.get(username=username)
@@ -397,8 +447,8 @@ def password_reset_confirm(request, uidb64=None, token=None):
         else:
             form = SetPasswordForm(user)
     else:
-        messages.error(request, 'The reset link is no longer valid.')
-        return redirect('accounts:password_reset_request')
+        messages.error(request, "The reset link is no longer valid.")
+        return redirect("accounts:email_password_reset_request")
 
     return render(request, 'accounts/password_reset_confirm.html', {'form': form})
 

@@ -93,6 +93,13 @@ class HuamiAccount(models.Model):
         help_text="사용자의 나이"
     )
 
+    phone_number = models.CharField(
+        db_column="phone_number",
+        max_length=15,  # 전화번호 길이에 맞게 조정 가능, 010-1234-5678 형식으로 저장
+        null=True,
+        help_text="전화번호를 입력해 주세요"
+    )
+
     @property
     def fullname(self) -> str:
         return f"{self.user.last_name} {self.user.first_name}"
