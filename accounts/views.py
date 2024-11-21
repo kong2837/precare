@@ -365,9 +365,9 @@ def email_password_reset_request(request):
                 messages.success(request, 'Verification code sent to your email.')
                 return redirect('accounts:verify_code')
             except HuamiAccount.DoesNotExist:
-                messages.error(request, 'Email not found in huami_account.')
+                messages.error(request, '등록되지 않은 이메일입니다.')
             except User.DoesNotExist:
-                messages.error(request, 'User not found.')
+                messages.error(request, '아이디가 존재하지 않습니다.')
     else:
         form = EmailPasswordResetRequestForm()
     return render(request, "accounts/email_password_reset_request.html", {"form": form})
@@ -386,14 +386,13 @@ def phone_number_password_reset_request(request):
                 create_profile_if_not_exists(user)
                 huami_account = HuamiAccount.objects.get(user=user)
                 if phone_number == huami_account.phone_number :
-                    print(phone_number)
                     uid = urlsafe_base64_encode(force_bytes(user.pk))
                     token = default_token_generator.make_token(user)
                     return redirect('accounts:password_reset_confirm', uidb64=uid, token=token)
                 else:
                     messages.error(request, '전화번호가 일치하지 않습니다.')
             except User.DoesNotExist:
-                messages.error(request, 'User not found.')
+                messages.error(request, '아이디가 존재하지 않습니다.')
     else:
         form = PhoneNumberPasswordResetRequestForm()
     return render(request, "accounts/phone_number_password_reset_request.html", {"form": form})
