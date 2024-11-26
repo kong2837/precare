@@ -25,7 +25,7 @@ services:
       bash -c "
       python3 manage.py makemigrations survey huami accounts&&
       python3 manage.py migrate&& 
-      gunicorn apop2.wsgi -b 0.0.0.0:8000"
+      gunicorn apop2.wsgi --workers 4 -b 0.0.0.0:8000"
     ports:
       - "8000:8000"
     expose:
