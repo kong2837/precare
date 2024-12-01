@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'survey',
     'huami',
     'accounts',
+    'jobs.apps.JobsConfig'
 ]
 
 MIDDLEWARE = [
@@ -166,3 +167,7 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # OTHER SETTINGS
 }
+
+# APSSCHEDULER 관련 설정들
+SCHEDULER_DEFAULT = True
+APSCHEDULER_RUN_NOW_TIMEOUT = 600
