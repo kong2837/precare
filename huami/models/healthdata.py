@@ -1,5 +1,7 @@
 import datetime
 from typing import Any
+
+import requests
 from django.db import models
 from . import HuamiAccount
 
@@ -87,16 +89,25 @@ class HealthData(models.Model):
             Returns:
                 tuple[HealthData, bool]: 기존에 있었거나 새로 생성된 오브젝트와 오브젝트 생성여부(created)
             """      
-            health, created = HealthData.objects.get_or_create(huami_account=huami_account, date=date)
+            health_data, created = HealthData.objects.get_or_create(huami_account=huami_account, date=date)
             if created:
-                health.weight = result['profile']['weight']
-                health.height = result['profile']['height']
-                health.age = int(date.split("-")[0]) - int(result['profile']['birth'].split("-")[0])
+                health_data.weight = result['profile']['weight']
+                health_data.height = result['profile']['height']
+                health_data.age = int(date.split("-")[0]) - int(result['profile']['birth'].split("-")[0])
             
-            return health, created
+            return health_data, created
         updated_health = []
-        result = huami_account.get_data()
-        user_age = int(datetime.datetime.now().year) - int(result['profile']['birth'].split("-")[0])
+        try:
+            result = huami_account.get_data()
+            user_age = int(datetime.datetime.now().year) - int(result['profile']['birth'].split("-")[0])
+        except requests.HTTPError as e:
+            huami_account.showed_sync_status = False
+            huami_account.note = huami_account.note + str(e.response.reason)
+            raise Exception(e.response.reason)
+        except Exception as e:
+            huami_account.showed_sync_status = False
+            huami_account.note = huami_account.note + str(e)
+            raise e
         
         for date in result['band'].keys():
             health, _ = _get_or_create()
