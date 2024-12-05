@@ -17,10 +17,10 @@ def update_health():
             HealthData.create_from_sync_data(user)
         except requests.HTTPError as e:
             logger.error(e.response.reason)
-            logger.warning(f"{user.huami.name}님의 데이터 동기화에 문제가 발생했습니다.")
+            logger.warning(f"{user.name}님의 데이터 동기화에 문제가 발생했습니다.")
         except Exception as e:
             logger.error(e)
-            logger.warning(f"{user.huami.name}님의 데이터 동기화에 문제가 발생했습니다.")
+            logger.warning(f"{user.name}님의 데이터 동기화에 문제가 발생했습니다.")
 
 
 # Create your views here.
