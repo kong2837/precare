@@ -12,15 +12,17 @@ logger = logging.getLogger(__name__)
 
 def update_health():
     users = HuamiAccount.objects.filter(research_status='ongoing')
+    logger.info(f"연구 진행 중인 유저들 {users.count()}명에 대해 동기화를 시작합니다.")
     for user in users:
         try:
             HealthData.create_from_sync_data(user)
+            logger.info(f"{user.name}님의 데이터 동기화가 완료되었습니다.")
         except requests.HTTPError as e:
             logger.error(e.response.reason)
-            logger.warning(f"{user.huami.name}님의 데이터 동기화에 문제가 발생했습니다.")
+            logger.warning(f"{user.name}님의 데이터 동기화에 문제가 발생했습니다.")
         except Exception as e:
             logger.error(e)
-            logger.warning(f"{user.huami.name}님의 데이터 동기화에 문제가 발생했습니다.")
+            logger.warning(f"{user.name}님의 데이터 동기화에 문제가 발생했습니다.")
 
 
 # Create your views here.
