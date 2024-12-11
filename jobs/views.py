@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def update_health():
     users = HuamiAccount.objects.filter(research_status='ongoing')
-    logger.info(f"연구 진행 중인 유저들 {users.count()}명에 대해 동기화를 시작합니다.")
+    logger.info(f"연구 진행 중인 유저들 {len(users)}명에 대해 동기화를 시작합니다.")
     for user in users:
         try:
             HealthData.create_from_sync_data(user)
