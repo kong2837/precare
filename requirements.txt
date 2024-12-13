@@ -6,5 +6,6 @@ gunicorn==22.0.0
 mysqlclient==2.2.1
 djangorestframework==3.15.2
 drf-spectacular==0.27.1
-django-apscheduler==0.6.2
+django-apscheduler==0.7.0
 openpyxl==2.4.11
+apscheduler==3.11.0

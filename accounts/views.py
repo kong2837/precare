@@ -2,6 +2,7 @@ import csv
 import hashlib
 import json
 
+import requests.exceptions
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -180,8 +181,11 @@ class UserHealthDataSyncView(SuperuserRequiredMixin, View):
             user.huami.age = age
             user.huami.save()
             messages.success(request, f"{len(health_data)}일의 데이터가 추가되었습니다.")
+        except requests.HTTPError as e:
+            messages.error(request, "동기화 과정 중 오류가 발생하였습니다." + str(e.response.reason))
+
         except Exception as e:
-            messages.error(request, "동기화 과정 중 오류가 발생하였습니다." + e)
+            messages.error(request, "동기화 과정 중 오류가 발생하였습니다." + str(e))
 
         return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': pk}))
 
