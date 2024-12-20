@@ -58,7 +58,10 @@
                     {% endif %}
                 </ul>
                 {% if user.is_authenticated %}
-                    <a class="btn btn-secondary" href="{% url 'accounts:logout' %}" role="button">로그아웃</a>
+                    <form method="post" action="{% url 'accounts:logout' %}" style="display: inline;">
+                {% csrf_token %}
+                    <button class="btn btn-secondary" type="submit">로그아웃</button>
+                    </form>
                 {% else %}
                     <a class="btn btn-primary" href="{% url 'accounts:login' %}" role="button">로그인</a>
                 {% endif %}
