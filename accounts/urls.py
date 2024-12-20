@@ -25,7 +25,6 @@ urlpatterns = [
     path("users.csv", UserPrimaryKeyAPIView.as_view(), name="usersCsvDownloadApi"),
     path("select_password_reset/",select_password_reset_request,name="select_password_reset_request",),
     path("email_password_reset/", email_password_reset_request, name="email_password_reset_request"),
-    path("phone_number_password_reset/", phone_number_password_reset_request, name="phone_number_password_reset_request"),
     path("verify_code/", verify_code, name="verify_code"),
     path("reset/<uidb64>/<token>/", password_reset_confirm, name="password_reset_confirm"),
     path("reset/done/", password_reset_complete, name="password_reset_complete"),
