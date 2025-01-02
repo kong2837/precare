@@ -100,6 +100,18 @@ class HuamiAccount(models.Model):
         help_text="전화번호를 입력해 주세요"
     )
 
+
+    pregnancy_start_date = models.DateTimeField( #yyyy-mm-dd 형식의 string으로 저장
+        db_column="pregnancy_start_date",
+        db_comment="임신 시작일",
+        null=True,
+        blank=True,
+        help_text="임신 시작일을 입력해주세요"
+    )
+
+
+
+
     @property
     def fullname(self) -> str:
         return f"{self.user.last_name} {self.user.first_name}"
@@ -163,3 +175,7 @@ class HuamiAccount(models.Model):
         return result
 
 # Create your models here.
+
+
+
+
