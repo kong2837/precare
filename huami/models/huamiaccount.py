@@ -17,6 +17,12 @@ class HuamiAccount(models.Model):
         ('completed', '종료'),
         ('preparing', '준비'),
     ]
+
+    RESEARCH_YEAR_CHOICES = [
+        ('none', '미확인'),
+        ('2023', '2023'),
+        ('2024', '2024'),
+    ]
     user = models.OneToOneField(
         to=settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -107,6 +113,13 @@ class HuamiAccount(models.Model):
         null=True,
         blank=True,
         help_text="임신 시작일을 입력해주세요"
+    )
+
+    research_year = models.CharField(
+        db_column="research_year",
+        max_length=6,
+        choices=RESEARCH_YEAR_CHOICES,
+        default='none',  # 기본값 설정
     )
 
 

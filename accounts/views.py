@@ -541,6 +541,22 @@ class UserResearchStatus(SuperuserRequiredMixin, View):
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'User not found'})
 
+class UserResearchYear(SuperuserRequiredMixin, View):
+    def post(self, request):
+        data = json.loads(request.body)
+
+        user_id = data.get('user_id')
+        new_year = data.get('new_year')
+
+        try:
+            user = User.objects.get(pk=user_id)
+            user.huami.research_year = new_year
+            user.huami.save()
+
+            return JsonResponse({'success': True})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User not found'})
+
 
 class UserResearchDate(SuperuserRequiredMixin, View):
     def post(self, request):

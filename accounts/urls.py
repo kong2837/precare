@@ -6,7 +6,7 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
     UserNoteUpdateView, UserPrimaryKeyAPIView, verify_code, password_reset_confirm, \
     password_reset_complete, find_username_request, verify_username_code, UserProfileView, UserPasswordChangeView, \
     HuamiAccountRecertificationView, UserResearchStatus, UserResearchDate, UserPhoneNumberChangeView, \
-    select_password_reset_request, email_password_reset_request, phone_number_password_reset_request
+    select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear
 
 app_name = 'accounts'
 
@@ -36,5 +36,6 @@ urlpatterns = [
     path("profile/recertification/",HuamiAccountRecertificationView.as_view(),name="user_recertification",),
     path("user/<int:user_id>/surveys/",XlsxDownloadView.as_view(),name="user_survey_download",),
     path("user/status/", UserResearchStatus.as_view(), name="update_research_status"),
+path("user/year/", UserResearchYear.as_view(), name="update_research_year"),
     path("user/date/", UserResearchDate.as_view(), name="update_research_date"),
 ]
