@@ -165,7 +165,7 @@
 
                 element.addEventListener('change', function () {
                     const userId = this.getAttribute('data-user-id');
-                    const newDate = this.value;
+                    const newDate = this.value || null;
 
                     fetch("{% url 'accounts:update_research_date' %}", {
                         method: 'POST',
