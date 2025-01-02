@@ -554,8 +554,10 @@ class UserResearchDate(SuperuserRequiredMixin, View):
             user = User.objects.get(pk=user_id)
             if date_type == 'join-date':
                 user.huami.join_date = new_date
-            else:
+            elif date_type == 'end-date':
                 user.huami.end_date = new_date
+            elif date_type == 'pregnancy_start_date':
+                user.huami.pregnancy_start_date=new_date
             user.huami.save()
             return JsonResponse({'success': True})
         except User.DoesNotExist:
