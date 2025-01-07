@@ -67,7 +67,10 @@ def make_csv_response(user: settings.AUTH_USER_MODEL, response: HttpResponse) ->
     Returns:
         HttpResponse: csv 데이터로 채워진 Response
     """
-    pregnancy_start_date = user.huami.pregnancy_start_date.date()
+    if user.huami.pregnancy_start_date!=None:
+        pregnancy_start_date = user.huami.pregnancy_start_date.date()
+    else:
+        pregnancy_start_date = None
 
     writer = csv.writer(response)
     writer.writerow(['week', 'year', 'month', 'day', 'hour', 'minute',
