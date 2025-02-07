@@ -76,3 +76,8 @@ django에서 superuser를 만들기 위해서 아래의 명령어를 수행합�
 ```shell
 docker exec -it apop python manage.py createsuperuser
 ```
+
+
+### 이후부터는 코드에 관한 정보입니다.
+###
+common 파일에 urls,view,form 웹페이지 다루는 파일 존재.

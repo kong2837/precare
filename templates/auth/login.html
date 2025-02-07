@@ -1,0 +1,58 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>임산부 조기진통 감지 및 스트레스 완화</title>
+
+    <!-- 정적 파일 경로 수정 -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+    <link href="{% static 'css/animate.css' %}" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+</head>
+
+<body class="gray-bg">
+
+    <div class="middle-box text-center loginscreen animated fadeInDown">
+        <div>
+            <div>
+                <h1 class="logo-name">P+C</h1>
+            </div>
+            <h3>Welcome to PreCare</h3>
+            <p>본 사이트는 임부의 조기진통 의심 증상과 비전형적 이상징후를 확인하고, 필요한 서비스를 제공받을 수 있도록 하는 통합관리 앱입니다.</p>
+            <p>Login in. To see it in action.</p>
+            <!-- action을 URL 패턴으로 변경 -->
+            <form class="m-t" role="form" method="POST" > <!-- action지정안하면 현재 웹페이로 post요청-->
+                {% csrf_token %}
+                <div class="form-group">
+                    <input type="text" class="form-control" placeholder="아이디" required="" name="username">
+                </div>
+                <div class="form-group">
+                    <input type="password" class="form-control" placeholder="비밀번호" required="" name="password">
+                </div>
+                <button type="submit" class="btn btn-primary block full-width m-b">로그인</button>
+                
+                
+                <a href="{% url 'auth:forgot_id' %}"><small>아이디 찾기</small></a>
+                <small> / </small>
+                <a href="{% url 'auth:forgot_password' %}"><small>비밀번호 찾기</small></a>
+                <p class="text-muted text-center"><small>아직 계정이 없으신가요?</small></p>
+                <a class="btn btn-sm btn-white btn-block" href="{% url 'auth:signup' %}">회원가입</a>
+            </form>
+            <p class="m-t"> <small>dailab 2025</small> </p>
+        </div>
+    </div>
+
+    <!-- Mainly scripts -->
+    <script src="{% static 'js/jquery-3.1.1.min.js' %}"></script>
+    <script src="{% static 'js/popper.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.js' %}"></script>
+
+</body>
+
+</html>
