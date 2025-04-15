@@ -1,6 +1,9 @@
 import csv
 import hashlib
 import json
+import base64
+import urllib.parse
+
 
 import requests.exceptions
 from django.conf import settings
@@ -578,3 +581,125 @@ class UserResearchDate(SuperuserRequiredMixin, View):
             return JsonResponse({'success': True})
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'User not found'})
+
+
+# 실험단계임
+class FitbitLoginView(View):
+    def get(self, request):
+        client_id = "23QDQ6"
+        redirect_uri = "https://dai427.cbnu.ac.kr/accounts/callback"
+        scope = [
+            "activity", "heartrate", "sleep", "nutrition", "weight",
+            "profile", "location", "oxygen_saturation", "respiratory_rate", "temperature"
+        ]
+
+        params = {
+            "response_type": "code",
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "scope": " ".join(scope)
+        }
+
+        auth_url = "https://www.fitbit.com/oauth2/authorize?" + urllib.parse.urlencode(params)
+        return redirect(auth_url)
+
+
+import base64
+import requests
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.http import JsonResponse
+from django.views import View
+
+class FitbitCallbackView(View):
+    def get(self, request):
+        # GET 파라미터 전체 출력 (디버깅용)
+        print("Request GET:", request.GET)
+
+        # 'code' 파라미터 추출
+        code = request.GET.get("code")
+        print("Authorization code:", code)
+
+        # code가 없으면 오류 반환
+        if not code:
+            return JsonResponse({"error": "Authorization code not found"}, status=400)
+
+        # Fitbit API와 통신할 클라이언트 정보
+        client_id = "23QDQ6"
+        client_secret = "3f9a9810d9d67358ce15e8cdafb388b2"
+        redirect_uri = "https://203.255.92.240/callback"
+
+        token_url = "https://api.fitbit.com/oauth2/token"
+
+        # 기본 인증 헤더 생성 (client_id:client_secret)
+        auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+
+        # 요청 헤더 설정
+        headers = {
+            "Authorization": f"Basic {auth_header}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+
+        # 데이터 (code와 함께 전달되는 파라미터들)
+        data = {
+            "client_id": client_id,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri,
+            "code": code
+        }
+
+        # access token을 요청
+        response = requests.post(token_url, headers=headers, data=data)
+
+        # 응답 상태 코드가 200일 때, access token 처리
+        if response.status_code == 200:
+            token_data = response.json()
+            print("Token data:", token_data)  # 토큰 데이터 출력
+            access_token = token_data.get("access_token")
+
+            # 세션에 access_token 저장
+            request.session['access_token'] = access_token
+
+            # Fitbit API에서 사용자 프로필 정보 가져오기
+            user_profile = self.get_user_profile(access_token)
+
+            if user_profile:
+                # 세션에 사용자 프로필 정보 저장
+                request.session['user_profile'] = user_profile
+
+                # 프로필 정보를 보여주는 페이지로 리다이렉트
+                return redirect(reverse('accounts:fitbit_profile'))  # 피트니스 데이터를 보여줄 페이지로 리다이렉트
+            else:
+                return JsonResponse({"error": "Failed to retrieve user profile"}, status=500)
+        else:
+            # 실패한 경우 오류 응답
+            return JsonResponse({
+                "error": "Failed to retrieve token",
+                "details": response.json()
+            }, status=response.status_code)
+
+    def get_user_profile(self, access_token):
+        # Fitbit API에서 사용자 프로필 데이터를 가져오는 함수
+        url = "https://api.fitbit.com/1/user/-/profile.json"
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        # GET 요청을 보내 사용자 프로필 데이터 가져오기
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            # 성공적으로 프로필 데이터를 받았다면
+            return response.json()
+        else:
+            # 실패한 경우
+            return None
+class FitbitProfileView(View):
+    def get(self, request):
+        # 세션에서 user_profile 정보 가져오기
+        user_profile = request.session.get('user_profile')
+
+        if not user_profile:
+            return JsonResponse({"error": "User profile not found"}, status=400)
+
+        return render(request, 'fitbit_profile.html', {'user_profile': user_profile})

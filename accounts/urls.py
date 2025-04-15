@@ -6,7 +6,10 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
     UserNoteUpdateView, UserPrimaryKeyAPIView, verify_code, password_reset_confirm, \
     password_reset_complete, find_username_request, verify_username_code, UserProfileView, UserPasswordChangeView, \
     HuamiAccountRecertificationView, UserResearchStatus, UserResearchDate, UserPhoneNumberChangeView, \
-    select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear
+    select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear, \
+    FitbitLoginView, FitbitCallbackView, FitbitProfileView
+
+path('callback/', FitbitCallbackView.as_view(), name='fitbit_callback'),
 
 app_name = 'accounts'
 
@@ -38,4 +41,7 @@ urlpatterns = [
     path("user/status/", UserResearchStatus.as_view(), name="update_research_status"),
 path("user/year/", UserResearchYear.as_view(), name="update_research_year"),
     path("user/date/", UserResearchDate.as_view(), name="update_research_date"),
+
+    path('fitbit/login/', FitbitLoginView.as_view(), name='fitbit_login'),
+    path('fitbit/profile/', FitbitProfileView.as_view(), name='fitbit_profile'),
 ]
