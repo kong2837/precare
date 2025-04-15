@@ -9,7 +9,6 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
     select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear, \
     FitbitLoginView, FitbitCallbackView, FitbitProfileView
 
-path('callback/', FitbitCallbackView.as_view(), name='fitbit_callback'),
 
 app_name = 'accounts'
 
@@ -44,4 +43,5 @@ path("user/year/", UserResearchYear.as_view(), name="update_research_year"),
 
     path('fitbit/login/', FitbitLoginView.as_view(), name='fitbit_login'),
     path('fitbit/profile/', FitbitProfileView.as_view(), name='fitbit_profile'),
+    path('callback/', FitbitCallbackView.as_view(), name='fitbit_callback'),
 ]

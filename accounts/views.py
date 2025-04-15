@@ -613,12 +613,9 @@ from django.views import View
 
 class FitbitCallbackView(View):
     def get(self, request):
-        # GET 파라미터 전체 출력 (디버깅용)
-        print("Request GET:", request.GET)
 
         # 'code' 파라미터 추출
         code = request.GET.get("code")
-        print("Authorization code:", code)
 
         # code가 없으면 오류 반환
         if not code:
