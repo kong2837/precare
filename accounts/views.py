@@ -587,7 +587,7 @@ class UserResearchDate(SuperuserRequiredMixin, View):
 class FitbitLoginView(View):
     def get(self, request):
         client_id = "23QDQ6"
-        redirect_uri = "https://dai427.cbnu.ac.kr/accounts/callback"
+        redirect_uri = "https://dai427.cbnu.ac.kr/accounts/callback/"
         scope = [
             "activity", "heartrate", "sleep", "nutrition", "weight",
             "profile", "location", "oxygen_saturation", "respiratory_rate", "temperature"
@@ -627,7 +627,7 @@ class FitbitCallbackView(View):
         # Fitbit API와 통신할 클라이언트 정보
         client_id = "23QDQ6"
         client_secret = "3f9a9810d9d67358ce15e8cdafb388b2"
-        redirect_uri = "https://203.255.92.240/callback"
+        redirect_uri = "https://203.255.92.240/callback/"
 
         token_url = "https://api.fitbit.com/oauth2/token"
 
