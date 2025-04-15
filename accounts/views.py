@@ -699,4 +699,4 @@ class FitbitProfileView(View):
         if not user_profile:
             return JsonResponse({"error": "User profile not found"}, status=400)
 
-        return render(request, 'fitbit_profile.html', {'user_profile': user_profile})
+        return render(request, 'accounts/fitbit_profile.html', {'user_profile': user_profile})
