@@ -1,11 +1,22 @@
 def __make_p_tag(origin: str) -> str:
-    return '<p class="fs-3"><strong>' + origin + "</strong></p>"
+    style = (
+        'font-size:1.1rem; '
+        'line-height:1.6; '
+        'word-break:keep-all; '
+        'text-align:center; '
+        'padding:0 1rem;'
+    )
+    return f'<p style="{style}"><strong>{origin}</strong></p>'
 
 
 def stress_result(scores: tuple) -> str:
     total = sum(scores)
     if total >= 16:
-        return __make_p_tag("심호흡을 한 후 잠깐 걸어 볼까요^^<br>그럼 이제 마음이 차분해지는 음악을 들어보세요♪<br>좋아하는 음악이면 됩니다.❤️️")
+        return __make_p_tag(
+            "심호흡을 한 후 잠깐 걸어 볼까요^^<br>"
+            "그럼 이제 마음이 차분해지는 음악을 들어보세요♪<br>"
+            "좋아하는 음악이면 됩니다.❤️️"
+        )
     if total >= 10:
         return __make_p_tag("오늘 힘드셨군요.<br>잠시 앉아 심호흡을 해보세요.❤️️")
     if total >= 6:
@@ -22,6 +33,7 @@ def pbras_result(scores: tuple) -> str:
     mon2 = (scores[2], scores[3], scores[7])
     mon3 = (scores[4], scores[5])
     mon4 = (scores[8], scores[9])
+
     if __check_score(mon1, 3):
         return __make_p_tag("침상에서 안정을 취한 후, 증상이 계속되면 산과 진료를 받는 것을 추천합니다!")
     if __check_score(mon1, 2):
