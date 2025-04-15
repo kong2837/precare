@@ -101,7 +101,7 @@ DATABASES = {
         "NAME": "apopdb",
         "USER": "example-user",
         "PASSWORD": "example-password",
-        "HOST": "mariadb",
+        "HOST": "localhost",
         "PORT": "3306"
     },
 }
