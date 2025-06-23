@@ -38,7 +38,7 @@ from .utils import generate_verification_code
 class LoginView(Login):
     """로그인을 위한 클래스 기반 뷰
     """
-    template_name = 'accounts/login.html'
+    template_name = 'accounts/admin_login.html'
     redirect_field_name = 'redirect_to'
     next_page = reverse_lazy('home')
     form_class = MyLoginForm
@@ -700,3 +700,7 @@ class FitbitProfileView(View):
             return JsonResponse({"error": "User profile not found"}, status=400)
 
         return render(request, 'accounts/fitbit_profile.html', {'user_profile': user_profile})
+
+#로그인 방식 선택
+def login_select(request):
+    return render(request, 'accounts/login.html')
