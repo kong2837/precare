@@ -58,7 +58,8 @@ INSTALLED_APPS = [
     'survey',
     'huami',
     'accounts',
-    'jobs.apps.JobsConfig'
+    'jobs.apps.JobsConfig',
+    'fitbit',
 ]
 
 MIDDLEWARE = [
