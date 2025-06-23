@@ -1,5 +1,5 @@
 from django.urls import path
-
+from accounts import views as accounts_views
 from survey.views import XlsxDownloadView
 from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, LoginView, LogoutView, SignUpView, \
     SuccessSignUpView, UserHealthDataSyncView, UserHealthNoteUpdateView, UserInfoView, UserManageView, \
@@ -13,7 +13,7 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
 app_name = 'accounts'
 
 urlpatterns = [
-    path("login/", LoginView.as_view(), name="login"),
+    path("admin/login/", LoginView.as_view(), name="admin_login"),
     path("signup/", SignUpView.as_view(), name="signup"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("successSignup/", SuccessSignUpView.as_view(), name="successSignup"),
@@ -44,4 +44,6 @@ path("user/year/", UserResearchYear.as_view(), name="update_research_year"),
     path('fitbit/login/', FitbitLoginView.as_view(), name='fitbit_login'),
     path('fitbit/profile/', FitbitProfileView.as_view(), name='fitbit_profile'),
     path('callback/', FitbitCallbackView.as_view(), name='fitbit_callback'),
+    path('login/', accounts_views.login_select, name='login'),
+
 ]
