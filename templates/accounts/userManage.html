@@ -46,8 +46,10 @@
                         </td> <!-- 버튼 추가 -->
                         <td>{% if user.huami.name != None %}
                             {{ user.huami.name }}
-                        {% else %}
+                        {% elif user.huami.fullname %}
                             {{ user.huami.fullname }}
+                        {% elif user.fitbit.fullname %}
+                            {{ user.fitbit.fullname }}
                         {% endif %}
                         </td>
                         <td>{{ user.huami.age }}</td>
@@ -96,7 +98,13 @@
                                 비정상
                             {% endif %}
                         </td>
-                     <td>{{ user.huami.email }}</td>
+                        <td>
+                            {% if user.huami.email %}
+                                {{ user.huami.email }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ user.huami.note }}</td>
                     </tr>
                 {% endfor %}
