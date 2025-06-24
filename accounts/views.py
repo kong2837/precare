@@ -142,7 +142,7 @@ class UserManageView(SuperuserRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        query_set = super().get_queryset()
+        query_set = super().get_queryset().select_related('huami', 'fitbit')
 
         search_query = self.request.GET.get('search', '')
 
