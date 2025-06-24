@@ -133,32 +133,35 @@ class UserInfoView(SuperuserRequiredMixin, DetailView):
 
 
 class UserManageView(SuperuserRequiredMixin, ListView):
-    """유저 정보들을 리스트로 제공하기 위한 클래스 기반 뷰
-    """
+    """HuamiAccount가 연결된 유저들만 리스트로 제공"""
     template_name = 'accounts/userManage.html'
-    model = settings.AUTH_USER_MODEL
+    model = get_user_model()  # settings.AUTH_USER_MODEL보다 명시적
     context_object_name = 'users'
-    queryset = get_user_model().objects.filter(is_superuser=False)
     paginate_by = 10
 
     def get_queryset(self):
+        query_set = get_user_model().objects.filter(
+            is_superuser=False,
+            huami__isnull=False
+        ).select_related('huami', 'fitbit')
+
         query_set = super().get_queryset().select_related('huami', 'fitbit')
 
         search_query = self.request.GET.get('search', '')
-
         if search_query:
             from django.db.models import Q
             query_set = query_set.filter(
-                Q(huami__name__icontains=search_query) | Q(huami__email__icontains=search_query)
+                Q(huami__name__icontains=search_query) |
+                Q(huami__email__icontains=search_query)
             )
 
         order_by = self.request.GET.get('order_by', 'huami__name')
         direction = self.request.GET.get('direction', 'asc')
-
         if direction == 'desc':
             order_by = f'-{order_by}'
 
         return query_set.order_by(order_by)
+
 
 
 class UserNoteUpdateView(SuperuserRequiredMixin, View):
