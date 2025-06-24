@@ -6,29 +6,22 @@
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-header bg-secondary text-white">
-                        <h4>계정 정보</h4>
+                        <h4>핏빗 계정 정보</h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <!-- Profile Picture -->
-{#                            <div class="col-md-4 text-center">#}
-{#                                <img src="https://s.gravatar.com/avatar/{{ email_hash }}?s=80" class="img-fluid rounded-circle mb-3" alt="User Profile Picture">#}
-{#                            </div>#}
-                            <!-- User Info -->
                             <div class="col-md-8">
                                 <h5>ID: <strong>{{ current_user.username }}</strong></h5>
-                                <p><strong>Email:</strong> {{ current_user.huami.email }}</p>
-                                <p><strong>이름:</strong> {{ current_user.huami.name }}</p>
-                                <p><strong>연구 시작일:</strong> {{ current_user.huami.join_date }}</p>
-                                <p><strong>연구 종료일:</strong> {{ current_user.huami.end_date }}</p>
-                                <a href="{% url 'accounts:user_password' %}" class="btn btn-secondary mt-3">비밀번호 재설정</a>
-                                <a href="{% url 'accounts:user_recertification' %}" class="btn btn-secondary mt-3">화웨이(Zepp Life) 계정 재설정</a>
-                                <a href="{% url 'accounts:change_user_phone_number' %}" class="btn btn-secondary mt-3">전화번호 재설정</a>
+                                <p><strong>이름:</strong> {{ current_user.fitbit.full_name }}</p>
+                                <p><strong>성별:</strong> {{ current_user.fitbit.gender }}</p>
+                                <p><strong>생년월일:</strong> {{ current_user.fitbit.birthday }}</p>
+                                <p><strong>키:</strong> {{ current_user.fitbit.height }} cm</p>
+                                <p><strong>몸무게:</strong> {{ current_user.fitbit.weight }} kg</p>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer text-muted text-center">
-                        데이터 동기화 상태: {{ current_user.huami.sync_status }}
+                        마지막 동기화: {{ current_user.fitbit.last_synced|date:"Y-m-d H:i" }}
                     </div>
                 </div>
             </div>
