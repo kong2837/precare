@@ -145,6 +145,8 @@ class UserManageView(SuperuserRequiredMixin, ListView):
             huami__isnull=False
         ).select_related('huami', 'fitbit')
 
+        query_set = super().get_queryset().select_related('huami', 'fitbit')
+
         search_query = self.request.GET.get('search', '')
         if search_query:
             from django.db.models import Q
