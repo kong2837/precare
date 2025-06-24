@@ -12,8 +12,9 @@
                 <label for="userId" class="col-sm-2 col-form-label">유저아이디</label>
                 <div class="col-sm-4">
                     <input type="text" readonly class="form-control-plaintext" id="userId"
-                        value="{{ userInfo.username }}">
+                        value="{% if userInfo.fitbit.fullname %}{{ userInfo.fitbit.fullname }}{% else %}{{ userInfo.username }}{% endif %}">
                 </div>
+
                 <label for="email" class="col-sm-2 col-form-label">Email</label>
                 <div class="col-sm-4">
                     <input type="text" readonly class="form-control-plaintext" id="email"
