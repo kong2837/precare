@@ -137,6 +137,7 @@ class UserManageView(SuperuserRequiredMixin, ListView):
     template_name = 'accounts/userManage.html'
     model = get_user_model()  # settings.AUTH_USER_MODEL보다 명시적
     context_object_name = 'users'
+    queryset = get_user_model().objects.filter(is_superuser=False,huami__isnull=False).select_related('huami')
     paginate_by = 10
 
     def get_queryset(self):
