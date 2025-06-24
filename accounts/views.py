@@ -35,6 +35,16 @@ from .utils import generate_verification_code
 from fitbit.models import FitbitAccount
 from django.contrib.auth import login
 from django.utils.timezone import now, timedelta
+from django.utils.crypto import get_random_string
+from django.utils.timezone import now, timedelta
+from django.contrib.auth import login
+from django.shortcuts import redirect
+from django.urls import reverse
+import requests
+import base64
+from django.views import View
+from django.http import JsonResponse
+from django.contrib.auth.models import User
 
 
 # Create your views here.
@@ -613,14 +623,7 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.views import View
 
-import base64
-import requests
-import urllib.parse
 
-from django.views import View
-from django.http import JsonResponse
-from django.shortcuts import redirect
-from django.urls import reverse
 
 
 class FitbitCallbackView(View):
@@ -659,7 +662,6 @@ class FitbitCallbackView(View):
         scope = token_data["scope"]
         token_type = token_data["token_type"]
 
-        # 사용자 프로필 요청
         profile_response = requests.get(
             "https://api.fitbit.com/1/user/-/profile.json",
             headers={"Authorization": f"Bearer {access_token}"}
@@ -676,13 +678,16 @@ class FitbitCallbackView(View):
         height = profile_data.get("height")
         weight = profile_data.get("weight")
 
-        # 유저 찾거나 생성
+        # 유저 생성 또는 가져오기
         user, created = User.objects.get_or_create(
             username=f"fitbit_{fitbit_user_id}",
-            defaults={"first_name": full_name or "", "password": User.objects.make_random_password()}
+            defaults={"first_name": full_name or ""}
         )
 
-        # FitbitAccount 업데이트 또는 생성
+        if created:
+            user.set_password(get_random_string(length=12))
+            user.save()
+
         FitbitAccount.objects.update_or_create(
             user=user,
             defaults={
@@ -701,10 +706,9 @@ class FitbitCallbackView(View):
             }
         )
 
-        # 로그인 처리
         login(request, user)
         print("Fitbit OAuth 성공 - 홈으로 리디렉트 시도")
-        return redirect(reverse("home"))  # 로그인 후 홈으로 이동
+        return redirect(reverse("home"))
 
 #로그인 방식 선택
 def login_select(request):
