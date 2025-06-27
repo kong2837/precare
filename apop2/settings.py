@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 import os
 from pathlib import Path
+from django.conf import settings
 
 
 
@@ -64,7 +65,8 @@ INSTALLED_APPS = [
     'survey',
     'huami',
     'accounts',
-    'jobs.apps.JobsConfig'
+    'jobs.apps.JobsConfig',
+    'fitbit',
 ]
 
 MIDDLEWARE = [
@@ -180,7 +182,5 @@ APSCHEDULER_RUN_NOW_TIMEOUT = 600
 
 FITBIT_CLIENT_ID = os.getenv("FITBIT_CLIENT_ID")
 FITBIT_CLIENT_SECRET = os.getenv("FITBIT_CLIENT_SECRET")
-
-
 
 
