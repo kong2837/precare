@@ -7,11 +7,26 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./static:/data/static
+      - ./letsencrypt:/etc/letsencrypt
     ports:
-      - '443:80'
+      - '443:443'
+      - '80:80'
     depends_on:
       - 'apop'
-  
+
+  certbot:
+    image: certbot/certbot
+    dns:
+      - 8.8.8.8
+    volumes:
+      - ./certbot:/data/certbot
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./static:/data/static
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - network
+    depends_on:
+      - nginx
   apop:
     build:
       context: .
@@ -24,8 +39,8 @@ services:
       - ./static:/djangoproject/static
     command: >
       bash -c "
-      python3 manage.py makemigrations survey huami accounts&&
-      python3 manage.py migrate&& 
+      python3 manage.py makemigrations survey huami accounts &&
+      python3 manage.py migrate &&
       gunicorn apop2.wsgi --workers 4 -b 0.0.0.0:8000"
     ports:
       - "8000:8000"
@@ -34,9 +49,9 @@ services:
     depends_on:
       - 'db'
     environment:
-      CSRF_TRUSTED_ORIGINS: ''
-      AUTH_KEY: ''
-  
+      CSRF_TRUSTED_ORIGINS: "https://dai427.cbnu.ac.kr"
+      AUTH_KEY: 'kong21'
+
   db:
     build:
       context: ./mariadb
@@ -55,9 +70,9 @@ services:
       MARIADB_USER: example-user
       MARIADB_PASSWORD: example-password
       MARIADB_ROOT_PASSWORD: password
-    command:
+    command: >
       sh -c "
-      service cron start&&
+      service cron start &&
       mariadbd -u root"
 
 networks:
