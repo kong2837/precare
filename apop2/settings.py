@@ -13,21 +13,27 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+from dotenv import load_dotenv
+load_dotenv()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-atqfh&#+x!)pdp=vk(3fzo))nv9%u811p18t2_l3ta9=eqw1ln'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv("DEBUG") == "True"
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split()
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split()
 
-CSRF_TRUSTED_ORIGINS = [os.environ.get('CSRF_TRUSTED_ORIGINS')]
+
 
 # Application definition
 """인증코드를 보내는 email 관련 정보 
@@ -58,8 +64,7 @@ INSTALLED_APPS = [
     'survey',
     'huami',
     'accounts',
-    'jobs.apps.JobsConfig',
-    'fitbit',
+    'jobs.apps.JobsConfig'
 ]
 
 MIDDLEWARE = [
@@ -98,12 +103,12 @@ WSGI_APPLICATION = 'apop2.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "apopdb",
-        "USER": "example-user",
-        "PASSWORD": "example-password",
-        "HOST": "mariadb",
-        "PORT": "3306"
+        "ENGINE": os.getenv("DB_ENGINE"),
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": int(os.getenv("DB_PORT", 3306))
     },
 }
 
@@ -160,7 +165,7 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# API DOCS 
+# API DOCS
 SPECTACULAR_SETTINGS = {
     'TITLE': '중견연구 API',
     'DESCRIPTION': '중견연구 웹 사이트 API 사용을 위한 문서입니다',
@@ -172,3 +177,10 @@ SPECTACULAR_SETTINGS = {
 # APSSCHEDULER 관련 설정들
 SCHEDULER_DEFAULT = True
 APSCHEDULER_RUN_NOW_TIMEOUT = 600
+
+FITBIT_CLIENT_ID = os.getenv("FITBIT_CLIENT_ID")
+FITBIT_CLIENT_SECRET = os.getenv("FITBIT_CLIENT_SECRET")
+
+
+
+

@@ -602,7 +602,7 @@ class UserResearchDate(SuperuserRequiredMixin, View):
 
 class FitbitLoginView(View):
     def get(self, request):
-        client_id = "23QDQ6"
+        client_id = settings.FITBIT_CLIENT_ID
         redirect_uri = "https://dai427.cbnu.ac.kr/accounts/callback/"
         scope = [
             "activity", "heartrate", "sleep", "nutrition", "weight",
@@ -639,6 +639,8 @@ class FitbitCallbackView(View):
 
         redirect_uri = "https://dai427.cbnu.ac.kr/accounts/callback/"
         token_url = "https://api.fitbit.com/oauth2/token"
+        client_id = settings.FITBIT_CLIENT_ID
+        client_secret = settings.FITBIT_CLIENT_SECRET
 
         auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
