@@ -632,8 +632,7 @@ class FitbitCallbackView(View):
         if not code:
             return JsonResponse({"error": "Authorization code not found"}, status=400)
 
-        client_id = "23QDQ6"
-        client_secret = "3f9a9810d9d67358ce15e8cdafb388b2"
+
         redirect_uri = "https://dai427.cbnu.ac.kr/accounts/callback/"
         token_url = "https://api.fitbit.com/oauth2/token"
 
