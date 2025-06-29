@@ -45,7 +45,9 @@ import base64
 from django.views import View
 from django.http import JsonResponse
 from django.contrib.auth.models import User
+from django.utils.timezone import localtime
 
+from fitbit.models import FitbitMinuteMetric, FitbitAccount
 
 # Create your views here.
 class LoginView(Login):
@@ -255,6 +257,71 @@ class HealthDataCsvDownloadView(SuperuserRequiredMixin, View):
             'Content-Disposition': f'attachment; filename="{pk}.csv"'})
 
         return make_csv_response(user, response)
+
+
+
+
+class FitbitHealthDataCsvDownloadView(SuperuserRequiredMixin, View):
+    """
+    FitbitMinuteMetric 데이터를 CSV로 내려주는 관리자 전용 뷰
+    GET 요청만 지원
+    """
+
+    def get(self, request, pk):
+        # ① 대상 유저 조회
+        user = get_object_or_404(get_user_model(), pk=pk)
+
+        # ② FitbitAccount 존재 확인 (없으면 404)
+        try:
+            account = user.fitbit      # OneToOneField, related_name='fitbit'
+        except FitbitAccount.DoesNotExist:
+            raise Http404("해당 유저는 Fitbit 계정이 연결되어 있지 않습니다.")
+
+        # ③ HTTP 응답 객체 생성
+        response = HttpResponse(headers={
+            "Content-Type": "text/csv",
+            "Content-Disposition": f'attachment; filename="{pk}.csv"',
+        })
+        writer = csv.writer(response)
+
+        # ④ CSV 헤더 작성
+        writer.writerow([
+            "timestamp",
+            "heart_rate",
+            "step_count",
+            "sleep_stage",
+            "spo2",
+            "respiratory_rate",
+            "skin_temperature",
+            "weight_kg",
+            "height_cm",
+            "age_years",
+        ])
+
+        # ⑤ 분 단위 데이터 조회 (시간순)
+        minute_rows = (
+            FitbitMinuteMetric.objects
+            .filter(account=account)
+            .order_by("timestamp")
+        )
+
+        # ⑥ 각 행을 CSV에 기록
+        for m in minute_rows:
+            writer.writerow([
+                localtime(m.timestamp).strftime("%Y-%m-%d %H:%M:%S"),
+                m.heart_rate or "",
+                m.step_count or "",
+                m.sleep_stage or "",
+                m.spo2 or "",
+                m.respiratory_rate or "",
+                m.skin_temperature or "",
+                m.weight_kg or "",
+                m.height_cm or "",
+                m.age_years or "",
+            ])
+
+        return response
+
 
 
 class AuthKeyRequiredMixin(UserPassesTestMixin):
