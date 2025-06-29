@@ -7,7 +7,7 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
     password_reset_complete, find_username_request, verify_username_code, UserProfileView, UserPasswordChangeView, \
     HuamiAccountRecertificationView, UserResearchStatus, UserResearchDate, UserPhoneNumberChangeView, \
     select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear, \
-    FitbitLoginView, FitbitCallbackView, FitbitUserManageView
+    FitbitLoginView, FitbitCallbackView, FitbitUserManageView, FitbitUserInfoView
 
 app_name = 'accounts'
 urlpatterns = [
@@ -17,6 +17,7 @@ urlpatterns = [
     path("manage/", UserManageView.as_view(), name="userManage"),
     path("fitbit_manage/", FitbitUserManageView.as_view(), name="fitbitUserManage"),
     path("info/<int:pk>/", UserInfoView.as_view(), name="userInfo"),
+    path("fitbit_info/<int:pk>/", FitbitUserInfoView.as_view(), name="fitbit_userInfo"),
     path("heatlhInfo/<int:pk>/",UserHealthNoteUpdateView.as_view(),name="userHealthInfo",),
     path("<int:pk>/updateNote/", UserNoteUpdateView.as_view(), name="updateNote"),
     path("<int:pk>/syncData/", UserHealthDataSyncView.as_view(), name="syncHealth"),
