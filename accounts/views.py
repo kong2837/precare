@@ -136,7 +136,7 @@ class FitbitUserInfoView(SuperuserRequiredMixin, DetailView):
     """
     model = get_user_model()
     context_object_name = 'userInfo'
-    template_name = 'accounts/fitbit_userInfo.html'
+    template_name = 'accounts/fitbit_userinfo.html'
 
 
 class UserManageView(SuperuserRequiredMixin, ListView):
