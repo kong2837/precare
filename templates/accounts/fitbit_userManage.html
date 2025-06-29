@@ -33,7 +33,7 @@
                 </thead>
                 <tbody id="userTable">
                 {% for user in users %}
-                    <tr data-href="{% url 'accounts:userInfo' user.pk %}">
+                    <tr data-href="{% url 'accounts:fitbit_userInfo' user.pk %}">
                         <td>{{ user.fitbit.full_name|default:user.username }}</td>
                         <td>{{ user.fitbit.gender|default:"-" }}</td>
                         <td>{{ user.fitbit.birthday|date:'Y-m-d' }}</td>

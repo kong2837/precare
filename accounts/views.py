@@ -131,6 +131,13 @@ class UserInfoView(SuperuserRequiredMixin, DetailView):
     context_object_name = 'userInfo'
     template_name = 'accounts/userInfo.html'
 
+class FitbitUserInfoView(SuperuserRequiredMixin, DetailView):
+    """유저 정보를 제공하기 위한 클래스 기반 뷰
+    """
+    model = get_user_model()
+    context_object_name = 'userInfo'
+    template_name = 'accounts/fitbit_userInfo.html'
+
 
 class UserManageView(SuperuserRequiredMixin, ListView):
     """HuamiAccount가 연결된 유저들만 리스트로 제공"""
