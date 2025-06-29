@@ -163,6 +163,36 @@ class UserManageView(SuperuserRequiredMixin, ListView):
 
         return query_set.order_by(order_by)
 
+from django.db.models import Q
+class FitbitUserManageView(ListView):
+    """관리자 전용 - Fitbit 계정이 연결된 유저 리스트 뷰"""
+    template_name = 'accounts/fitbit_userManage.html'
+    model = settings.AUTH_USER_MODEL
+    context_object_name = 'users'
+    paginate_by = 10
+
+    def get_queryset(self):
+        qs = (
+            get_user_model()
+            .objects
+            .filter(is_superuser=False, fitbit__isnull=False)
+            .select_related('fitbit')
+        )
+
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            qs = qs.filter(
+                Q(fitbit__full_name__icontains=search_query) |
+                Q(username__icontains=search_query) |
+                Q(email__icontains=search_query)
+            )
+
+        order_by = self.request.GET.get('order_by', 'fitbit__full_name')
+        direction = self.request.GET.get('direction', 'asc')
+        if direction == 'desc':
+            order_by = f'-{order_by}'
+
+        return qs.order_by(order_by)
 
 
 class UserNoteUpdateView(SuperuserRequiredMixin, View):
