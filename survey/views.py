@@ -242,7 +242,15 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
         # create main sheet
         ws.title = '대상정보'
         ws.append(['이름', 'ID'])
-        ws.append([user.huami.fullname, user.username])
+        # 이름 결정: huami.fullname → fitbit.full_name → username
+        if hasattr(user, 'huami') and user.huami and user.huami.fullname:
+            name = user.huami.fullname
+        elif hasattr(user, 'fitbit') and user.fitbit and user.fitbit.full_name:
+            name = user.fitbit.full_name
+        else:
+            name = user.username
+
+        ws.append([name, user.username])
 
         def _select_sheet(survey: Survey):
             # "[상시] OO 설문조사" 형식으로 되어있음
@@ -272,7 +280,16 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
             tmp.seek(0)
             stream = tmp.read()
 
-        filename = urllib.parse.quote(f"{user.huami.fullname} 설문결과")
+        # 파일 이름 결정
+        if hasattr(user, 'huami') and user.huami and user.huami.fullname:
+            name = user.huami.fullname
+        elif hasattr(user, 'fitbit') and user.fitbit and user.fitbit.full_name:
+            name = user.fitbit.full_name
+        else:
+            name = user.username
+
+        filename = urllib.parse.quote(f"{name} 설문결과")
+
         response = HttpResponse(content=stream,
                                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
