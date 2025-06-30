@@ -29,6 +29,7 @@
                     <th scope="col">키(cm)</th>
                     <th scope="col">몸무게(kg)</th>
                     <th scope="col">동기화 시간</th>
+                    <th scope="col">설문</th>
                 </tr>
                 </thead>
                 <tbody id="userTable">
@@ -40,6 +41,10 @@
                         <td>{{ user.fitbit.height }}</td>
                         <td>{{ user.fitbit.weight }}</td>
                         <td>{{ user.fitbit.last_synced|date:'Y-m-d H:i' }}</td>
+                        <td>
+                            <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
+                            <a class="btn btn-primary" href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>
