@@ -10,13 +10,27 @@
     <div class="card mb-5">
         <div class="row g-0">
             <div class="col-md-2">
-                <img src="" class="img-fluid rounded-start" alt="..."/>
+{% load static %}
+
+
+{% if survey.title == "[상시]QUIPP 무증상" %}
+    <img src="{% static 'QUIPP_n.png' %}" class="img-fluid" alt="무증상"/>
+{% elif survey.title == "[상시]QUIPP 유증상" %}
+    <img src="{% static 'QUIPP_y.png' %}" class="img-fluid" alt="기본"/>
+{% elif survey.title == "[상시]임신스트레스 10문항" %}
+    <img src="{% static 'stress.png' %}" class="img-fluid" alt="기본"/>
+{% elif survey.title == "[상시]조기진통위험 10문항" %}
+    <img src="{% static 'pregnant.png' %}" class="img-fluid" alt="기본"/>
+{% elif survey.title == "[연구시작시]연구 참여자 기초 건강 설문" %}
+    <img src="{% static 'checklist.png' %}" class="img-fluid" alt="기본"/>
+{% elif survey.title == "[연구종료시]만족도 조사" %}
+    <img src="{% static 'satisfy.png' %}" class="img-fluid" alt="기본"/>
+{% endif %}
             </div>
             <div class="col-md-8">
                 <div class="card-body">
                     <h5 class="card-title">{{ survey.title }}</h5>
                     <p class="card-text">{{ survey.description }}</p>
-                    <p class="card-text"><small class="text-body-secondary">마지막 수정날짜 - {{ survey.updated_at }}</small></p>
                 </div>
             </div>
             <div class="col-md-2 align-self-center">
