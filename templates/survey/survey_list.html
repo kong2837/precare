@@ -4,7 +4,7 @@
 <div class="container py-4">
     <div class="p-5 mb-4 bg-body-tertiary rounded-3">
         <h1 class="text-center display-5 fw-bold">설문조사</h1>
-        <p class="text-center fs-4">QUIPP 설문은 '무증상' 또는 '유증상' 중 하나만 선택하여 진행해주세요.</p>
+        <!-- <p class="text-center fs-4">QUIPP 설문은 '무증상' 또는 '유증상' 중 하나만 선택하여 진행해주세요.</p> -->
     </div>
     {% for survey in object_list %}
     <div class="card mb-5">
@@ -12,8 +12,9 @@
             <div class="col-md-2">
 {% load static %}
 
-
-{% if survey.title == "[상시]QUIPP 무증상" %}
+{% if survey.title == "[상시]QUIPP" %}
+    <img src="{% static 'QUIPP.png' %}" class="img-fluid" alt="기본"/>
+{% elif survey.title == "[상시]QUIPP 무증상" %}
     <img src="{% static 'QUIPP_n.png' %}" class="img-fluid" alt="무증상"/>
 {% elif survey.title == "[상시]QUIPP 유증상" %}
     <img src="{% static 'QUIPP_y.png' %}" class="img-fluid" alt="기본"/>
