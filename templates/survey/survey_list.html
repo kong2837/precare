@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="p-5 mb-4 bg-body-tertiary rounded-3">
-        <h1 class="text-center display-5 fw-bold">설문조사</h1>
+<div class="container py-4 d-flex flex-column align-items-center">
+    <div class="p-5 mb-4 bg-body-tertiary rounded-3 text-center" style="width: 100%;">
+        <h1 class="display-5 fw-bold">설문조사</h1>
     </div>
 
     <style>
@@ -17,10 +17,13 @@
             text-decoration: none;
             color: inherit;
             overflow: hidden;
+            transform: scale(0.8);
+            transform-origin: center;
+            width: 100%;
         }
 
         .survey-card:hover {
-            transform: translateY(-4px);
+            transform: scale(0.8) translateY(-4px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.1);
         }
 
@@ -52,8 +55,8 @@
     {% load static %}
     {% for survey in object_list %}
         {% if survey.title != "[상시]QUIPP 유증상" and survey.title != "[상시]QUIPP 무증상" %}
-        <a href="{% url 'survey:survey-detail' survey.pk %}" class="text-decoration-none">
-            <div class="card mb-4 survey-card">
+        <a href="{% url 'survey:survey-detail' survey.pk %}" class="text-decoration-none w-100 d-flex justify-content-center">
+            <div class="card mb-2 survey-card">
                 <div class="survey-label 
                     {% if survey.title == "[상시]QUIPP" %}label-quipp
                     {% elif survey.title == "[상시]임신스트레스 10문항" %}label-stress
