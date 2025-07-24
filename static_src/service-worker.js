@@ -1,7 +1,7 @@
 const CACHE_NAME = 'precare-cache-v1';
 const urlsToCache = [
 '/',
-'/static_/IC_LOGO.png', 
+'/static/IC_LOGO.png', 
   '/manifest.json',
   // 필요한 정적 리소스들 추가
 ];
