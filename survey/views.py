@@ -29,11 +29,15 @@ class MyLoginRequiredMixin(LoginRequiredMixin):
 
 
 class SurveyListView(MyLoginRequiredMixin, ListView):
-    """참여 가능한 설문 목록을 제공하는 클래스 기반 뷰
-    """
+    """참여 가능한 설문 목록을 제공하는 클래스 기반 뷰"""
     template_name = 'survey/survey_list.html'
     model = Survey
-    paginate_by = 5
+
+    def get_queryset(self):
+        return Survey.objects.exclude(
+            title__in=["[상시]QUIPP 유증상", "[상시]QUIPP 무증상"]
+        ).order_by('id')  # 필요하면 정렬 추가
+
 
 
 class SurveyDetailView(MyLoginRequiredMixin, DetailView):
@@ -294,3 +298,4 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
                                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
         return response
+
