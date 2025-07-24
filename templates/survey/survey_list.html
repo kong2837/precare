@@ -4,66 +4,94 @@
 <div class="container py-4">
     <div class="p-5 mb-4 bg-body-tertiary rounded-3">
         <h1 class="text-center display-5 fw-bold">설문조사</h1>
-        <!-- <p class="text-center fs-4">QUIPP 설문은 '무증상' 또는 '유증상' 중 하나만 선택하여 진행해주세요.</p> -->
     </div>
-    {% for survey in object_list %}
-    <div class="card mb-5">
-        <div class="row g-0">
-            <div class="col-md-2">
-{% load static %}
 
-{% if survey.title == "[상시]QUIPP" %}
-    <img src="{% static 'QUIPP.png' %}" class="img-fluid" alt="기본"/>
-{% elif survey.title == "[상시]QUIPP 무증상" %}
-    <img src="{% static 'QUIPP_n.png' %}" class="img-fluid" alt="무증상"/>
-{% elif survey.title == "[상시]QUIPP 유증상" %}
-    <img src="{% static 'QUIPP_y.png' %}" class="img-fluid" alt="기본"/>
-{% elif survey.title == "[상시]임신스트레스 10문항" %}
-    <img src="{% static 'stress.png' %}" class="img-fluid" alt="기본"/>
-{% elif survey.title == "[상시]조기진통위험 10문항" %}
-    <img src="{% static 'pregnant.png' %}" class="img-fluid" alt="기본"/>
-{% elif survey.title == "[연구시작시]연구 참여자 기초 건강 설문" %}
-    <img src="{% static 'checklist.png' %}" class="img-fluid" alt="기본"/>
-{% elif survey.title == "[연구종료시]만족도 조사" %}
-    <img src="{% static 'satisfy.png' %}" class="img-fluid" alt="기본"/>
-{% endif %}
-            </div>
-            <div class="col-md-8">
-                <div class="card-body">
-                    <h5 class="card-title">{{ survey.title }}</h5>
-                    <p class="card-text">{{ survey.description }}</p>
+    <style>
+        .survey-card {
+            position: relative;
+            background-color: #FFF7F2;
+            border-radius: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            overflow: hidden;
+        }
+
+        .survey-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .survey-img {
+            border-top-left-radius: 2rem;
+            border-bottom-left-radius: 2rem;
+            object-fit: cover;
+            height: 100%;
+        }
+
+        .survey-label {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 12px;
+            border-top-left-radius: 2rem;
+            border-bottom-left-radius: 2rem;
+        }
+
+        .label-quipp     { background-color: #FFA07A; }
+        .label-stress    { background-color: #F9C74F; }
+        .label-pregnant  { background-color: #90BE6D; }
+        .label-checklist { background-color: #43AA8B; }
+        .label-satisfy   { background-color: #577590; }
+        .label-default   { background-color: #ccc; }
+    </style>
+
+    {% load static %}
+    {% for survey in object_list %}
+        {% if survey.title != "[상시]QUIPP 유증상" and survey.title != "[상시]QUIPP 무증상" %}
+        <a href="{% url 'survey:survey-detail' survey.pk %}" class="text-decoration-none">
+            <div class="card mb-4 survey-card">
+                <div class="survey-label 
+                    {% if survey.title == "[상시]QUIPP" %}label-quipp
+                    {% elif survey.title == "[상시]임신스트레스 10문항" %}label-stress
+                    {% elif survey.title == "[상시]조기진통위험 10문항" %}label-pregnant
+                    {% elif survey.title == "[연구시작시]연구 참여자 기초 건강 설문" %}label-checklist
+                    {% elif survey.title == "[연구종료시]만족도 조사" %}label-satisfy
+                    {% else %}label-default{% endif %}">
+                </div>
+
+                <div class="row g-0 align-items-center">
+                    <div class="col-md-3">
+                        {% if survey.title == "[상시]QUIPP" %}
+                            <img src="{% static 'QUIPP.png' %}" class="img-fluid survey-img" alt="기본"/>
+                        {% elif survey.title == "[상시]임신스트레스 10문항" %}
+                            <img src="{% static 'stress.png' %}" class="img-fluid survey-img" alt="스트레스"/>
+                        {% elif survey.title == "[상시]조기진통위험 10문항" %}
+                            <img src="{% static 'pregnant.png' %}" class="img-fluid survey-img" alt="조기진통"/>
+                        {% elif survey.title == "[연구시작시]연구 참여자 기초 건강 설문" %}
+                            <img src="{% static 'checklist.png' %}" class="img-fluid survey-img" alt="기초건강"/>
+                        {% elif survey.title == "[연구종료시]만족도 조사" %}
+                            <img src="{% static 'satisfy.png' %}" class="img-fluid survey-img" alt="만족도"/>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-9">
+                        <div class="card-body py-4 px-4">
+                            <h5 class="card-title fw-bold mb-1" style="color: #2c3e50; font-size: 1.8rem;">
+                                {{ survey.title }}
+                            </h5>
+                            <p class="card-text text-muted" style="font-size: 1.2rem; line-height: 1.4;">
+                                {{ survey.description }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-2 align-self-center">
-                <div class="d-grid gap-2 mx-auto">
-                    <a class="btn btn-primary" href="{% url 'survey:survey-detail' survey.pk %}" role="button">작성하기</a>
-                    <a class="btn btn-secondary" href="{% url 'survey:user-survey-list' survey.pk %}" role="button">목록보기</a>
-                  </div>
-            </div>
-        </div>
-    </div>
+        </a>
+        {% endif %}
     {% endfor %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page=1">&laquo; 처음으로</a></li>
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">이전</a>
-                </li>
-            {% endif %}
-            {% for page_num in page_obj.paginator.page_range %}
-                {% if page_obj.number == page_num %}
-                    <li class="page-item active">
-                        {% else %}
-                    <li class="page-item">
-                {% endif %}
-            <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-            </li>
-            {% endfor %}
-            {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">다음</a></li>
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">마지막으로 &raquo;</a></li>
-            {% endif %}
-        </ul>
-    </nav>
 </div>
 {% endblock content %}
