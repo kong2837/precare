@@ -1,35 +1,42 @@
 <!DOCTYPE html>
 
-{# Load the tag library #}
 {% load django_bootstrap5 %}
-
-{# Load CSS and JavaScript #}
-{% bootstrap_css %}
-{% bootstrap_javascript %}
-
-{# Display django.contrib.messages as Bootstrap alerts #}
-{% bootstrap_messages %}
-
 {% load static %}
 
 <html lang="ko">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>조기진통 감지 및 스트레스 완화</title>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRECARE</title>
 
-    <body>
-        {% include 'header.html' %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
 
-        <body>
-            {% block content %}
-            {% endblock content %}
-        </body>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
 
-        <div class="container">
-            {% include 'footer.html' %}
-        </div>
-    </body>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
 
+        main {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'header.html' %}
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    {% include 'footer.html' %}
+</body>
 </html>
