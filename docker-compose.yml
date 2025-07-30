@@ -27,6 +27,7 @@ services:
       - network
     depends_on:
       - nginx
+
   apop:
     build:
       context: .
@@ -36,14 +37,14 @@ services:
     networks:
       - network
     volumes:
-      - ./static:/djangoproject/static
+      - .:/app                             # 🔥 전체 코드 마운트
+      - ./static:/djangoproject/static     # static 파일 마운트 유지
+    working_dir: /app                      # 🔥 Django root 경로 설정
     command: >
       bash -c "
       python3 manage.py makemigrations survey huami accounts &&
       python3 manage.py migrate &&
       gunicorn apop2.wsgi --workers 4 -b 0.0.0.0:8000"
-    ports:
-      - "8000:8000"
     expose:
       - "8000"
     depends_on:
