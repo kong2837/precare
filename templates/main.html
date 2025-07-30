@@ -1,92 +1,129 @@
 <!DOCTYPE html>
 
-{# Load the tag library #}
 {% load django_bootstrap5 %}
-
-{# Load CSS and JavaScript #}
-{% bootstrap_css %}
-{% bootstrap_javascript %}
-
-{# Display django.contrib.messages as Bootstrap alerts #}
-{% bootstrap_messages %}
-
 {% load static %}
 
-
 <html lang="ko">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>조기진통 감지 및 스트레스 완화</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>조기진통 감지 및 스트레스 완화</title>
 
-        {# manifest.json 연결 #}
-        <link rel="manifest" href="{% static 'manifest.json' %}" type="application/manifest+json">
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    {% bootstrap_messages %}
 
-        {# ios icon #}
-        <link rel="apple-touch-icon" sizes="57x57" href="{% static 'icons/apple-icon-57x57.png' %}">
-        <link rel="apple-touch-icon" sizes="60x60" href="{% static 'icons/apple-icon-60x60.png' %}">
-        <link rel="apple-touch-icon" sizes="72x72" href="{% static 'icons/apple-icon-72x72.png' %}">
-        <link rel="apple-touch-icon" sizes="76x76" href="{% static 'icons/apple-icon-76x76.png' %}">
-        <link rel="apple-touch-icon" sizes="114x114" href="{% static 'icons/apple-icon-114x114.png' %}">
-        <link rel="apple-touch-icon" sizes="120x120" href="{% static 'icons/apple-icon-120x120.png' %}">
-        <link rel="apple-touch-icon" sizes="144x144" href="{% static 'icons/apple-icon-144x144.png' %}">
-        <link rel="apple-touch-icon" sizes="152x152" href="{% static 'icons/apple-icon-152x152.png' %}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{% static 'icons/apple-icon-180x180.png' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}" type="application/manifest+json">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'icons/apple-icons-180x180.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon-32x32.png' %}">
+    <meta name="theme-color" content="#ffffff">
 
-        {# android icons #}
-        <link rel="icon" type="image/png" sizes="192x192"  href="{% static 'icons/android-icon-192x192.png' %}">
-        <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon-32x32.png' %}">
-        <link rel="icon" type="image/png" sizes="96x96" href="{% static 'icons/favicon-96x96.png' %}">
-        <link rel="icon" type="image/png" sizes="16x16" href="{% static 'icons/favicon-16x16.png' %}">
-
-        <meta name="msapplication-TileColor" content="#ffffff">
-        <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-        <meta name="theme-color" content="#ffffff">
-    </head>
-
-    <body>
-        {% include 'header.html' %}
-
-        <body>
-            {% block content %}
-            <div class="container py-5">
-            <div class="p-5 mb-4 bg-body-tertiary rounded-3 text-center">
-
-                <img src="{% static 'IC_LOGO.png' %}" width="300" height="400" alt="중견연구 아이콘" />
-                <h1 class="display-5 fst_italic" style="margin-top: 2rem;">소개</h1>
-                <p class="lead my-3" style="font-size: 1.5rem;">
-                    본 사이트는 임부의 조기진통 의심 증상과 비전형적 이상징후와 관련요인을 일상생활 속에서 상시 모니터링하고, 관리가 필요한 임부가 가정이나 직장에서도 서비스를 제공받을 수 있도록 하는 통합관리 앱입니다.
-
-
-                <p class="lead my-3" style="font-size: 2rem;">
-                    <p class="lead my-3" style="font-size: 2rem;">
+    <style>
+        .hero {
+            background-color: #FFF4ED;
+            padding: 4rem 1rem;
+            text-align: center;
+        }
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #5A4A42;
+        }
+        .hero-sub {
+            font-size: 1.25rem;
+            color: #6B6B6B;
+            margin-top: 1rem;
+        }
+        .card-section {
+            background-color: #FAF7F3;
+            padding: 4rem 0;
+        }
+            .info-card {
+                border: none;
+                background-color: #E5F6F3;
+                border-radius: 1rem;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                transition: transform 0.2s;
+                min-height: 200px; /* 원하는 만큼 조절 가능 */
+            }
 
 
-                <div class="lh-1 fw-light text-body-secondary" style="margin-top: 5rem; font-size: 1.5rem;">
-                    [설문조사] 탭에서 각각의 설문을 시행하면 증상에 맞는 관리 가이드를 얻을 수 있습니다.
-                </div>
-                <a href="{% url 'survey:survey-list' %}" class="btn btn-lg btn-dark mt-4">
-                    설문조사하러 가기
-                </a>
-            </div>
-            </div>
+        .info-card:hover {
+            transform: translateY(-5px);
+        }
+        .info-icon {
+            font-size: 2rem;
+            color: #ff9472;
+        }
+    </style>
+</head>
 
+<body>
+    {% include 'header.html' %}
 
+    <main>
+        <section class="hero">
+            <img src="{% static 'IC_LOGO.png' %}" alt="아이콘" width="230" height="240">
+            <div class="hero-title">임산부 건강관리 플랫폼</div>
+            <div class="hero-sub">조기진통 및 스트레스 상태를 상시 모니터링하고, 필요한 도움을 제공합니다.</div>
+            <a href="{% url 'survey:survey-list' %}" class="btn btn-dark btn-lg mt-4">설문조사하러 가기</a>
+        </section>
 
-            {% endblock content %}
-        </body>
+<section class="card-section">
+  <div class="container">
+    <div class="row text-center mb-5">
+      <h2 class="fw-bold">PRECARE 서비스는 이렇게 도와드려요</h2>
+    </div>
+    <div class="row g-4">
+      <!-- 카드 1 -->
+      <div class="col-md-4">
+        <div class="card info-card h-100 position-relative text-center d-flex flex-column justify-content-center p-4">
+          <img src="{% static 'icons/survey-icon.png' %}"
+               alt="설문 아이콘"
+               class="position-absolute top-0 end-0 m-3"
+               style="width: 75px; opacity: 0.08; pointer-events: none;" />
+          <h5 class="fw-bold">산부인과 기반 설문</h5>
+          <p class="text-muted mb-0">전문 의료진이 검토한 조기진통 위험<br>예측 문항을 제공합니다.</p>
+        </div>
+      </div>
 
-        {% include 'footer.html' %}
+      <!-- 카드 2 -->
+      <div class="col-md-4">
+        <div class="card info-card h-100 position-relative text-center d-flex flex-column justify-content-center p-4">
+          <img src="{% static 'icons/guide-icon.png' %}"
+               alt="가이드 아이콘"
+               class="position-absolute top-0 end-0 m-3"
+               style="width: 60px; opacity: 0.08; pointer-events: none;" />
+          <h5 class="fw-bold">증상 기반 가이드</h5>
+          <p class="text-muted mb-0">설문 결과를 기반으로 개인 맞춤형<br>관리 가이드를 안내받을 수 있습니다.</p>
+        </div>
+      </div>
 
-        {# service-worker #}
-        <script>
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register("{% static 'service-worker.js' %}")
+      <!-- 카드 3 -->
+      <div class="col-md-4">
+        <div class="card info-card h-100 position-relative text-center d-flex flex-column justify-content-center p-4">
+          <img src="{% static 'icons/security-icon.png' %}"
+               alt="보안 아이콘"
+               class="position-absolute top-0 end-0 m-3"
+               style="width: 78px; opacity: 0.08; pointer-events: none;" />
+          <h5 class="fw-bold">안전한 정보 처리</h5>
+          <p class="text-muted mb-0">IRB 승인 및 비식별화를 통해<br>개인정보를 안전하게 보호합니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register("{% static 'service-worker.js' %}")
                 .then(reg => console.log('SW registered:', reg))
                 .catch(err => console.error('SW registration failed:', err));
-            }
-        </script>
-
-    </body>
-
+        }
+    </script>
+</body>
 </html>
