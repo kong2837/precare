@@ -12,21 +12,30 @@
     {% bootstrap_css %}
     {% bootstrap_javascript %}
 
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+   <style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        font-family: 'Paybooc', sans-serif;
+        font-weight: 500;
+    }
 
-        body {
-            display: flex;
-            flex-direction: column;
-        }
+    body {
+        display: flex;
+        flex-direction: column;
+    }
 
-        main {
-            flex: 1;
-        }
-    </style>
+    main {
+        flex: 1;
+    }
+
+    /* 입력창이나 버튼에도 폰트 통일 */
+    button, input, select, textarea {
+        font-family: 'Paybooc', sans-serif;
+        font-weight: 500;
+    }
+</style>
+
 </head>
 
 <body>
