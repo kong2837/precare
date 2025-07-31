@@ -55,6 +55,20 @@
             font-size: 2rem;
             color: #ff9472;
         }
+      .precare-btn {
+        background-color: 		#FBB77D   ; 
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, transform 0.2s ease;
+      }
+
+      .precare-btn:hover {
+        background-color: #EBA064; 
+        color : white !important;
+        transform: translateY(-2px);
+      }
     </style>
 </head>
 
@@ -66,7 +80,8 @@
             <img src="{% static 'IC_LOGO.png' %}" alt="아이콘" width="230" height="240">
             <div class="hero-title">임산부 건강관리 플랫폼</div>
             <div class="hero-sub">조기진통 및 스트레스 상태를 상시 모니터링하고, 필요한 도움을 제공합니다.</div>
-            <a href="{% url 'survey:survey-list' %}" class="btn btn-dark btn-lg mt-4">설문조사하러 가기</a>
+        <a href="{% url 'survey:survey-list' %}" class="btn precare-btn btn-lg mt-4">설문조사하러 가기</a>
+
         </section>
 
 <section class="card-section">
