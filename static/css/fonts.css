@@ -1,0 +1,31 @@
+/* Light (font-weight: 300) */
+@font-face {
+  font-family: 'Paybooc';
+  src: url('../fonts/paybooc-light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* Medium (font-weight: 500) */
+@font-face {
+  font-family: 'Paybooc';
+  src: url('../fonts/paybooc-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* Bold (font-weight: 700) */
+@font-face {
+  font-family: 'Paybooc';
+  src: url('../fonts/paybooc-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* ExtraBold (font-weight: 800) */
+@font-face {
+  font-family: 'Paybooc';
+  src: url('../fonts/paybooc-extrabold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+}

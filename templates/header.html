@@ -1,14 +1,19 @@
 {% load static %}
 
 <style>
+    {% comment %} ✅ 기본 설정: Paybooc Medium (500) 적용 {% endcomment %}
     header {
         background-color: #4AB3C6;
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: 'Paybooc', sans-serif;
+        font-weight: 500;
+    }
+
+    .precare-logo {
+        font-weight: 800;
     }
 
     .nav-link {
         color: #FFFDF8 !important;
-        font-weight: 500;
         transition: color 0.2s;
     }
 
@@ -16,7 +21,7 @@
         color: #FFE3D6 !important;
     }
 
-    .btn-login {
+    .btn-login, .btn-logout {
         background-color: #FFFDF8;
         color: #4AB3C6;
         border: none;
@@ -24,28 +29,18 @@
         padding: 0.4rem 1rem;
     }
 
-    .btn-login:hover {
-        background-color: #f26d4f;
-        color: white;
-    }
-
-    .btn-logout {
-        background-color: #FFFDF8;
-        color: #4AB3C6;
-        border: none;
-        border-radius: 1.5rem;
-        padding: 0.4rem 1rem;
-    }
-
+    .btn-login:hover,
     .btn-logout:hover {
         background-color: #f26d4f;
         color: white;
     }
+
     .nav svg {
         margin-right: 5px;
         vertical-align: middle;
     }
 </style>
+
 
 <header>
     <div class="px-3 py-2 border-bottom">
@@ -54,7 +49,8 @@
                 <a href="{% url 'home' %}"
                    class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
                     <img src="{% static 'IC_LOGO.png' %}" width="52" height="52" alt="중견연구 아이콘" />
-                    <span class="ms-2 fw-bold" style="font-size: 1.3rem;">PRECARE</span>
+                <span class="ms-2 precare-logo" style="font-size: 1.3rem;">PRECARE</span>
+
                 </a>
 
                 <ul class="nav col-12 col-lg-auto my-2 justify-content-center my-md-0 text-small">
