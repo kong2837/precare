@@ -1,34 +1,108 @@
 {% extends 'accounts/base.html' %}
-{# Load the tag library #}
 {% load django_bootstrap5 %}
-
-{# Load CSS and JavaScript #}
 {% bootstrap_css %}
 {% bootstrap_javascript %}
-
-{# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
-
 {% load static %}
 
 {% block content %}
-<section class="vh-100 gradient-custom">
-  <div class="container py-5 h-100">
-    <div class="row d-flex justify-content-center align-items-center h-100">
-      <div class="col-12 col-md-8 col-lg-6 col-xl-5">
-        <div class="card bg-dark text-white" style="border-radius: 1rem;">
-          <div class="card-body p-5 text-center">
-            <div class="mb-md-5 mt-md-4 pb-5">
-              <form method="post" class="form">
-                {% csrf_token %}
-                  <h2 class="fw-bold mb-4 text-uppercase" style="font-size: 2rem; line-height: 1.6;">
-                  PRECARE
-                </h2>
-                <p class="text-white-50 mb-5">관리자 정보를 입력해주세요!</p>
-                {% bootstrap_form form %}
-                <button class="btn btn-outline-light btn-lg px-5" type="submit">로그인하기</button>
-              </form>
-            </div>
+<style>
+  body {
+background: linear-gradient(135deg,
+  rgba(255, 255, 255, 0.35) 0%,
+  rgba(74, 179, 198, 0.25) 30%,
+  rgba(255, 148, 114, 0.25) 70%,
+  rgba(255, 255, 255, 0.35) 100%);
+
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  .login-card {
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .login-header {
+    background-color: white;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .login-logo {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #1F3A5F;
+    text-align: center;
+    margin-top:  1.5rem;
+  }
+
+  .login-body {
+    background-color: white;
+    padding: 2.5rem;
+    text-align: center;
+  }
+
+  .login-body p {
+    color: #666;
+    margin-bottom: 2rem;
+  }
+
+  .btn-apricot {
+    border: 2px solid #F1AA8D;
+    color: #F1AA8D;
+    background-color: white;
+    transition: background-color 0.3s, color 0.3s;
+    width: 100%;
+  }
+
+  .btn-apricot:hover {
+    background-color: #F1AA8D;
+    color: white;
+  }
+
+  .back-link {
+    margin-top: 1.5rem;
+  }
+
+  .back-link a {
+    color: #999;
+    font-weight: bold;
+    text-decoration: none;
+  }
+
+  .back-link a:hover {
+    text-decoration: underline;
+  }
+
+  .home-link {
+    display: block;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #888;
+    text-decoration: none;
+  }
+</style>
+
+<section class="vh-100 d-flex align-items-center">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6 col-xl-4">
+        <div class="card login-card">
+
+            <div class="login-logo">PRECARE</div>
+
+
+          <!-- 로그인 폼 -->
+          <div class="login-body">
+            <p>관리자 정보를 입력해주세요!</p>
+                <form method="post" class="form">
+                  {% csrf_token %}
+                  {% bootstrap_field form.username show_label=False %}
+                  {% bootstrap_field form.password show_label=False %}
+                  <button class="btn btn-apricot btn-lg mt-3" type="submit">로그인하기</button>
+                </form>
+                <a href="{% url 'home' %}" class="home-link">홈으로 가기</a>
           </div>
         </div>
       </div>
