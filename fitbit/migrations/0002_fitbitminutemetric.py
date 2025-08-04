@@ -102,3 +102,6 @@ class Migration(migrations.Migration):
             },
         ),
     ]
+
+    class Meta:
+        app_label = 'my_jobs'
