@@ -1,6 +1,8 @@
 import requests
 from datetime import datetime
 from django.utils.timezone import make_aware
+
+from fitbit.sync.sync import update_last_synced
 from fitbit.token.refresh import refresh_token
 from fitbit.models import FitbitMinuteMetric
 
@@ -48,6 +50,7 @@ def get_heart_rate_intraday(date, account):
             saved_count += 1
 
         print(f"✅ 심박수 {saved_count}건 저장 완료.")
+        update_last_synced(account)
         return data
 
     elif response.status_code == 401:
