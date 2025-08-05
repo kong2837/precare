@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.timezone import make_aware
 
 from fitbit.token.refresh import refresh_token
@@ -10,7 +10,7 @@ from fitbit.models import FitbitMinuteMetric
 def get_sleep_stage(date, account):
     """
     Fitbit API를 통해 수면 단계 데이터를 요청하고,
-    분 단위로 FitbitMinuteMetric 모델에 저장한다.
+    지속 시간(seconds)에 따라 분 단위로 FitbitMinuteMetric 모델에 저장한다.
     """
     headers = {
         "Authorization": f"Bearer {account.access_token}"
@@ -36,21 +36,26 @@ def get_sleep_stage(date, account):
             for entry in levels:
                 stage = entry["level"]
                 if stage not in ("wake", "light", "deep", "rem"):
-                    continue  # 호흡수 등 무시
+                    continue
 
-                ts = make_aware(datetime.fromisoformat(entry["dateTime"]))
+                start_time = make_aware(datetime.fromisoformat(entry["dateTime"]))
+                duration_seconds = entry.get("seconds", 0)
+                duration_minutes = duration_seconds // 60
 
-                obj, _ = FitbitMinuteMetric.objects.get_or_create(
-                    account=account,
-                    timestamp=ts,
-                    defaults={"sleep_stage": stage}
-                )
+                for i in range(duration_minutes):
+                    minute_ts = start_time + timedelta(minutes=i)
 
-                if obj.sleep_stage != stage:
-                    obj.sleep_stage = stage
-                    obj.save(update_fields=["sleep_stage"])
+                    obj, _ = FitbitMinuteMetric.objects.get_or_create(
+                        account=account,
+                        timestamp=minute_ts,
+                        defaults={"sleep_stage": stage}
+                    )
 
-                saved_stage_count += 1
+                    if obj.sleep_stage != stage:
+                        obj.sleep_stage = stage
+                        obj.save(update_fields=["sleep_stage"])
+
+                    saved_stage_count += 1
 
         print(f"✅ 수면 단계 {saved_stage_count}건 저장 완료.")
         update_last_synced(account)
