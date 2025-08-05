@@ -34,9 +34,21 @@ class SurveyListView(MyLoginRequiredMixin, ListView):
     model = Survey
 
     def get_queryset(self):
-        return Survey.objects.exclude(
+        custom_order = [
+            "[연구시작시]연구 참여자 기초 건강 설문",
+            "[상시]QUIPP",
+            "[상시]조기진통위험 10문항",
+            "[상시]임신스트레스 10문항",
+            "[연구종료시]만족도 조사",
+        ]
+        surveys = Survey.objects.exclude(
             title__in=["[상시]QUIPP 유증상", "[상시]QUIPP 무증상"]
-        ).order_by('id')  # 필요하면 정렬 추가
+        )
+        surveys_sorted = sorted(
+            surveys,
+            key=lambda s: custom_order.index(s.title) if s.title in custom_order else 999
+        )
+        return surveys_sorted
 
 
 
