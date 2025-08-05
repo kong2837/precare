@@ -45,17 +45,21 @@ def get_sleep_stage(date, account):
                 for i in range(duration_minutes):
                     minute_ts = start_time + timedelta(minutes=i)
 
-                    obj, _ = FitbitMinuteMetric.objects.get_or_create(
-                        account=account,
-                        timestamp=minute_ts,
-                        defaults={"sleep_stage": stage}
-                    )
-
-                    if obj.sleep_stage != stage:
-                        obj.sleep_stage = stage
-                        obj.save(update_fields=["sleep_stage"])
-
-                    saved_stage_count += 1
+                    try:
+                        obj = FitbitMinuteMetric.objects.get(account=account, timestamp=minute_ts)
+                        # 기존 레코드가 있다면 sleep_stage만 업데이트
+                        if obj.sleep_stage != stage:
+                            obj.sleep_stage = stage
+                            obj.save(update_fields=["sleep_stage"])
+                            saved_stage_count += 1
+                    except FitbitMinuteMetric.DoesNotExist:
+                        # 기존 레코드가 없으면 새로 생성
+                        FitbitMinuteMetric.objects.create(
+                            account=account,
+                            timestamp=minute_ts,
+                            sleep_stage=stage
+                        )
+                        saved_stage_count += 1
 
         print(f"✅ 수면 단계 {saved_stage_count}건 저장 완료.")
         update_last_synced(account)
