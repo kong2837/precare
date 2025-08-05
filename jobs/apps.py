@@ -25,10 +25,10 @@ class JobsConfig(AppConfig):
             time.sleep(1)  # 1초 후 실행 (DB 접근 시간 확보)
             from datetime import datetime, timedelta
             from apscheduler.triggers.interval import IntervalTrigger
-            from jobs.tasks import sync_heart_rate
+            from jobs.tasks import sync_intra_data
 
             scheduler.add_job(
-                sync_heart_rate,
+                sync_intra_data,
                 trigger=IntervalTrigger(minutes=10),
                 id="sync_heart_rate_every_10_minutes",
                 replace_existing=True,
