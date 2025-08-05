@@ -26,6 +26,7 @@ def get_heart_rate_intraday(date, account):
 
         if not dataset:
             print("ℹ️ 데이터가 없습니다.")
+            update_last_synced(account)
             return None
 
         saved_count = 0
