@@ -1,6 +1,6 @@
 import requests
 from datetime import datetime
-from django.utils.timezone import make_aware
+from django.utils import timezone
 
 from fitbit.sync.sync import update_last_synced
 from fitbit.token.refresh import refresh_token
@@ -25,7 +25,7 @@ def get_heart_rate_intraday(date, account):
         date_str = data.get("activities-heart", [{}])[0].get("dateTime", date)  # 예: '2025-06-26'
 
         if not dataset:
-            print("ℹ️ 데이터가 없습니다.")
+            print(f"ℹ️ {account.user.username} | {date} | 심박수 데이터 없음.")
             update_last_synced(account)
             return None
 
@@ -34,10 +34,9 @@ def get_heart_rate_intraday(date, account):
             time_str = item["time"]  # 예: "12:01:00"
             bpm = item["value"]
 
-            # datetime 생성 (UTC aware)
-            dt = make_aware(datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S"))
+            # UTC 기준 aware datetime 생성
+            dt = timezone.make_aware(datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S"), timezone=timezone.utc)
 
-            # upsert: account + timestamp 기준으로 저장
             obj, created = FitbitMinuteMetric.objects.get_or_create(
                 account=account,
                 timestamp=dt,
@@ -45,17 +44,19 @@ def get_heart_rate_intraday(date, account):
             )
 
             if not created:
-                obj.heart_rate = bpm
-                obj.save(update_fields=["heart_rate"])
+                if obj.heart_rate != bpm:
+                    obj.heart_rate = bpm
+                    obj.save(update_fields=["heart_rate"])
+                    saved_count += 1
+            else:
+                saved_count += 1
 
-            saved_count += 1
-
-        print(f"✅ 심박수 {saved_count}건 저장 완료.")
+        print(f"✅ {account.user.username} | {date} | 심박수 {saved_count}건 저장 완료.")
         update_last_synced(account)
         return data
 
     elif response.status_code == 401:
-        print("⚠️ Access token 만료. 다시 갱신 시도 중...")
+        print(f"⚠️ {account.user.username} | 액세스 토큰 만료. 갱신 시도 중...")
         if refresh_token(account):
             return get_heart_rate_intraday(date, account)
         else:
@@ -63,6 +64,6 @@ def get_heart_rate_intraday(date, account):
             return None
 
     else:
-        print("❌ 요청 실패:", response.status_code)
+        print(f"❌ 요청 실패: {response.status_code}")
         print(response.text)
         return None

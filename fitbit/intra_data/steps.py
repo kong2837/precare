@@ -1,6 +1,6 @@
 import requests
 from datetime import datetime
-from django.utils.timezone import make_aware
+from django.utils import timezone
 
 from fitbit.sync.sync import update_last_synced
 from fitbit.token.refresh import refresh_token
@@ -25,7 +25,7 @@ def get_step_count_intraday(date, account):
         date_str = data.get("activities-steps", [{}])[0].get("dateTime", date)
 
         if not dataset:
-            print("ℹ️ 걸음수 데이터가 없습니다.")
+            print(f"ℹ️ {account.user.username} | {date} | 걸음수 데이터 없음.")
             update_last_synced(account)
             return None
 
@@ -34,7 +34,10 @@ def get_step_count_intraday(date, account):
             time_str = item["time"]
             steps = item["value"]
 
-            dt = make_aware(datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S"))
+            dt = timezone.make_aware(
+                datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S"),
+                timezone=timezone.utc
+            )
 
             obj, created = FitbitMinuteMetric.objects.get_or_create(
                 account=account,
@@ -43,17 +46,19 @@ def get_step_count_intraday(date, account):
             )
 
             if not created:
-                obj.step_count = steps
-                obj.save(update_fields=["step_count"])
+                if obj.step_count != steps:
+                    obj.step_count = steps
+                    obj.save(update_fields=["step_count"])
+                    saved_count += 1
+            else:
+                saved_count += 1
 
-            saved_count += 1
-
-        print(f"✅ 걸음수 {saved_count}건 저장 완료.")
+        print(f"✅ {account.user.username} | {date} | 걸음수 {saved_count}건 저장 완료.")
         update_last_synced(account)
         return data
 
     elif response.status_code == 401:
-        print("⚠️ Access token 만료. 다시 갱신 시도 중...")
+        print(f"⚠️ {account.user.username} | Access token 만료. 다시 갱신 시도 중...")
         if refresh_token(account):
             return get_step_count_intraday(date, account)
         else:
@@ -61,6 +66,6 @@ def get_step_count_intraday(date, account):
             return None
 
     else:
-        print("❌ 요청 실패:", response.status_code)
+        print(f"❌ 요청 실패: {response.status_code}")
         print(response.text)
         return None
