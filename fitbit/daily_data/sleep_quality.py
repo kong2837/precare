@@ -1,5 +1,4 @@
 import requests
-from datetime import datetime, timedelta
 import datetime
 from django.utils import timezone
 
@@ -67,7 +66,7 @@ def get_sleep_stage(date, account):
                 duration_minutes = int((next_time - start_time).total_seconds() // 60)
 
                 for i in range(duration_minutes):
-                    minute_ts = normalize_to_minute(start_time + timedelta(minutes=i))
+                    minute_ts = normalize_to_minute(start_time + datetime.timedelta(minutes=i))
 
 
                     obj, created = FitbitMinuteMetric.objects.get_or_create(

@@ -1,5 +1,4 @@
 import requests
-from datetime import datetime
 import datetime
 from django.utils import timezone
 
