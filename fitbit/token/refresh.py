@@ -13,6 +13,7 @@ def refresh_token(account):
     }
     data = {
         "grant_type": "refresh_token",
+        "client_id": settings.FITBIT_CLIENT_ID,
         "refresh_token": account.refresh_token
     }
 
