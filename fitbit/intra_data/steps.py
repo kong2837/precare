@@ -5,6 +5,7 @@ from django.utils import timezone
 from fitbit.sync.sync import update_last_synced
 from fitbit.token.refresh import refresh_token
 from fitbit.models import FitbitMinuteMetric
+from fitbit.utils import normalize_to_minute
 
 
 def get_step_count_intraday(date, account):
@@ -34,10 +35,8 @@ def get_step_count_intraday(date, account):
             time_str = item["time"]
             steps = item["value"]
 
-            dt = timezone.make_aware(
-                datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S"),
-                timezone=timezone.utc
-            )
+            dt_raw = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
+            dt = normalize_to_minute(timezone.make_aware(dt_raw, timezone=timezone.utc))
 
             obj, created = FitbitMinuteMetric.objects.get_or_create(
                 account=account,
