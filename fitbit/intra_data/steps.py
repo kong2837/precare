@@ -35,8 +35,13 @@ def get_step_count_intraday(date, account):
             time_str = item["time"]
             steps = item["value"]
 
-            dt_raw = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
-            dt = normalize_to_minute(timezone.make_aware(dt_raw, timezone=timezone.utc))
+            # 🔧 datetime 모듈의 strptime 사용
+            dt_raw = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
+
+            # 🔧 UTC aware로 변환 후 분 단위 정규화
+            dt = normalize_to_minute(
+                timezone.make_aware(dt_raw, timezone=datetime.timezone.utc)
+            )
 
             obj, created = FitbitMinuteMetric.objects.get_or_create(
                 account=account,
