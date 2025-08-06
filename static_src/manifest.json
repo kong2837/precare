@@ -1,6 +1,6 @@
 {
-  "name": "Precare",
-  "short_name": "Precare",
+  "name": "조기진통 감지 및 스트레스 완화",
+  "short_name": "조기진통 감지 및 스트레스 완화",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fffaf7",
