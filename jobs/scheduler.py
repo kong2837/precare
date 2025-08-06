@@ -2,8 +2,9 @@
 
 import os
 import django
+import sys
 
-
+sys.path.append("/app")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apop2.settings")  # ⚠️ 프로젝트 이름에 맞게 수정
 django.setup()
 
