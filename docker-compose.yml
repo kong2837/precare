@@ -54,6 +54,22 @@ services:
       AUTH_KEY: 'kong21'
     env_file:
       - .env
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 'scheduler'
+    restart: always
+    networks:
+      - network
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: python jobs/scheduler.py
+    depends_on:
+      - db
+    env_file:
+      - .env
 
   db:
     build:
