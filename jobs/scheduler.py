@@ -29,7 +29,7 @@ def main():
             trigger=IntervalTrigger(minutes=2),
             id="sync_heart_rate_every_10_minutes",
             replace_existing=True,
-            next_run_time=datetime.now() + timedelta(minutes=10),
+            next_run_time=datetime.now() + timedelta(minutes=1),
         )
         print("🔁 심박수 자동 동기화 작업 등록됨")
 
