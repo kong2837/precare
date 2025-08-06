@@ -5,7 +5,7 @@ from django.utils import timezone
 from fitbit.sync.sync import update_last_synced
 from fitbit.token.refresh import refresh_token
 from fitbit.models import FitbitMinuteMetric
-from fitbit.utils import normalize_to_minute_kst  # ✅ KST 기준 함수 사용
+from fitbit.utils import normalize_to_minute  # ✅ KST 기준 함수 사용
 
 
 def get_heart_rate_intraday(date, account):
@@ -36,7 +36,7 @@ def get_heart_rate_intraday(date, account):
             bpm = item["value"]
 
             dt_raw = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
-            dt = normalize_to_minute_kst(dt_raw)  # ✅ 한국시간 기준 정규화
+            dt = normalize_to_minute(dt_raw)  # ✅ 한국시간 기준 정규화
 
             obj, created = FitbitMinuteMetric.objects.get_or_create(
                 account=account,

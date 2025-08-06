@@ -37,9 +37,8 @@ def get_sleep_stage(date, account):
                 print(f"ℹ️ {account.user.username} | {date} | 수면 단계 데이터 없음.")
                 continue
 
-            # 끝 시간 추출
             session_end = timezone.make_aware(
-                datetime.fromisoformat(session["endTime"]),
+                datetime.datetime.fromisoformat(session["endTime"]),
                 timezone=timezone.utc
             )
 
@@ -49,25 +48,22 @@ def get_sleep_stage(date, account):
                     continue
 
                 start_time = timezone.make_aware(
-                    datetime.fromisoformat(entry["dateTime"]),
+                    datetime.datetime.fromisoformat(entry["dateTime"]),
                     timezone=timezone.utc
                 )
 
-                # 다음 entry가 있으면 그 시간까지, 없으면 session 종료 시간까지
                 if idx + 1 < len(levels):
                     next_time = timezone.make_aware(
-                        datetime.fromisoformat(levels[idx + 1]["dateTime"]),
+                        datetime.datetime.fromisoformat(levels[idx + 1]["dateTime"]),
                         timezone=timezone.utc
                     )
                 else:
                     next_time = session_end
 
-                # 분 단위로 반복
                 duration_minutes = int((next_time - start_time).total_seconds() // 60)
 
                 for i in range(duration_minutes):
-                    minute_ts = normalize_to_minute(start_time + datetime.timedelta(minutes=i))
-
+                    minute_ts = normalize_to_minute(start_time + datetime.timedelta(minutes=i))  # ✅ 초 제거
 
                     obj, created = FitbitMinuteMetric.objects.get_or_create(
                         account=account,
