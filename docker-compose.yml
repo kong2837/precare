@@ -65,7 +65,7 @@ services:
     volumes:
       - .:/app
     working_dir: /app
-    command: python jobs/scheduler.py
+    command: python -u jobs/scheduler.py
     depends_on:
       - db
     env_file:
