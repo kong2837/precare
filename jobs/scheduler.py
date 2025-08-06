@@ -2,6 +2,11 @@
 
 import os
 import django
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apop2.settings")  # ⚠️ 프로젝트 이름에 맞게 수정
+django.setup()
+
 import time
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -9,10 +14,6 @@ from apscheduler.triggers.interval import IntervalTrigger
 from django_apscheduler.jobstores import DjangoJobStore
 import atexit
 import traceback
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apop2.settings")  # ⚠️ 프로젝트 이름에 맞게 수정
-django.setup()
-
 from jobs.tasks import sync_intra_data  # ⚠️ 실제 등록된 작업 함수
 
 def main():
