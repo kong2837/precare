@@ -35,9 +35,14 @@ def get_heart_rate_intraday(date, account):
             time_str = item["time"]  # 예: "12:01:00"
             bpm = item["value"]
 
-            # UTC 기준 aware datetime 생성
-            dt_raw = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
-            dt = normalize_to_minute(timezone.make_aware(dt_raw, timezone=timezone.utc))
+            # 🔧 모듈에서 strptime 호출
+            dt_raw = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
+
+            # 🔧 UTC aware + 분 정규화
+            dt = normalize_to_minute(
+                timezone.make_aware(dt_raw, timezone=datetime.timezone.utc)
+            )
+
             obj, created = FitbitMinuteMetric.objects.get_or_create(
                 account=account,
                 timestamp=dt,
