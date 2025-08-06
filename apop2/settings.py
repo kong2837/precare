@@ -65,7 +65,7 @@ INSTALLED_APPS = [
     'survey',
     'huami',
     'accounts',
-    'jobs.apps.JobsConfig',
+    'jobs',
     'fitbit',
 ]
 
