@@ -15,7 +15,7 @@ def ensure_kst_aware(dt: datetime) -> datetime:
         return dt
     return make_aware(dt, timezone=KST)
 
-def normalize_to_minute(dt: datetime) -> datetime:
+def normalize_to_minute_kst(dt: datetime) -> datetime:
     """
     datetime을 한국시(KST) 기준으로 정규화한다.
     초 및 마이크로초를 제거한다.
