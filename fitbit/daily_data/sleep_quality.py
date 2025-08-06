@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime, timedelta
+import datetime
 from django.utils import timezone
 
 from fitbit.token.refresh import refresh_token

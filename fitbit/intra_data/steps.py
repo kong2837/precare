@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime
+import datetime
 from django.utils import timezone
 
 from fitbit.sync.sync import update_last_synced
