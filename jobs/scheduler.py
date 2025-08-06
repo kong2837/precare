@@ -26,7 +26,7 @@ def main():
 
         scheduler.add_job(
             sync_intra_data,
-            trigger=IntervalTrigger(minutes=10),
+            trigger=IntervalTrigger(minutes=2),
             id="sync_heart_rate_every_10_minutes",
             replace_existing=True,
             next_run_time=datetime.now() + timedelta(minutes=10),
