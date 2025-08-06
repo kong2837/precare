@@ -5,7 +5,7 @@ from django.utils import timezone
 from fitbit.sync.sync import update_last_synced
 from fitbit.token.refresh import refresh_token
 from fitbit.models import FitbitMinuteMetric
-from fitbit.utils import normalize_to_minute
+from fitbit.utils import normalize_to_minute_kst  # ✅ KST 기준 정규화 함수 사용
 
 
 def get_step_count_intraday(date, account):
@@ -32,16 +32,13 @@ def get_step_count_intraday(date, account):
 
         saved_count = 0
         for item in dataset:
-            time_str = item["time"]
             steps = item["value"]
+            if steps == 0:
+                continue  # ✅ 0 걸음은 저장하지 않음
 
-            # 🔧 datetime 모듈의 strptime 사용
+            time_str = item["time"]
             dt_raw = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
-
-            # 🔧 UTC aware로 변환 후 분 단위 정규화
-            dt = normalize_to_minute(
-                timezone.make_aware(dt_raw, timezone=datetime.timezone.utc)
-            )
+            dt = normalize_to_minute_kst(dt_raw)  # ✅ 한국시간 기준 정규화 적용
 
             obj, created = FitbitMinuteMetric.objects.get_or_create(
                 account=account,
