@@ -5,12 +5,13 @@ from django.utils import timezone
 from fitbit.token.refresh import refresh_token
 from fitbit.sync.sync import update_last_synced
 from fitbit.models import FitbitMinuteMetric
+from fitbit.utils import normalize_to_minute
 
 
 def get_sleep_stage(date, account):
     """
     Fitbit API를 통해 수면 단계 데이터를 요청하고,
-    지속 시간(seconds)에 따라 분 단위로 FitbitMinuteMetric 모델에 저장한다.
+    다음 단계의 시작 시간까지 같은 상태로 저장.
     """
     headers = {
         "Authorization": f"Bearer {account.access_token}"
@@ -32,12 +33,17 @@ def get_sleep_stage(date, account):
 
         for session in sessions:
             levels = session.get("levels", {}).get("data", [])
-
             if not levels:
                 print(f"ℹ️ {account.user.username} | {date} | 수면 단계 데이터 없음.")
                 continue
 
-            for entry in levels:
+            # 끝 시간 추출
+            session_end = timezone.make_aware(
+                datetime.fromisoformat(session["endTime"]),
+                timezone=timezone.utc
+            )
+
+            for idx, entry in enumerate(levels):
                 stage = entry["level"]
                 if stage not in ("wake", "light", "deep", "rem"):
                     continue
@@ -47,11 +53,21 @@ def get_sleep_stage(date, account):
                     timezone=timezone.utc
                 )
 
-                duration_seconds = entry.get("seconds", 0)
-                duration_minutes = duration_seconds // 60
+                # 다음 entry가 있으면 그 시간까지, 없으면 session 종료 시간까지
+                if idx + 1 < len(levels):
+                    next_time = timezone.make_aware(
+                        datetime.fromisoformat(levels[idx + 1]["dateTime"]),
+                        timezone=timezone.utc
+                    )
+                else:
+                    next_time = session_end
+
+                # 분 단위로 반복
+                duration_minutes = int((next_time - start_time).total_seconds() // 60)
 
                 for i in range(duration_minutes):
-                    minute_ts = start_time + timedelta(minutes=i)
+                    minute_ts = normalize_to_minute(start_time + timedelta(minutes=i))
+
 
                     obj, created = FitbitMinuteMetric.objects.get_or_create(
                         account=account,
