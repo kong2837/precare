@@ -1,13 +1,18 @@
-import pytz
-from datetime import datetime
-from django.utils.timezone import is_aware, make_aware
+import datetime as dt
+from django.utils.timezone import make_aware, is_aware
 
-KST = pytz.timezone("Asia/Seoul")
+def normalize_to_minute_raw(date_str: str, time_str: str):
+    """
+    Fitbit 응답의 date, time 문자열을 그대로 사용.
+    타임존 변환 없이 초/마이크로초만 제거.
+    """
+    # Fitbit에서 오는 응답이 이미 KST라면 그대로 사용
+    d = dt.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
 
-def normalize_to_minute(dt: datetime) -> datetime:
-    """
-    초 및 마이크로초 제거하고, KST timezone-aware datetime 반환.
-    """
-    if not is_aware(dt):
-        dt = make_aware(dt, timezone=KST)
-    return dt.replace(second=0, microsecond=0)
+    # timezone-aware가 필요하면 make_aware 하되, settings.TIME_ZONE 기준
+    if not is_aware(d):
+        from django.conf import settings
+        from zoneinfo import ZoneInfo
+        d = make_aware(d, ZoneInfo(settings.TIME_ZONE))
+
+    return d.replace(second=0, microsecond=0)
