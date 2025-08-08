@@ -1,7 +1,7 @@
 import datetime as dt
 from django.utils.timezone import make_aware, is_aware
 
-def normalize_to_minute_raw(date_str: str, time_str: str):
+def normalize_to_minute(date_str: str, time_str: str):
     """
     Fitbit 응답의 date, time 문자열을 그대로 사용.
     타임존 변환 없이 초/마이크로초만 제거.
