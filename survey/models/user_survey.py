@@ -38,6 +38,12 @@ class UserSurvey(models.Model):
         auto_now=True,
         help_text='유저 설문 수정 시간'
     )
+    score = models.IntegerField(
+        null=True,
+        blank=True,
+        db_column='score',
+        help_text='설문 점수 총합'
+    )
     
     @property
     def survey_name(self) -> str:
