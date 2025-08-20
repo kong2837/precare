@@ -1,3 +1,5 @@
+from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
+
 def __make_p_tag(origin: str) -> str:
     style = (
         'font-size:1.1rem; '
@@ -49,3 +51,29 @@ def pbras_result(scores: tuple) -> str:
     if __check_score(mon4, 2):
         return __make_p_tag("편안함을 주는 음악을 들으세요.❤️")
     return __make_p_tag("네 좋아요. 지금처럼 지내시면 됩니다.❤️")
+
+def update_stress_scores():
+    """기존 임신스트레스 score가 저장되지 않은 유저 스트레스 점수 업데이트 함수
+    """
+    user_surveys = UserSurvey.objects.filter(survey__title__icontains="임신스트레스 10문항")
+    
+    for user_survey in user_surveys:
+        try:
+            replies = Reply.objects.filter(
+                user_survey=user_survey
+            ).order_by("survey_question__order")
+
+            scores = []
+            for reply in replies:
+                answer = Answer.objects.get(description=reply.content)
+                scores.append(answer.value)
+
+            total_score = sum(scores)
+            user_survey.score = total_score
+            user_survey.save()
+            
+            print(f"[✅] {user_survey.id} → 총 점수 {total_score} 저장 완료")
+        except Answer.DoesNotExist:
+            print(f"[❌] Answer 매칭 실패: {reply.content}")
+        except Exception as e:
+            print(f"[⚠️] 오류 발생 (user_survey={user_survey.id}): {e}")
