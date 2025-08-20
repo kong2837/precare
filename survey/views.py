@@ -282,10 +282,21 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
                 ws.append(['작성시간', *survey.questions.all().values_list('title', flat=True), '스트레스 점수'])
 
         for user_survey in user_surveys:
+            
             _select_sheet(user_survey.survey)
-            reply_dict = {reply.survey_question.question.title: reply.content for reply in user_survey.replies.all()}
-            replies = [reply_dict.get(question.value, '') for question in ws[1][1:]]
+            
+            reply_dict = {
+                reply.survey_question.question.title: reply.content
+                for reply in user_survey.replies.all()
+            }
+            
+            # reply_dict = {reply.survey_question.question.title: reply.content for reply in user_survey.replies.all()}
+            # replies = [reply_dict.get(question.value, '') for question in ws[1][1:]]
+
+            question_titles = user_survey.survey.questions.all().values_list('title', flat=True)
+            replies = [reply_dict.get(title, '') for title in question_titles]
             ws.append([user_survey.create_at, *replies, user_survey.score])
+            
         return wb
 
     def get(self, request, user_id):
