@@ -96,4 +96,8 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "핏빗 계정",
             },
         ),
+
     ]
+
+    class Meta:
+        app_label = 'my_jobs'

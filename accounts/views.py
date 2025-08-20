@@ -811,7 +811,6 @@ class FitbitCallbackView(View):
                 "birthday": birthday,
                 "height": height,
                 "weight": weight,
-                "last_synced": now()
             }
         )
 
