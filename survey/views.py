@@ -212,6 +212,7 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
 
         self._create_replies(user_survey, request.POST)
         result = ""
+        total_score = None
 
         if "임신스트레스 10문항" in user_survey.survey_name or "조기진통위험 10문항" in user_survey.survey_name:
             replies = Reply.objects.filter(user_survey=user_survey).order_by("survey_question__order")
@@ -220,10 +221,13 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
                 scores.append(Answer.objects.filter(description=reply.content).get().value)
             if "임신스트레스 10문항" in user_survey.survey_name:
                 result = utils.stress_result(tuple(scores))
+                total_score = sum(scores)
+                user_survey.score = total_score
+                user_survey.save()
             else:
                 result = utils.pbras_result(tuple(scores))
 
-        return render(request, 'survey/survey_complete.html', {'result': result})
+        return render(request, 'survey/survey_complete.html', {'result': result, 'total_score': total_score})
 
     def put(self, request, *args, **kwargs):
         """작성된 설문 수정 화면
