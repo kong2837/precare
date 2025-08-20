@@ -57,6 +57,11 @@ def update_stress_scores():
     """
     user_surveys = UserSurvey.objects.filter(survey__title__icontains="임신스트레스 10문항")
     
+    answers_dict = {
+        a.description.strip().replace(" ", "").replace(".", "").replace("·", ""): a.value
+        for a in Answer.objects.all()
+    }
+
     for user_survey in user_surveys:
         try:
             replies = Reply.objects.filter(
@@ -65,15 +70,19 @@ def update_stress_scores():
 
             scores = []
             for reply in replies:
-                answer = Answer.objects.get(description=reply.content)
-                scores.append(answer.value)
+                desc_raw = reply.content
+                desc_cleaned = desc_raw.strip().replace(" ", "").replace(".", "").replace("·", "")
+
+                if desc_cleaned in answers_dict:
+                    scores.append(answers_dict[desc_cleaned])
+                else:
+                    print(f"[❌] Answer 매칭 실패: {desc_raw}")
 
             total_score = sum(scores)
             user_survey.score = total_score
             user_survey.save()
-            
+
             print(f"[✅] {user_survey.id} → 총 점수 {total_score} 저장 완료")
-        except Answer.DoesNotExist:
-            print(f"[❌] Answer 매칭 실패: {reply.content}")
+
         except Exception as e:
             print(f"[⚠️] 오류 발생 (user_survey={user_survey.id}): {e}")
