@@ -23,7 +23,8 @@
             <table class="table table-striped">
                 <thead>
                 <tr>
-                    <th scope="col">액션</th> <!-- 새로운 열 추가 -->
+                    <th scope="col">설문</th>
+                    <th scope="col">건강 데이터</th>
                     <th scope="col" data-column="name">이름</th>
                     <th scope="col" data-column="age">나이</th>
                     <th scope="col" data-column="research_status">연구 상태</th>
@@ -43,7 +44,10 @@
                             <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
                             <a class="btn btn-primary"
                                href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
-                        </td> <!-- 버튼 추가 -->
+                        </td>
+                        <td>
+                            <a class="btn btn-primary" href="{% url 'accounts:csvDownload' user.pk %}">CSV로 저장</a>
+                        </td>
                         <td>{% if user.huami.name != None %}
                             {{ user.huami.name }}
                         {% elif user.huami.fullname %}
