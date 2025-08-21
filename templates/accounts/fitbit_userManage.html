@@ -30,6 +30,7 @@
                     <th scope="col">몸무게(kg)</th>
                     <th scope="col">동기화 시간</th>
                     <th scope="col">설문</th>
+                    <th scope="col">건강 데이터</th>
                 </tr>
                 </thead>
                 <tbody id="userTable">
@@ -44,6 +45,9 @@
                         <td>
                             <a class="btn btn-primary" href="{% url 'survey:survey-list-admin' user.pk %}">설문결과보기</a>
                             <a class="btn btn-primary" href="{% url 'accounts:user_survey_download' user.pk %}">설문결과다운로드</a>
+                        </td>
+                        <td>
+                            <a class="btn btn-primary" href="{% url 'accounts:fitbit_csvDownload' user.pk %}">CSV로 저장</a>
                         </td>
                     </tr>
                 {% endfor %}
