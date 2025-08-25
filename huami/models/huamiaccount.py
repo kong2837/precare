@@ -22,6 +22,7 @@ class HuamiAccount(models.Model):
         ('none', '미확인'),
         ('2023', '2023'),
         ('2024', '2024'),
+        ('2025', '2025'),
     ]
     user = models.OneToOneField(
         to=settings.AUTH_USER_MODEL,
