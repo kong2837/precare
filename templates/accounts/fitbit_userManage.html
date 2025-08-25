@@ -33,7 +33,6 @@
                     <th scope="col" data-column="join_date">연구 시작일</th>
                     <th scope="col" data-column="end_date">연구 종료일</th>
                     <th scope="col" data-column="showed_sync_status">동기화 상태</th>
-                    <th scope="col" data-column="email">이메일</th>
                     <th scope="col" data-column="note">노트</th>
                 </tr>
                 <!-- <tr>
@@ -83,39 +82,32 @@
                                 2023년
                             </option>
                             <option value="2024"
-                                    {% if user.huami.research_year == '2024' %}selected{% endif %}>2024년
+                                    {% if user.huami.research_year == '2024' %}selected{% endif %}>
+                                2024년
                             </option>
                         </select></td>
                         <td>
                             <input type="date" class="form-control pregnancy_start_date"
                                    data-user-id="{{ user.pk }}"
-                                   value="{{ user.huami.pregnancy_start_date|date:'Y-m-d' }}">
+                                   value="{{ user.fitbit_fitbitaccount.pregnancy_start_date|date:'Y-m-d' }}">
                         </td>
                         <td>
                             <input type="date" class="form-control start-date"
                                    data-user-id="{{ user.pk }}"
-                                   value="{{ user.huami.join_date|date:'Y-m-d' }}">
+                                   value="{{ user.fitbit_fitbitaccount.join_date|date:'Y-m-d' }}">
                         </td>
                         <td>
                             <input type="date" class="form-control end-date"
                                    data-user-id="{{ user.pk }}"
-                                   value="{{ user.huami.end_date|date:'Y-m-d' }}">
+                                   value="{{ user.fitbit_fitbitaccount.end_date|date:'Y-m-d' }}">
                         </td>
                         <td>
-                            {% if user.huami.showed_sync_status %}
-                                정상
-                            {% else %}
-                                비정상
-                            {% endif %}
+                            <input type="date" class="form-control last_synced"
+                                   data-user-id="{{ user.pk }}"
+                                   value="{{ user.fitbit_fitbitaccount.last_synced|date:'Y-m-d' }}">
                         </td>
-                        <td>
-                            {% if user.huami.email %}
-                                {{ user.huami.email }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ user.huami.note }}</td>
+
+                        <td>{{ user.fitbit_fitbitaccount.note }}</td>
                     </tr>
 
                 {% endfor %}
