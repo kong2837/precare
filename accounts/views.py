@@ -46,10 +46,30 @@ from django.views import View
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.utils.timezone import localtime
+from django.utils.dateparse import parse_date
+from django.core.exceptions import ObjectDoesNotExist 
+
 
 from fitbit.models import FitbitMinuteMetric, FitbitAccount
 
-# Create your views here.
+# 공용 타깃 선택 함수
+def _get_research_target(user):
+    """
+    HuamiAccount가 있으면 우선 사용, 없으면 FitbitAccount 반환.
+    둘 다 없으면 None.
+    """
+    try:
+        return user.huami
+    except ObjectDoesNotExist:
+        pass
+
+    try:
+        return user.fitbit
+    except ObjectDoesNotExist:
+        pass
+
+    return None
+
 class LoginView(Login):
     """로그인을 위한 클래스 기반 뷰
     """
@@ -652,34 +672,40 @@ def verify_username_code(request, email):
 class UserResearchStatus(SuperuserRequiredMixin, View):
     def post(self, request):
         data = json.loads(request.body)
-
         user_id = data.get('user_id')
         new_status = data.get('new_status')
 
         try:
             user = User.objects.get(pk=user_id)
-            user.huami.research_status = new_status
-            user.huami.save()
-
-            return JsonResponse({'success': True})
         except User.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'User not found'})
+            return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+        
+        target = _get_research_target(user)
+        if target is None:
+            return JsonResponse({'success': False, 'error': 'no linked profile (huami & fitbit)'}, status=404)
+        
+        target.research_status = new_status
+        target.save(update_fields=['research_status'])
+        return JsonResponse({'success': 'True'})
 
 class UserResearchYear(SuperuserRequiredMixin, View):
     def post(self, request):
         data = json.loads(request.body)
-
         user_id = data.get('user_id')
         new_year = data.get('new_year')
 
         try:
             user = User.objects.get(pk=user_id)
-            user.huami.research_year = new_year
-            user.huami.save()
-
-            return JsonResponse({'success': True})
         except User.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'User not found'})
+            return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+
+        target = _get_research_target(user)
+        if target is None:
+            return JsonResponse({'success': False, 'error': 'no linked profile (huami/fitbit)'}, status=400)
+
+        target.research_year = new_year
+        target.save(update_fields=['research_year'])
+        return JsonResponse({'success': True})
 
 
 class UserResearchDate(SuperuserRequiredMixin, View):
@@ -692,16 +718,24 @@ class UserResearchDate(SuperuserRequiredMixin, View):
 
         try:
             user = User.objects.get(pk=user_id)
-            if date_type == 'join-date':
-                user.huami.join_date = new_date
-            elif date_type == 'end-date':
-                user.huami.end_date = new_date
-            elif date_type == 'pregnancy_start_date':
-                user.huami.pregnancy_start_date=new_date
-            user.huami.save()
-            return JsonResponse({'success': True})
         except User.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'User not found'})
+            return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+
+        target = _get_research_target(user)
+        if target is None:
+            return JsonResponse({'success': False, 'error': 'no linked profile (huami/fitbit)'}, status=400)
+
+        # 하이픈 -> 언더스코어 정규화
+        norm_type = (date_type or '').replace('-', '_')
+        if norm_type not in {'join_date', 'end_date', 'pregnancy_start_date'}:
+            return JsonResponse({'success': False, 'error': 'invalid date_type'}, status=400)
+
+        # 문자열 → date 객체 변환
+        parsed = parse_date(new_date) if new_date else None
+
+        setattr(target, norm_type, parsed)
+        target.save(update_fields=[norm_type])
+        return JsonResponse({'success': True})
 
 
 class FitbitLoginView(View):
