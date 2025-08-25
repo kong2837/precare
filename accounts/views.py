@@ -231,9 +231,34 @@ class UserNoteUpdateView(SuperuserRequiredMixin, View):
 
     def post(self, request, pk):
         user = get_object_or_404(get_user_model(), pk=pk)
-        user.huami.note = request.POST['note']
-        user.huami.save()
+        note = request.POST.get('note', '').strip()
+
+        target = _get_research_target(user)
+        
+        if target is None:
+            messages.error(request, '연결된 프로필(huami/fitbit)이 없습니다.')
+            # 프로필 없을 때는 기본 userInfo로
+            return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': pk}))
+
+        target.note = note
+        target.save(update_fields=['note'])
+        messages.success(request, '비고가 업데이트되었습니다.')
+
+        try:
+            if target == user.fitbit:
+                return redirect(reverse_lazy('accounts:fitbit_userInfo', kwargs={'pk': pk}))
+        except ObjectDoesNotExist:
+            pass  # fitbit이 없으면 그냥 huami라고 가정
+
+        try:
+            if target == user.huami:
+                return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': pk}))
+        except ObjectDoesNotExist:
+            pass
+
+        # 혹시 둘 다 아니면 기본 userInfo
         return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': pk}))
+
 
 
 class UserHealthNoteUpdateView(SuperuserRequiredMixin, View):
