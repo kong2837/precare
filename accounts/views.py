@@ -242,7 +242,6 @@ class UserNoteUpdateView(SuperuserRequiredMixin, View):
 
         target.note = note
         target.save(update_fields=['note'])
-        messages.success(request, '비고가 업데이트되었습니다.')
 
         try:
             if target == user.fitbit:
