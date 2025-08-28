@@ -44,13 +44,16 @@ def _make_note_list(note: str) -> list:
             notes[i].append(match[0])
     return notes
 
-
+    """
+    임신주수 계산 함수!!!!!!
+    """
 def cal_gestational_week(pregnancy_start_date, particular_date):
     """
     특정 년/월/일을 입력하면 몆주차인지 리턴해줌.
     임신날짜 정보가 없으면 0 반환
     중간에 생체 데이터 없을 수도 있으므로 하루마다 모두 이 함수 호출해서 주수 반환하게 함.
     """
+    # .days 임포트 먼지 알아보기
     if pregnancy_start_date == None:
         return 0
     else:
