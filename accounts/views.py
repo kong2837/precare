@@ -3,6 +3,7 @@ import hashlib
 import json
 import base64
 import urllib.parse
+from urllib.parse import quote as urlquote
 
 
 import requests.exceptions
@@ -32,11 +33,12 @@ from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
 from .forms import EmailPasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm,PhoneNumberPasswordResetRequestForm
 from .models import Profile
 from .utils import generate_verification_code
-from fitbit.models import FitbitAccount
+
 from django.contrib.auth import login
-from django.utils.timezone import now, timedelta
+from django.utils import timezone
+from django.utils.timezone import now, timedelta, datetime, localtime
+from datetime import date
 from django.utils.crypto import get_random_string
-from django.utils.timezone import now, timedelta
 from django.contrib.auth import login
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -45,12 +47,14 @@ import base64
 from django.views import View
 from django.http import JsonResponse
 from django.contrib.auth.models import User
-from django.utils.timezone import localtime
 from django.utils.dateparse import parse_date
 from django.core.exceptions import ObjectDoesNotExist 
+from collections import defaultdict
+from django.db.models.functions import TruncDate, TruncMonth
 
-
+from survey.models import UserSurvey
 from fitbit.models import FitbitMinuteMetric, FitbitAccount
+from django.db.models import Avg
 
 # 공용 타깃 선택 함수
 def _get_research_target(user):
@@ -242,7 +246,6 @@ class UserNoteUpdateView(SuperuserRequiredMixin, View):
 
         target.note = note
         target.save(update_fields=['note'])
-        messages.success(request, '비고가 업데이트되었습니다.')
 
         try:
             if target == user.fitbit:
@@ -798,7 +801,7 @@ class FitbitCallbackView(View):
         code = request.GET.get("code")
         if not code:
             return JsonResponse({"error": "Authorization code not found"}, status=400)
-
+        
 
         redirect_uri = "https://dai427.cbnu.ac.kr/accounts/callback/"
         token_url = "https://api.fitbit.com/oauth2/token"
@@ -856,7 +859,7 @@ class FitbitCallbackView(View):
             user.set_password(get_random_string(length=12))
             user.save()
 
-        FitbitAccount.objects.update_or_create(
+        account, _ = FitbitAccount.objects.update_or_create(
             user=user,
             defaults={
                 "fitbit_user_id": fitbit_user_id,
@@ -877,6 +880,146 @@ class FitbitCallbackView(View):
         print("Fitbit OAuth 성공 - 홈으로 리디렉트 시도")
         return redirect(reverse("home"))
 
+    
+def _month_start(d: date) -> date:
+    return d.replace(day=1)
+
+def _add_months(d: date, n: int) -> date:
+    y = d.year + (d.month - 1 + n) // 12
+    m = (d.month - 1 + n) % 12 + 1
+    return date(y, m, 1)
+
+def _to_date(value):
+    """datetime/date/None → date 로 안전 변환"""
+    if not value:
+        return None
+    try:
+        # timezone-aware datetime이면 localtime 사용
+        if hasattr(value, "tzinfo"):
+            try:
+                return timezone.localtime(value).date()
+            except Exception:
+                return value.date()
+        if hasattr(value, "date"):
+            return value.date()
+    except Exception:
+        pass
+    return value  # 이미 date 라고 가정
+
+class StressChartData(LoginRequiredMixin, View):
+    """
+    GET /accounts/<pk>/stress-data/?range=weekly|monthly
+    - 기준일(anchor): target.last_synced / target.sync_date / 최근 설문일 / 오늘
+    - weekly: 기준일 포함 7일(기준일-6 ~ 기준일), 값 없으면 null → 빈칸
+    - monthly: 기준일이 속한 달을 포함한 최근 12개월,
+               각 달의 '주간평균(0~30)'들의 평균(없으면 0), 라벨은 'MM월(임신 N개월)'
+    """
+    def get(self, request, pk):
+        user = get_object_or_404(get_user_model(), pk=pk)
+        if (request.user != user) and (not request.user.is_superuser):
+            return JsonResponse({"error": "forbidden"}, status=403)
+
+        # ----- 임신 시작일 (라벨용) -----
+        target = _get_research_target(user)
+        preg_start = None
+        if target is not None:
+            ps = getattr(target, "pregnancy_start_date", None)
+            preg_start = _to_date(ps)
+
+        # ----- 점수 있는 설문 쿼리 -----
+        qs = UserSurvey.objects.filter(user_id=user.id, score__isnull=False)
+
+        # ----- 기준일(anchor) 결정: last_synced / sync_date → 최근 설문일 → 오늘 -----
+        last_synced = None
+        if target is not None:
+            last_synced = getattr(target, "last_synced", None) or getattr(target, "sync_date", None)
+        anchor = _to_date(last_synced)
+
+        if not anchor:
+            last_survey_dt = qs.order_by("-create_at").values_list("create_at", flat=True).first()
+            anchor = _to_date(last_survey_dt)
+
+        if not anchor:
+            anchor = timezone.localdate()
+
+        rng = (request.GET.get("range") or "weekly").lower()
+
+        # ---------------------- 주간: 기준일 포함 7일 ----------------------
+        if rng == "weekly":
+            start = anchor - timedelta(days=6)
+            end   = anchor
+            day_rows = (
+                qs.filter(create_at__date__range=(start, end))
+                  .annotate(day=TruncDate("create_at"))
+                  .values("day")
+                  .annotate(value=Avg("score"))
+            )
+            day_map = {r["day"]: round(r["value"], 1) for r in day_rows}
+
+            labels, values = [], []
+            for i in range(7):
+                d = start + timedelta(days=i)
+                # 라벨: MM/DD (임신 N주)
+                if preg_start:
+                    gd = (d - preg_start).days
+                    label = f"{d.strftime('%m/%d')} ({gd // 7 + 1}주)" if gd >= 0 else f"{d.strftime('%m/%d')} (-)"
+                else:
+                    label = d.strftime("%m/%d")
+                labels.append(label)
+                values.append(day_map.get(d, None))   # 없으면 null → Chart.js에서 갭
+            return JsonResponse({"labels": labels, "values": values})
+
+        # ---------------------- 월간: 기준일 포함 최근 12개월 ----------------------
+        current_month = _month_start(anchor)
+        months = [_add_months(current_month, -i) for i in range(11, -1, -1)]  # 과거→현재
+        first_month = months[0]
+        after_last  = _add_months(current_month, 1)
+
+        # 12개월 구간의 일자 평균(0~30) 로드
+        day_rows = (
+            qs.filter(create_at__date__gte=first_month, create_at__date__lt=after_last)
+              .annotate(day=TruncDate("create_at"))
+              .values("day")
+              .annotate(value=Avg("score"))
+              .order_by("day")
+        )
+
+        # 월별: (ISO 연,주)별로 일자 평균 모아 주간평균 → 그 달의 '주간평균'들의 평균(0~30)
+        month_week_values = {m: defaultdict(list) for m in months}
+        for r in day_rows:
+            d = r["day"]
+            v = float(r["value"])
+            mstart = _month_start(d)
+            if mstart not in month_week_values:
+                continue
+            iso = d.isocalendar()  # (year, week, weekday)
+            wkey = (iso.year, iso.week)
+            month_week_values[mstart][wkey].append(v)
+
+        labels, values = [], []
+        for mstart in months:
+            # 라벨: "MM월(임신 N개월)"
+            if preg_start:
+                gd = (mstart - preg_start).days
+                if gd >= 0:
+                    preg_month = gd // 30 + 1
+                    label = f"{mstart.strftime('%m월')} ({preg_month}개월)"
+                else:
+                    label = f"{mstart.strftime('%m월')} (-)"
+            else:
+                label = f"{mstart.strftime('%m월')}"
+            labels.append(label)
+
+            week_groups = month_week_values[mstart]
+            if not week_groups:
+                values.append(0.0)  # 데이터 없으면 0
+                continue
+
+            weekly_avgs = [sum(vals)/len(vals) for vals in week_groups.values()]  # 각 주 평균(0~30)
+            monthly_avg = round(sum(weekly_avgs)/len(weekly_avgs), 1)             # 그 주 평균들의 평균(0~30)
+            values.append(monthly_avg)
+
+        return JsonResponse({"labels": labels, "values": values})
 #로그인 방식 선택
 def login_select(request):
     return render(request, 'accounts/login.html')
