@@ -908,18 +908,27 @@ def _to_date(value):
 
 class StressChartData(LoginRequiredMixin, View):
     """
-    GET /accounts/<pk>/stress-data/?range=weekly|monthly
-    - 기준일(anchor): target.last_synced / target.sync_date / 최근 설문일 / 오늘
-    - weekly: 기준일 포함 7일(기준일-6 ~ 기준일), 값 없으면 null → 빈칸
-    - monthly: 기준일이 속한 달을 포함한 최근 12개월,
-               각 달의 '주간평균(0~30)'들의 평균(없으면 0), 라벨은 'MM월(임신 N개월)'
+    GET /accounts/<pk>/stress-data/
+      - params:
+        - range=weekly | monthly | weekly_windows
+        - idx=<int>  # weekly_windows 전용: 0(최신)부터 과거로 1,2,...
+        - windows=1  # weekly_windows 전용: 버튼 목록(윈도우 메타)만 반환
+
+      1) 0~40점
+      2) weekly -> 기준일 포함 최근 7일
+      3) weekly_windows -> "동기화 날짜(anchor)로부터 7일씩 끊은 모든 구간"을 페이지처럼 제공
+         - idx=0: [anchor-6, anchor]
+         - idx=1: [anchor-13, anchor-7]
+         - ...
+         - windows=1: 프론트 버튼용 윈도우 리스트(라벨: '임신 N개월') 반환
+      4) monthly -> 기준일 포함 최근 1년을 월 단위로 끊어서
     """
     def get(self, request, pk):
         user = get_object_or_404(get_user_model(), pk=pk)
         if (request.user != user) and (not request.user.is_superuser):
             return JsonResponse({"error": "forbidden"}, status=403)
 
-        # ----- 임신 시작일 (라벨용) -----
+        # ----- 임신 시작일 (라벨용: '임신 N개월') -----
         target = _get_research_target(user)
         preg_start = None
         if target is not None:
@@ -944,17 +953,86 @@ class StressChartData(LoginRequiredMixin, View):
 
         rng = (request.GET.get("range") or "weekly").lower()
 
-        # ---------------------- 주간: 기준일 포함 7일 ----------------------
-        if rng == "weekly":
-            start = anchor - timedelta(days=6)
-            end   = anchor
+        # ---------------------- 주간: 기준일 포함 7일 (0~40점 스케일) ----------------------
+        if rng == "weekly_series":
+            # 전체 데이터의 최소일 (없으면 anchor만)
+            first_day = qs.order_by("create_at").values_list("create_at", flat=True).first()
+            first_day = _to_date(first_day) or anchor
+
+            # anchor 기준으로 7일씩 끊은 윈도우들 생성 (최신 idx=0 → 과거로 증가)
+            windows = self._build_weekly_windows(anchor, first_day)
+            windows = list(reversed(windows))  # x축을 과거→현재 순서로
+
+            labels, values = [], []
+            for (start, end) in windows:
+                # 이 7일 구간의 평균(없으면 None)
+                row = (qs.filter(create_at__date__range=(start, end))
+                         .aggregate(value=Avg("score")))
+                v = row["value"]
+                # 라벨: "MM/DD~MM/DD (임신 N주)"
+                if preg_start:
+                    # 주의 ‘시작일’을 기준으로 임신 n주 표기
+                    gd = (start - preg_start).days
+                    if gd >= 0:
+                        week_no = gd // 7 + 1
+                        label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')} ({week_no}주)"
+                    else:
+                        label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')} (-)"
+                else:
+                    label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')}"
+                labels.append(label)
+                values.append(round(float(v), 1) if v is not None else None)
+
+            return JsonResponse({
+                "labels": labels,
+                "values": values,
+                "meta": {"scale_max": 40}
+            })
+
+        # ---------------------- 7일 단위 윈도우 페이지(버튼 전환용) ----------------------
+        if rng == "weekly_windows":
+            # 전체 데이터의 최소일 찾기 (없는 경우 anchor만 기준)
+            first_day = qs.order_by("create_at").values_list("create_at", flat=True).first()
+            first_day = _to_date(first_day) or anchor
+
+            # anchor로부터 7일씩 끊은 윈도우 목록 생성
+            windows = self._build_weekly_windows(anchor, first_day)
+
+            # 버튼 목록만 달라고 하면(라벨: 임신 N개월)
+            if request.GET.get("windows") == "1":
+                btns = []
+                for idx, (w_start, w_end) in enumerate(windows):
+                    btns.append({
+                        "idx": idx,
+                        "start": w_start.isoformat(),
+                        "end": w_end.isoformat(),
+                        "label": self._month_label_from_preg(preg_start, w_start)  # '임신 N개월'
+                    })
+                return JsonResponse({"windows": btns, "meta": {"scale_max": 40}})
+
+            # 특정 윈도우(idx)의 7일치 그래프 데이터 반환
+            try:
+                idx = int(request.GET.get("idx", "0"))
+            except ValueError:
+                idx = 0
+            if idx < 0:
+                idx = 0
+            if idx >= len(windows):
+                # 인덱스가 너무 크면 마지막(가장 과거) 윈도우로
+                idx = len(windows) - 1 if windows else 0
+
+            if not windows:
+                return JsonResponse({"labels": [], "values": [], "meta": {"scale_max": 40}})
+
+            start, end = windows[idx]
+
             day_rows = (
                 qs.filter(create_at__date__range=(start, end))
                   .annotate(day=TruncDate("create_at"))
                   .values("day")
                   .annotate(value=Avg("score"))
             )
-            day_map = {r["day"]: round(r["value"], 1) for r in day_rows}
+            day_map = {r["day"]: round(float(r["value"]), 1) for r in day_rows}
 
             labels, values = [], []
             for i in range(7):
@@ -966,60 +1044,123 @@ class StressChartData(LoginRequiredMixin, View):
                 else:
                     label = d.strftime("%m/%d")
                 labels.append(label)
-                values.append(day_map.get(d, None))   # 없으면 null → Chart.js에서 갭
-            return JsonResponse({"labels": labels, "values": values})
+                values.append(day_map.get(d, None))
 
-        # ---------------------- 월간: 기준일 포함 최근 12개월 ----------------------
-        current_month = _month_start(anchor)
-        months = [_add_months(current_month, -i) for i in range(11, -1, -1)]  # 과거→현재
-        first_month = months[0]
-        after_last  = _add_months(current_month, 1)
+            return JsonResponse({
+                "labels": labels,
+                "values": values,
+                "window": {
+                    "idx": idx,
+                    "start": start.isoformat(),
+                    "end": end.isoformat(),
+                    "label": self._month_label_from_preg(preg_start, start)  # 버튼과 동일 라벨
+                },
+                "meta": {"scale_max": 40}
+            })
 
-        # 12개월 구간의 일자 평균(0~30) 로드
-        day_rows = (
-            qs.filter(create_at__date__gte=first_month, create_at__date__lt=after_last)
-              .annotate(day=TruncDate("create_at"))
-              .values("day")
-              .annotate(value=Avg("score"))
-              .order_by("day")
-        )
+        # ---------------------- 월간: 기준일 포함 최근 12개월 (0~40점 스케일) ----------------------
+        if rng == "monthly":
+        # 1) 이 유저의 설문 기록 범위를 전부 계산
+            first_dt = qs.order_by("create_at").values_list("create_at", flat=True).first()
+            last_dt  = qs.order_by("-create_at").values_list("create_at", flat=True).first()
 
-        # 월별: (ISO 연,주)별로 일자 평균 모아 주간평균 → 그 달의 '주간평균'들의 평균(0~30)
-        month_week_values = {m: defaultdict(list) for m in months}
-        for r in day_rows:
-            d = r["day"]
-            v = float(r["value"])
-            mstart = _month_start(d)
-            if mstart not in month_week_values:
-                continue
-            iso = d.isocalendar()  # (year, week, weekday)
-            wkey = (iso.year, iso.week)
-            month_week_values[mstart][wkey].append(v)
+            if not first_dt or not last_dt:
+                # 데이터가 없으면 빈 응답
+                return JsonResponse({"labels": [], "values": [], "meta": {"scale_max": 40}})
 
-        labels, values = [], []
-        for mstart in months:
-            # 라벨: "MM월(임신 N개월)"
-            if preg_start:
-                gd = (mstart - preg_start).days
-                if gd >= 0:
-                    preg_month = gd // 30 + 1
-                    label = f"{mstart.strftime('%m월')} ({preg_month}개월)"
+            first_day = _to_date(first_dt)
+            last_day  = _to_date(last_dt)
+
+            # 월 시작일로 정규화
+            first_month = _month_start(first_day)
+            last_month  = _month_start(last_day)
+
+            # first_month ~ last_month(포함) 까지 모든 달 생성
+            months = []
+            m = first_month
+            while m <= last_month:
+                months.append(m)
+                m = _add_months(m, 1)
+
+            after_last = _add_months(last_month, 1)
+
+            # 2) 전체 구간의 일자 평균 로드 (일 단위 평균 → 주별 평균 → 월 평균)
+            day_rows = (
+                qs.filter(create_at__date__gte=first_month, create_at__date__lt=after_last)
+                .annotate(day=TruncDate("create_at"))
+                .values("day")
+                .annotate(value=Avg("score"))
+                .order_by("day")
+            )
+
+            # 월별: (ISO 연,주)로 묶어 '주간 평균'들을 모은 후, 그 주 평균들의 평균을 월 점수로
+            month_week_values = {m: defaultdict(list) for m in months}
+            for r in day_rows:
+                d = r["day"]
+                v = float(r["value"])
+                mstart = _month_start(d)
+                if mstart not in month_week_values:
+                    continue
+                iso = d.isocalendar()  # (year, week, weekday)
+                wkey = (iso.year, iso.week)
+                month_week_values[mstart][wkey].append(v)
+
+            labels, values = [], []
+            for mstart in months:
+                # 라벨: "MM월(임신 N개월)" 또는 임신 시작일 없으면 "MM월"
+                if preg_start:
+                    gd = (mstart - preg_start).days
+                    if gd >= 0:
+                        preg_month = gd // 30 + 1
+                        label = f"{mstart.strftime('%m월')} ({preg_month}개월)"
+                    else:
+                        label = f"{mstart.strftime('%m월')} (-)"
                 else:
-                    label = f"{mstart.strftime('%m월')} (-)"
-            else:
-                label = f"{mstart.strftime('%m월')}"
-            labels.append(label)
+                    label = f"{mstart.strftime('%m월')}"
+                labels.append(label)
 
-            week_groups = month_week_values[mstart]
-            if not week_groups:
-                values.append(0.0)  # 데이터 없으면 0
-                continue
+                week_groups = month_week_values[mstart]
+                if not week_groups:
+                    values.append(0.0)  # 데이터 없는 달은 0
+                    continue
 
-            weekly_avgs = [sum(vals)/len(vals) for vals in week_groups.values()]  # 각 주 평균(0~30)
-            monthly_avg = round(sum(weekly_avgs)/len(weekly_avgs), 1)             # 그 주 평균들의 평균(0~30)
-            values.append(monthly_avg)
+                weekly_avgs = [sum(vals)/len(vals) for vals in week_groups.values()]  # 각 주 평균(0~40)
+                monthly_avg = round(sum(weekly_avgs)/len(weekly_avgs), 1)             # 주 평균들의 평균(0~40)
+                values.append(monthly_avg)
 
-        return JsonResponse({"labels": labels, "values": values})
+            return JsonResponse({"labels": labels, "values": values, "meta": {"scale_max": 40}})
+
+    # ---------- 내부 헬퍼들 ----------
+    def _build_weekly_windows(self, anchor, first_day):
+        """
+        anchor 포함 7일: [anchor-6, anchor]를 idx=0으로 하고,
+        과거로 7일씩 끊어서 데이터 시작일 이전까지 생성.
+        반환: [(start, end), ...]  # idx=0이 최신
+        """
+        windows = []
+        # 첫 윈도우(최신)
+        end = anchor
+        start = anchor - timedelta(days=6)
+        while True:
+            windows.append((start, end))
+            # 다음(과거) 윈도우
+            end = start - timedelta(days=1)
+            start = end - timedelta(days=6)
+            # 더 내려가면 first_day 이전으로 완전히 벗어나는지 체크
+            if end < first_day:
+                break
+        return windows
+
+    def _month_label_from_preg(self, preg_start, date_for_label):
+        """
+        버튼 라벨: '임신 N개월'
+        preg_start가 없으면 달(예: 'MM월')로 대체
+        """
+        if preg_start:
+            gd = (date_for_label - preg_start).days
+            return f"임신 {gd // 30 + 1}개월" if gd >= 0 else "임신 이전"
+        return f"{date_for_label.strftime('%m월')}"
+
 #로그인 방식 선택
 def login_select(request):
     return render(request, 'accounts/login.html')

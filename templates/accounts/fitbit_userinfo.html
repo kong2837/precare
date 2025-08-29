@@ -24,10 +24,10 @@
     <div class="card-body border-top">
       <h4 class="mt-1">스트레스 점수</h4>
 
-      <!-- 탭: chart-link 클래스로 사용 (nav-link도 함께 주면 부트스트랩 탭 스타일 유지) -->
+      <!-- 탭 -->
       <ul class="nav nav-tabs" id="stressTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link chart-link active" data-range="weekly" type="button" aria-selected="true">주간</button>
+          <button class="nav-link chart-link active" data-range="weekly_series" type="button" aria-selected="true">주간</button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link chart-link" data-range="monthly" type="button" aria-selected="false">월간</button>
@@ -40,8 +40,6 @@
         <p id="stressEmpty" class="text-muted small d-none">표시할 설문 데이터가 없습니다.</p>
       </div>
     </div>
-  </div>
-</div>
 
 <!-- 탭 글자색을 항상 검정으로 강제 -->
 <style>
@@ -56,41 +54,26 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function(){
-  const uid = Number("{{ userInfo.pk }}");
+  const uid  = Number("{{ userInfo.pk }}");
   const base = "{% url 'accounts:stress_data_chart' 0 %}".replace('/0/', `/${uid}/`);
 
-  const tabs          = document.querySelectorAll('#stressTabs .chart-link');
-  const weeklyCanvas  = document.getElementById('stressWeekly');
-  const monthlyCanvas = document.getElementById('stressMonthly');
-  const emptyEl       = document.getElementById('stressEmpty');
+  const tabs        = document.querySelectorAll('#stressTabs .chart-link');
+  const weeklyCV    = document.getElementById('stressWeekly');
+  const monthlyCV   = document.getElementById('stressMonthly');
+  const emptyEl     = document.getElementById('stressEmpty');
 
-  let charts = {};
+  let charts = { weekly_series: null, monthly: null };
+  let scaleMax = 40;
 
-  async function loadChart(range) {
-    const res = await fetch(`${base}?range=${range}`, { credentials: "same-origin" });
-    if (!res.ok) {
-      console.error('HTTP', res.status);
-      emptyEl.textContent = '차트를 불러오는 중 문제가 발생했습니다.';
-      emptyEl.classList.remove('d-none');
-      return;
-    }
-    const data = await res.json();
-
-    const target  = (range === 'weekly') ? weeklyCanvas : monthlyCanvas;
-    const hasData = Array.isArray(data.values) && data.values.length > 0;
-
-    emptyEl.classList.toggle('d-none', hasData);
-
-    if (charts[range]) charts[range].destroy();
-    if (!hasData) return;
-
-    charts[range] = new Chart(target.getContext('2d'), {
+  function drawLine(canvas, key, labels, values){
+    if (charts[key]) charts[key].destroy();
+    charts[key] = new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
-        labels: data.labels,
+        labels,
         datasets: [{
           label: '스트레스 점수',
-          data: data.values,
+          data: values,
           tension: 0.2,
           pointRadius: 3
         }]
@@ -98,13 +81,62 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        spanGaps: false, // weekly의 null을 갭으로
-        scales: {
-          y: { beginAtZero: true, max: 30 }
-        },
+        spanGaps: true, 
+        scales: { y: { beginAtZero: true, max: scaleMax } },
         plugins: { legend: { display: true } }
       }
     });
+  }
+
+  async function loadWeeklySeries(){
+    const res = await fetch(`${base}?range=weekly_series`, { credentials: "same-origin" });
+    if (!res.ok){
+      console.error('HTTP', res.status);
+      emptyEl.textContent = '차트를 불러오는 중 문제가 발생했습니다.';
+      emptyEl.classList.remove('d-none');
+      return;
+    }
+    const data = await res.json();
+    scaleMax = data?.meta?.scale_max ?? 40;
+
+    const labels = data.labels || [];
+    const values = data.values || [];
+    const hasData = values.length > 0;
+    emptyEl.classList.toggle('d-none', hasData);
+    weeklyCV.classList.toggle('d-none', !hasData);
+    monthlyCV.classList.add('d-none');
+
+    if (!hasData){
+      if (charts.weekly_series) charts.weekly_series.destroy();
+      return;
+    }
+    drawLine(weeklyCV, 'weekly_series', labels, values);
+  }
+
+  async function loadMonthly(){
+    const res = await fetch(`${base}?range=monthly`, { credentials: "same-origin" });
+    if (!res.ok){
+      console.error('HTTP', res.status);
+      emptyEl.textContent = '차트를 불러오는 중 문제가 발생했습니다.';
+      emptyEl.classList.remove('d-none');
+      return;
+    }
+    const data = await res.json();
+    scaleMax = data?.meta?.scale_max ?? scaleMax;
+
+    const labels = data.labels || [];
+    const values = data.values || [];
+    const hasData = values.length > 0;
+
+    emptyEl.classList.toggle('d-none', hasData);
+    monthlyCV.classList.toggle('d-none', !hasData);
+    weeklyCV.classList.add('d-none');
+
+    if (!hasData){
+      if (charts.monthly) charts.monthly.destroy();
+      return;
+    }
+    drawLine(monthlyCV, 'monthly', labels, values);
   }
 
   function activate(range){
@@ -113,14 +145,18 @@
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    weeklyCanvas.classList.toggle('d-none', range !== 'weekly');
-    monthlyCanvas.classList.toggle('d-none', range !== 'monthly');
-    emptyEl.classList.add('d-none');
-    loadChart(range);
+
+    if (range === 'weekly_series') {
+      loadWeeklySeries();
+    } else {
+      loadMonthly();
+    }
   }
 
   tabs.forEach(btn => btn.addEventListener('click', () => activate(btn.dataset.range)));
-  activate('weekly');
+  // 최초: 주간(주 단위) 로드
+  activate('weekly_series');
 })();
 </script>
+
 {% endblock %}
