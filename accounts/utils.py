@@ -5,6 +5,8 @@ from django.http import HttpResponse
 import re
 import string
 import random
+from datetime import date, datetime
+from django.utils import timezone
 
 _PATTERN = re.compile(r'\[(\w+),\s*([0-1]\d|2[0-3]):([0-5]\d)\s*~\s*([0-1]\d|2[0-3]):([0-5]\d)\]')
 
@@ -44,9 +46,17 @@ def _make_note_list(note: str) -> list:
             notes[i].append(match[0])
     return notes
 
-    """
-    임신주수 계산 함수!!!!!!
-    """
+
+def _to_date(value):
+    """datetime/date/None → date 로 안전 변환"""
+    if value is None:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime): # 이미 date인 경우
+        return value
+    if isinstance(value, datetime): # datetime인 경우, aware일 때 localtime으로 서울 기준 달력으로 만들고, naive인 경우 그냥 사용(pregenancy_start_date가 UTC라면 저장될 때의 코드를 localtime처리 해주어야함)
+        return (timezone.localtime(value).date() if timezone.is_aware(value) else value.date())
+
+
 def cal_gestational_week(pregnancy_start_date, particular_date):
     """
     특정 년/월/일을 입력하면 몆주차인지 리턴해줌.
@@ -58,6 +68,14 @@ def cal_gestational_week(pregnancy_start_date, particular_date):
         return 0
     else:
         return (particular_date - pregnancy_start_date).days // 7 + 1
+    
+    
+def cal_gestational_month(pregnancy_start_date, particular_date):
+    """임신 몇 개월차인지 리턴해주는 함수"""
+    if pregnancy_start_date == None:
+        return 0
+    else:
+        return(particular_date - pregnancy_start_date).days // 30 + 1
 
 
 def make_csv_response(user: settings.AUTH_USER_MODEL, response: HttpResponse) -> HttpResponse:
