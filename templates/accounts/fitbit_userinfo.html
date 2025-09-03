@@ -27,7 +27,7 @@
       <!-- 탭 -->
       <ul class="nav nav-tabs" id="stressTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link chart-link active" data-range="weekly_series" type="button" aria-selected="true">주간</button>
+          <button class="nav-link chart-link active" data-range="weekly" type="button" aria-selected="true">주간</button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link chart-link" data-range="monthly" type="button" aria-selected="false">월간</button>
@@ -62,7 +62,7 @@
   const monthlyCV   = document.getElementById('stressMonthly');
   const emptyEl     = document.getElementById('stressEmpty');
 
-  let charts = { weekly_series: null, monthly: null };
+  let charts = { weekly: null, monthly: null };
   let scaleMax = 40;
 
   function drawLine(canvas, key, labels, values){
@@ -89,7 +89,7 @@
   }
 
   async function loadWeeklySeries(){
-    const res = await fetch(`${base}?range=weekly_series`, { credentials: "same-origin" });
+    const res = await fetch(`${base}?range=weekly`, { credentials: "same-origin" });
     if (!res.ok){
       console.error('HTTP', res.status);
       emptyEl.textContent = '차트를 불러오는 중 문제가 발생했습니다.';
@@ -107,10 +107,10 @@
     monthlyCV.classList.add('d-none');
 
     if (!hasData){
-      if (charts.weekly_series) charts.weekly_series.destroy();
+      if (charts.weekly) charts.weekly.destroy();
       return;
     }
-    drawLine(weeklyCV, 'weekly_series', labels, values);
+    drawLine(weeklyCV, 'weekly', labels, values);
   }
 
   async function loadMonthly(){
@@ -146,7 +146,7 @@
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
 
-    if (range === 'weekly_series') {
+    if (range === 'weekly') {
       loadWeeklySeries();
     } else {
       loadMonthly();
@@ -155,7 +155,7 @@
 
   tabs.forEach(btn => btn.addEventListener('click', () => activate(btn.dataset.range)));
   // 최초: 주간(주 단위) 로드
-  activate('weekly_series');
+  activate('weekly');
 })();
 </script>
 
