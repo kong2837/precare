@@ -32,7 +32,7 @@ from huami.models.healthdata import HealthData
 from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
 from .forms import EmailPasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm,PhoneNumberPasswordResetRequestForm
 from .models import Profile
-from .utils import generate_verification_code
+from .utils import generate_verification_code, _to_date, cal_gestational_week, cal_gestational_month
 
 from django.contrib.auth import login
 from django.utils import timezone
@@ -881,80 +881,42 @@ class FitbitCallbackView(View):
         return redirect(reverse("home"))
 
     
-def _month_start(d: date) -> date:
-    return d.replace(day=1)
 
-def _add_months(d: date, n: int) -> date:
-    y = d.year + (d.month - 1 + n) // 12
-    m = (d.month - 1 + n) % 12 + 1
-    return date(y, m, 1)
-
-def _to_date(value):
-    """datetime/date/None → date 로 안전 변환"""
-    if not value:
-        return None
-    try:
-        # timezone-aware datetime이면 localtime 사용
-        if hasattr(value, "tzinfo"):
-            try:
-                return timezone.localtime(value).date()
-            except Exception:
-                return value.date()
-        if hasattr(value, "date"):
-            return value.date()
-    except Exception:
-        pass
-    return value  # 이미 date 라고 가정
 
 class StressChartData(LoginRequiredMixin, View):
     """
-    GET /accounts/<pk>/stress-data/
-      - params:
-        - range=weekly | monthly | weekly_windows
-        - idx=<int>  # weekly_windows 전용: 0(최신)부터 과거로 1,2,...
-        - windows=1  # weekly_windows 전용: 버튼 목록(윈도우 메타)만 반환
-
       1) 0~40점
-      2) weekly -> 기준일 포함 최근 7일
-      3) weekly_windows -> "동기화 날짜(anchor)로부터 7일씩 끊은 모든 구간"을 페이지처럼 제공
-         - idx=0: [anchor-6, anchor]
-         - idx=1: [anchor-13, anchor-7]
-         - ...
-         - windows=1: 프론트 버튼용 윈도우 리스트(라벨: '임신 N개월') 반환
-      4) monthly -> 기준일 포함 최근 1년을 월 단위로 끊어서
+      2) weekly -> 첫 점수 등록 날짜 ~ 마지막 동기화 날짜 기간동안의 점수를 주단위로 끊어서 표시
+      3) monthly -> 월 단위로 끊어서 기록된 모든 달을 표시
     """
     def get(self, request, pk):
         user = get_object_or_404(get_user_model(), pk=pk)
         if (request.user != user) and (not request.user.is_superuser):
             return JsonResponse({"error": "forbidden"}, status=403)
 
-        # ----- 임신 시작일 (라벨용: '임신 N개월') -----
+        # ----- 임신 시작일 fitbit/huami DB에서 선택하여 불러오기 & datetime -> date로 type 전환 -----
         target = _get_research_target(user)
         preg_start = None
         if target is not None:
             ps = getattr(target, "pregnancy_start_date", None)
             preg_start = _to_date(ps)
 
-        # ----- 점수 있는 설문 쿼리 -----
+        # ----- 점수 있는 설문 찾아 불러오기 -----
         qs = UserSurvey.objects.filter(user_id=user.id, score__isnull=False)
 
-        # ----- 기준일(anchor) 결정: last_synced / sync_date → 최근 설문일 → 오늘 -----
+        # ----- 최근 동기화 날짜 불러오기: last_synced(fitbit) / sync_date(huami) & datetime-> date type 전환 -----
         last_synced = None
         if target is not None:
             last_synced = getattr(target, "last_synced", None) or getattr(target, "sync_date", None)
         anchor = _to_date(last_synced)
 
-        if not anchor:
-            last_survey_dt = qs.order_by("-create_at").values_list("create_at", flat=True).first()
-            anchor = _to_date(last_survey_dt)
-
-        if not anchor:
+        if not anchor: # 혹시 최근 동기화가 저장되어있지 않은 경우 현재 날짜까지 표시
             anchor = timezone.localdate()
 
         rng = (request.GET.get("range") or "weekly").lower()
 
         # ---------------------- 주간: 기준일 포함 7일 (0~40점 스케일) ----------------------
-        if rng == "weekly_series":
+        if rng == "weekly":
             # 전체 데이터의 최소일 (없으면 anchor만)
             first_day = qs.order_by("create_at").values_list("create_at", flat=True).first()
             first_day = _to_date(first_day) or anchor
@@ -972,14 +934,14 @@ class StressChartData(LoginRequiredMixin, View):
                 # 라벨: "MM/DD~MM/DD (임신 N주)"
                 if preg_start:
                     # 주의 ‘시작일’을 기준으로 임신 n주 표기
-                    gd = (start - preg_start).days
-                    if gd >= 0:
-                        week_no = gd // 7 + 1
+                    week_no = cal_gestational_week(preg_start, start)
+                    if week_no >= 0:
                         label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')} ({week_no}주)"
                     else:
                         label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')} (-)"
                 else:
                     label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')}"
+                    
                 labels.append(label)
                 values.append(round(float(v), 1) if v is not None else None)
 
@@ -988,76 +950,6 @@ class StressChartData(LoginRequiredMixin, View):
                 "values": values,
                 "meta": {"scale_max": 40}
             })
-
-        # ---------------------- 7일 단위 윈도우 페이지(버튼 전환용) ----------------------
-        if rng == "weekly_windows":
-            # 전체 데이터의 최소일 찾기 (없는 경우 anchor만 기준)
-            first_day = qs.order_by("create_at").values_list("create_at", flat=True).first()
-            first_day = _to_date(first_day) or anchor
-
-            # anchor로부터 7일씩 끊은 윈도우 목록 생성
-            windows = self._build_weekly_windows(anchor, first_day)
-
-            # 버튼 목록만 달라고 하면(라벨: 임신 N개월)
-            if request.GET.get("windows") == "1":
-                btns = []
-                for idx, (w_start, w_end) in enumerate(windows):
-                    btns.append({
-                        "idx": idx,
-                        "start": w_start.isoformat(),
-                        "end": w_end.isoformat(),
-                        "label": self._month_label_from_preg(preg_start, w_start)  # '임신 N개월'
-                    })
-                return JsonResponse({"windows": btns, "meta": {"scale_max": 40}})
-
-            # 특정 윈도우(idx)의 7일치 그래프 데이터 반환
-            try:
-                idx = int(request.GET.get("idx", "0"))
-            except ValueError:
-                idx = 0
-            if idx < 0:
-                idx = 0
-            if idx >= len(windows):
-                # 인덱스가 너무 크면 마지막(가장 과거) 윈도우로
-                idx = len(windows) - 1 if windows else 0
-
-            if not windows:
-                return JsonResponse({"labels": [], "values": [], "meta": {"scale_max": 40}})
-
-            start, end = windows[idx]
-
-            day_rows = (
-                qs.filter(create_at__date__range=(start, end))
-                  .annotate(day=TruncDate("create_at"))
-                  .values("day")
-                  .annotate(value=Avg("score"))
-            )
-            day_map = {r["day"]: round(float(r["value"]), 1) for r in day_rows}
-
-            labels, values = [], []
-            for i in range(7):
-                d = start + timedelta(days=i)
-                # 라벨: MM/DD (임신 N주)
-                if preg_start:
-                    gd = (d - preg_start).days
-                    label = f"{d.strftime('%m/%d')} ({gd // 7 + 1}주)" if gd >= 0 else f"{d.strftime('%m/%d')} (-)"
-                else:
-                    label = d.strftime("%m/%d")
-                labels.append(label)
-                values.append(day_map.get(d, None))
-
-            return JsonResponse({
-                "labels": labels,
-                "values": values,
-                "window": {
-                    "idx": idx,
-                    "start": start.isoformat(),
-                    "end": end.isoformat(),
-                    "label": self._month_label_from_preg(preg_start, start)  # 버튼과 동일 라벨
-                },
-                "meta": {"scale_max": 40}
-            })
-
         # ---------------------- 월간: 기준일 포함 최근 12개월 (0~40점 스케일) ----------------------
         if rng == "monthly":
         # 1) 이 유저의 설문 기록 범위를 전부 계산
@@ -1109,9 +1001,8 @@ class StressChartData(LoginRequiredMixin, View):
             for mstart in months:
                 # 라벨: "MM월(임신 N개월)" 또는 임신 시작일 없으면 "MM월"
                 if preg_start:
-                    gd = (mstart - preg_start).days
-                    if gd >= 0:
-                        preg_month = gd // 30 + 1
+                    preg_month = cal_gestational_month(preg_start, mstart)
+                    if preg_month >= 0:
                         label = f"{mstart.strftime('%m월')} ({preg_month}개월)"
                     else:
                         label = f"{mstart.strftime('%m월')} (-)"
@@ -1150,16 +1041,15 @@ class StressChartData(LoginRequiredMixin, View):
             if end < first_day:
                 break
         return windows
+    
+    def _month_start(d: date) -> date:
+        return d.replace(day=1)
 
-    def _month_label_from_preg(self, preg_start, date_for_label):
-        """
-        버튼 라벨: '임신 N개월'
-        preg_start가 없으면 달(예: 'MM월')로 대체
-        """
-        if preg_start:
-            gd = (date_for_label - preg_start).days
-            return f"임신 {gd // 30 + 1}개월" if gd >= 0 else "임신 이전"
-        return f"{date_for_label.strftime('%m월')}"
+    def _add_months(d: date, n: int) -> date:
+        y = d.year + (d.month - 1 + n) // 12
+        m = (d.month - 1 + n) % 12 + 1
+        return date(y, m, 1)
+
 
 #로그인 방식 선택
 def login_select(request):
