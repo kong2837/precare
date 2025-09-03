@@ -881,6 +881,13 @@ class FitbitCallbackView(View):
         return redirect(reverse("home"))
 
     
+def _month_start(d: date) -> date:
+    return d.replace(day=1)
+
+def _add_months(d: date, n: int) -> date:
+    y = d.year + (d.month - 1 + n) // 12
+    m = (d.month - 1 + n) % 12 + 1
+    return date(y, m, 1)
 
 
 class StressChartData(LoginRequiredMixin, View):
@@ -1041,14 +1048,7 @@ class StressChartData(LoginRequiredMixin, View):
             if end < first_day:
                 break
         return windows
-    
-    def _month_start(d: date) -> date:
-        return d.replace(day=1)
 
-    def _add_months(d: date, n: int) -> date:
-        y = d.year + (d.month - 1 + n) // 12
-        m = (d.month - 1 + n) % 12 + 1
-        return date(y, m, 1)
 
 
 #로그인 방식 선택
