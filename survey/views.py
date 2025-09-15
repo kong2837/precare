@@ -19,6 +19,7 @@ import survey.utils as utils
 from accounts.views import SuperuserRequiredMixin
 from huami.models import HuamiAccount
 from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
+from django.core.exceptions import FieldError
 
 
 # Create your views here.
@@ -233,11 +234,12 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
                 scores.append(Answer.objects.filter(description=reply.content).get().value)
             if "임신스트레스 10문항" in user_survey.survey_name:
                 result = utils.stress_result(tuple(scores))
-                total_score = sum(scores)
-                user_survey.score = total_score
-                user_survey.save()
             else:
                 result = utils.pbras_result(tuple(scores))
+            
+            total_score = sum(scores)
+            user_survey.score = total_score
+            user_survey.save()
 
         return render(request, 'survey/survey_complete.html', {'result': result, 'total_score': total_score})
 
@@ -271,32 +273,54 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
             name = user.username
 
         ws.append([name, user.username])
+        
+        # 설문별 점수 라벨 간단 매핑
+        def score_label(title: str):
+            if "임신스트레스 10문항" in title:
+                return "스트레스 점수"
+            if "조기진통위험 10문항" in title:
+                return "조기진통 점수"
+            if "QUIPP" in title:
+                return "QUIPP 점수"
+            return None  # 그 외 설문은 점수 컬럼 없음
+        
+        # 시트명 간단 정리: "[상시] ..." 제거
+        def sheet_name_from(title: str):
+            m = re.search(r'\[.*?\]\s*(.*)', title)
+            return m.group(1) if m else title
+        
+        # 3) 질문 타이틀 불러오기
+        def question_titles(survey):
+            qs = survey.questions.all()
+            try:
+                qs = qs.order_by('order')
+            except FieldError:
+                qs = qs.order_by('id')
+            return list(qs.values_list('title', flat=True))
 
-        def _select_sheet(survey: Survey):
-            # "[상시] OO 설문조사" 형식으로 되어있음
-            nonlocal ws
-            pattern = r'\[.*?\]\s*(.*)'
-            title = re.search(pattern, survey.title).group(1)
-            if title not in wb.sheetnames:
-                ws = wb.create_sheet(title=title)
-                ws.append(['작성시간', *survey.questions.all().values_list('title', flat=True), '스트레스 점수'])
+        for us in user_surveys:
+            survey = us.survey
+            sname = sheet_name_from(survey.title)
+            titles = question_titles(survey)
+            s_label = score_label(survey.title)
 
-        for user_survey in user_surveys:
-            
-            _select_sheet(user_survey.survey)
-            
-            reply_dict = {
-                reply.survey_question.question.title: reply.content
-                for reply in user_survey.replies.all()
-            }
-            
-            # reply_dict = {reply.survey_question.question.title: reply.content for reply in user_survey.replies.all()}
-            # replies = [reply_dict.get(question.value, '') for question in ws[1][1:]]
+            # 시트가 없으면 헤더 만들기
+            if sname not in wb.sheetnames:
+                ws = wb.create_sheet(title=sname)
+                header = ['작성시간', *titles]
+                if s_label:
+                    header.append(s_label)  # 해당 설문만 점수 컬럼 추가
+                ws.append(header)
+            else:
+                ws = wb[sname]
 
-            question_titles = user_survey.survey.questions.all().values_list('title', flat=True)
-            replies = [reply_dict.get(title, '') for title in question_titles]
-            ws.append([user_survey.create_at, *replies, user_survey.score])
-            
+            # 응답 매핑 후 행 추가
+            reply_dict = {r.survey_question.question.title: r.content for r in us.replies.all()}
+            row = [us.create_at, *[reply_dict.get(t, '') for t in titles]]
+            if s_label:
+                row.append(us.score)  # 해당 설문만 점수 값 추가
+            ws.append(row)
+
         return wb
 
     def get(self, request, user_id):
