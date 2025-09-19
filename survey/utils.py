@@ -1,4 +1,5 @@
 from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
+from django.db.models import Q
 
 def __make_p_tag(origin: str) -> str:
     style = (
@@ -52,11 +53,16 @@ def pbras_result(scores: tuple) -> str:
         return __make_p_tag("편안함을 주는 음악을 들으세요.❤️")
     return __make_p_tag("네 좋아요. 지금처럼 지내시면 됩니다.❤️")
 
-def update_stress_scores():
-    """기존 임신스트레스 score가 저장되지 않은 유저 스트레스 점수 업데이트 함수
-    """
-    user_surveys = UserSurvey.objects.filter(survey__title__icontains="임신스트레스 10문항")
-    
+def update_survey_scores():
+    """기존 설문조사의 score가 저장되지 않은 유저 스트레스 점수 업데이트 함수"""
+    user_surveys = UserSurvey.objects.filter(
+        survey__title__icontains="임신스트레스 10문항"
+    ) | UserSurvey.objects.filter(
+        survey__title__icontains="QUIPP"
+    ) | UserSurvey.objects.filter(
+        survey__title__icontains="조기진통위험 10문항"
+    )
+
     answers_dict = {
         a.description.strip().replace(" ", "").replace(".", "").replace("·", ""): a.value
         for a in Answer.objects.all()
@@ -70,19 +76,26 @@ def update_stress_scores():
 
             scores = []
             for reply in replies:
-                desc_raw = reply.content
+                desc_raw = reply.content or ""
                 desc_cleaned = desc_raw.strip().replace(" ", "").replace(".", "").replace("·", "")
 
-                if desc_cleaned in answers_dict:
-                    scores.append(answers_dict[desc_cleaned])
+                score = answers_dict.get(desc_cleaned)
+
+                if score is not None:
+                    scores.append(score)
                 else:
-                    print(f"[❌] Answer 매칭 실패: {desc_raw}")
+                    # 🔽 주관식 문항은 0점으로 처리 (QUIPP 설문인 경우)
+                    if "QUIPP" in user_survey.survey.title:
+                        scores.append(0)
+                        print(f"[ℹ️] 주관식 문항 → 0점 처리: {desc_raw}")
+                    else:
+                        print(f"[❌] Answer 매칭 실패: {desc_raw}")
 
             total_score = sum(scores)
             user_survey.score = total_score
             user_survey.save()
 
-            print(f"[✅] {user_survey.id} → 총 점수 {total_score} 저장 완료")
+            print(f"[✅] {user_survey.id} → 총 점수 {total_score} 저장 완료 ({user_survey.survey.title})")
 
         except Exception as e:
             print(f"[⚠️] 오류 발생 (user_survey={user_survey.id}): {e}")
