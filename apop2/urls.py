@@ -25,5 +25,6 @@ urlpatterns = [
     path('api/', include('apop2.apiurls')),
     path('survey/', include('survey.urls')),
     path('accounts/', include('accounts.urls')),
+    path('information/', include('information.urls', namespace='information')),
     path('', HomeView.as_view(), name='home'),
 ]

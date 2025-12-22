@@ -55,6 +55,7 @@ from django.db.models.functions import TruncDate, TruncMonth
 from survey.models import UserSurvey
 from fitbit.models import FitbitMinuteMetric, FitbitAccount
 from django.db.models import Avg
+from django.db.models import Q
 
 # 공용 타깃 선택 함수
 def _get_research_target(user):
@@ -889,8 +890,14 @@ def _add_months(d: date, n: int) -> date:
     m = (d.month - 1 + n) % 12 + 1
     return date(y, m, 1)
 
+# CHANGE: 설문 필터 정의(제목 기준). 필요 시 survey_id로 바꿔도 됨.
+SURVEY_FILTERS = {
+    "stress":  Q(survey__title__icontains="임신스트레스"),
+    "quipp":   Q(survey__title__icontains="QUIPP"),
+    "preterm": Q(survey__title__icontains="조기진통"),
+}
 
-class StressChartData(LoginRequiredMixin, View):
+class ScoreChartData(LoginRequiredMixin, View):
     """
       1) 0~40점
       2) weekly -> 첫 점수 등록 날짜 ~ 마지막 동기화 날짜 기간동안의 점수를 주단위로 끊어서 표시
@@ -908,8 +915,19 @@ class StressChartData(LoginRequiredMixin, View):
             ps = getattr(target, "pregnancy_start_date", None)
             preg_start = _to_date(ps)
 
-        # ----- 점수 있는 설문 찾아 불러오기 -----
-        qs = UserSurvey.objects.filter(user_id=user.id, score__isnull=False)
+        # ----- metric 결정: 기본 stress -----
+        metric = (request.GET.get("metric") or "stress").lower()
+        survey_filter = SURVEY_FILTERS.get(metric)
+        if survey_filter is None:
+            return JsonResponse({"error": f"unknown metric: {metric}"}, status=400)
+
+        # ----- 이 유저의 해당 설문 점수만 조회 (score 사용! 중요) -----
+        #     ※ 핵심: 세 설문 모두 user_survey.score 에 저장되므로
+        #       필드명은 'score' 고정, 설문 구분은 survey_filter 로만!
+        qs = (UserSurvey.objects
+              .filter(user_id=user.id)
+              .filter(survey_filter)
+              .filter(score__isnull=False))
 
         # ----- 최근 동기화 날짜 불러오기: last_synced(fitbit) / sync_date(huami) & datetime-> date type 전환 -----
         last_synced = None

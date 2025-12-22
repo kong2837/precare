@@ -7,7 +7,7 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
     password_reset_complete, find_username_request, verify_username_code, UserProfileView, UserPasswordChangeView, \
     HuamiAccountRecertificationView, UserResearchStatus, UserResearchDate, UserPhoneNumberChangeView, \
     select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear, \
-    FitbitLoginView, FitbitCallbackView, FitbitUserManageView, FitbitUserInfoView, FitbitHealthDataCsvDownloadView, StressChartData
+    FitbitLoginView, FitbitCallbackView, FitbitUserManageView, FitbitUserInfoView, FitbitHealthDataCsvDownloadView, ScoreChartData
 
 app_name = 'accounts'
 urlpatterns = [
@@ -44,5 +44,6 @@ urlpatterns = [
     path('callback/', FitbitCallbackView.as_view(), name='fitbit_callback'),
     path('login/', accounts_views.login_select, name='login'),
     path("admin/login/", LoginView.as_view(), name="admin_login"),
-    path("<int:pk>/stress-data/", accounts_views.StressChartData.as_view(), name="stress_data_chart"),
+    path("<int:pk>/stress-data/", accounts_views.ScoreChartData.as_view(), name="score_data_chart"),
+    path("charts/<int:pk>", ScoreChartData.as_view(), name="score-chart"),
 ]

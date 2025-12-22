@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="container py-5">
+  <h2 class="fw-bold text-center mb-4">임신 주수별 산모 및 태아정보</h2>
+  <p class="text-center text-muted mb-5">임신 주수별 정보를 확인해 보세요.</p>
+
+  <div class="row g-4 justify-content-center">
+    <!-- 임신 초기 -->
+    <div class="col-12 col-md-4">
+      <a href="{% url 'information:early' %}" class="text-decoration-none w-100 d-block">
+        <div class="p-5 text-center rounded-4" style="background:#CFEAD2;">
+          <h3 class="fw-bold mb-0" style="color:#2E5E3E;">임신 초기<br>(1주~13주)</h3>
+        </div>
+      </a>
+    </div>
+
+    <!-- 임신 중기 -->
+    <div class="col-12 col-md-4">
+      <a href="{% url 'information:mid' %}" class="text-decoration-none w-100 d-block">
+        <div class="p-5 text-center rounded-4" style="background:#F9C8CF;">
+          <h3 class="fw-bold mb-0" style="color:#7E3B44;">임신 중기<br>(14주~27주)</h3>
+        </div>
+      </a>
+    </div>
+
+    <!-- 임신 후기 -->
+    <div class="col-12 col-md-4">
+      <a href="{% url 'information:late' %}" class="text-decoration-none w-100 d-block">
+        <div class="p-5 text-center rounded-4" style="background:#D9C4FF;">
+          <h3 class="fw-bold mb-0" style="color:#4D3D77;">임신 후기<br>(28주~40주)</h3>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}
