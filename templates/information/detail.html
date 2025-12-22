@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+
+  <h2 class="fw-bold mb-4">{{ title }}</h2>
+
+  <!-- 주수 선택 -->
+  <form method="get" class="mb-4">
+    <label class="fw-bold">주수 선택</label>
+    <select name="week" class="form-select w-auto d-inline-block ms-2"
+            onchange="this.form.submit()">
+      <option value="">선택하세요</option>
+      {% for w in weeks %}
+        <option value="{{ w }}" {% if w == selected_week %}selected{% endif %}>
+          {{ w }}주
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if info %}
+  <div class="row g-4">
+    <!-- 태아 정보 -->
+    <div class="col-md-4">
+      <div class="p-4 rounded-4 h-100" style="background:#E1FAF6;">
+        <h5 class="fw-bold mb-2">👶 태아 정보</h5>
+        <p class="mb-0">{{ info.baby }}</p>
+      </div>
+    </div>
+
+    <!-- 임부 정보 -->
+    <div class="col-md-4">
+      <div class="p-4 rounded-4 h-100" style="background:#FFF1E6;">
+        <h5 class="fw-bold mb-2">🤰 임부 정보</h5>
+        <p class="mb-0">{{ info.mother }}</p>
+      </div>
+    </div>
+
+    <!-- 관리 TIP -->
+    <div class="col-md-4">
+      <div class="p-4 rounded-4 h-100" style="background:#F0ECFF;">
+        <h5 class="fw-bold mb-2">💡 주수별 관리 TIP</h5>
+        <p class="mb-0">{{ info.tip }}</p>
+      </div>
+    </div>
+  </div>
+  {% else %}
+    <p class="text-muted">주수를 선택하면 정보가 표시됩니다.</p>
+  {% endif %}
+
+</div>
+{% endblock %}
