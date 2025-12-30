@@ -1,6 +1,7 @@
 import csv
 import re
 import urllib.parse
+import json
 from tempfile import NamedTemporaryFile
 from typing import Any
 
@@ -18,9 +19,13 @@ from openpyxl import Workbook
 import survey.utils as utils
 from accounts.views import SuperuserRequiredMixin
 from huami.models import HuamiAccount
-from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer
+from survey.models import Survey, Question, UserSurvey, Reply, SurveyQuestion, Answer, ActionFeedback
 from django.core.exceptions import FieldError
+from django.http import JsonResponse
 
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from .models import ActionFeedback
 
 # Create your views here.
 
@@ -224,24 +229,48 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
                                                 survey=survey)
 
         self._create_replies(user_survey, request.POST)
-        result = ""
-        total_score = None
+        
+        total_score = None # 설문 점수
+        action_code = None # 설문 점수에 따른 행동 요령
 
         if "임신스트레스 10문항" in user_survey.survey_name or "조기진통위험 10문항" in user_survey.survey_name:
+            
             replies = Reply.objects.filter(user_survey=user_survey).order_by("survey_question__order")
             scores = []
+            
             for reply in replies:
                 scores.append(Answer.objects.filter(description=reply.content).get().value)
+                
             if "임신스트레스 10문항" in user_survey.survey_name:
-                result = utils.stress_result(tuple(scores))
+                result_data = utils.stress_result(tuple(scores))
             else:
-                result = utils.pbras_result(tuple(scores))
+                result_data = utils.pbras_result(tuple(scores))
             
             total_score = sum(scores)
             user_survey.score = total_score
             user_survey.save()
+            
+            result_data = utils.stress_result(tuple(scores))
+            result_html = result_data["html"]   
+            action_code = result_data["action_code"]
+            
+            ActionFeedback.objects.create(
+            user_survey=user_survey,
+            action_code=action_code,
+            performed=False
+        )
 
-        return render(request, 'survey/survey_complete.html', {'result': result, 'total_score': total_score})
+        return render(
+            request,
+            "survey/survey_complete.html",
+            {
+                "result": result_html,
+                "action_code": action_code,
+                "action_message": utils.ACTION_MESSAGES.get(action_code),
+                "user_survey_id": user_survey.id,
+                "total_score": total_score,
+            }
+        )
 
     def put(self, request, *args, **kwargs):
         """작성된 설문 수정 화면
@@ -349,3 +378,36 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
         response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
         return response
 
+def update_action_feedback(request):
+    data = json.loads(request.body)
+    performed = data.get("performed")
+
+    action_feedback = ActionFeedback.objects.filter(
+        user_survey__user=request.user
+    ).order_by("-id").first()
+
+    if not action_feedback:
+        return JsonResponse({"error": "not found"}, status=404)
+
+    action_feedback.performed = performed
+    action_feedback.save()
+
+    return JsonResponse({"status": "ok"})
+
+@require_POST
+@login_required
+def update_action_feedback(request):
+    data = json.loads(request.body)
+
+    performed = data.get("performed")
+    user_survey_id = data.get("user_survey_id")
+
+    action_feedback = ActionFeedback.objects.get(
+        user_survey_id=user_survey_id,
+        user_survey__user=request.user
+    )
+
+    action_feedback.performed = performed
+    action_feedback.save()
+
+    return JsonResponse({"status": "ok"})
