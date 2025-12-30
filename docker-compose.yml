@@ -37,9 +37,9 @@ services:
     networks:
       - network
     volumes:
-      - .:/app                             # 🔥 전체 코드 마운트
-      - ./static:/djangoproject/static     # static 파일 마운트 유지
-    working_dir: /app                      # 🔥 Django root 경로 설정
+      - .:/app
+      - ./static:/djangoproject/static
+    working_dir: /app 
     command: >
       bash -c "
       python3 manage.py makemigrations survey huami accounts &&

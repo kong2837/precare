@@ -45,6 +45,7 @@ class UserSurvey(models.Model):
         help_text='설문 점수 총합'
     )
     
+    
     @property
     def survey_name(self) -> str:
         return self.survey.title
