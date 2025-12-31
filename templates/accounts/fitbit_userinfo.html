@@ -55,7 +55,7 @@
 <script>
 (function(){
   const uid  = Number("{{ userInfo.pk }}");
-  const base = "{% url 'accounts:stress_data_chart' 0 %}".replace('/0/', `/${uid}/`);
+  const base = "{% url 'accounts:score_data_chart' 0 %}".replace('/0/', `/${uid}/`);
 
   const tabs        = document.querySelectorAll('#stressTabs .chart-link');
   const weeklyCV    = document.getElementById('stressWeekly');
