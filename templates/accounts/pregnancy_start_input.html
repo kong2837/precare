@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-3">임신 시작일 입력</h1>
+  <p class="text-muted">임신 주수를 계산하기 위한 시작 기준일을 입력해주세요.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ form.pregnancy_start_date.label_tag }}
+      {{ form.pregnancy_start_date }}
+      {% if form.pregnancy_start_date.help_text %}
+      <div class="form-text">{{ form.pregnancy_start_date.help_text }}</div>
+      {% endif %}
+      {% for err in form.pregnancy_start_date.errors %}
+        <div class="text-danger">{{ err }}</div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">저장</button>
+  </form>
+</div>
+{% endblock %}
