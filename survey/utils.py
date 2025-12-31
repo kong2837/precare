@@ -11,20 +11,40 @@ def __make_p_tag(origin: str) -> str:
     )
     return f'<p style="{style}"><strong>{origin}</strong></p>'
 
+ACTION_MESSAGES = {
+    "BED_REST": "침상에 누워 충분한 안정을 취하셨나요?",
+    "DRINK_WATER": "물 한 잔 마시셨나요?",
+    "DRINK_WATER_OFTEN": "틈틈이 앉아서 물을 마시셨나요?",
+    "SIT_AND_BREATH": "지금 자리에 앉아 심호흡을 하셨나요?",
+    "SIT_AND_DRINK_WATER": "잠깐 앉아서 물을 마시고 심호흡 하셨나요?",
+    "MUSIC": "잠시 앉아 편안한 음악을 들어보셨나요?",
+}
 
 def stress_result(scores: tuple) -> str:
     total = sum(scores)
     if total >= 16:
-        return __make_p_tag(
+        return {
+            "html": __make_p_tag(
             "심호흡을 한 후 잠깐 걸어 볼까요^^<br>"
             "그럼 이제 마음이 차분해지는 음악을 들어보세요♪<br>"
             "좋아하는 음악이면 됩니다.❤️️"
-        )
+            ),
+            "action_code": "MUSIC"
+                }
     if total >= 10:
-        return __make_p_tag("오늘 힘드셨군요.<br>잠시 앉아 심호흡을 해보세요.❤️️")
+        return {
+            "html": __make_p_tag("오늘 힘드셨군요.<br>잠시 앉아 심호흡을 해보세요.❤️️"),
+            "action_code": "SIT_AND_BREATH"
+        }
     if total >= 6:
-        return __make_p_tag("하던 일을 멈추고 후~<br>심호흡을 해보세요.️❤️")
-    return __make_p_tag("스트레스 점수가 낮습니다.<br>잘하셨어요.☺<br>짝짝짝 지금처럼 편안하게 지내세요.❤️")
+        return {
+            "html": __make_p_tag("하던 일을 멈추고 후~<br>심호흡을 해보세요.️❤️"),
+            "action_code": "SIT_AND_BREATH"
+        }
+    return {
+        "html": __make_p_tag("스트레스 점수가 낮습니다.<br>잘하셨어요.☺<br>짝짝짝 지금처럼 편안하게 지내세요.❤️"),
+        "action_code": None
+        }
 
 
 def __check_score(scores: tuple, std: int) -> bool:
@@ -38,20 +58,39 @@ def pbras_result(scores: tuple) -> str:
     mon4 = (scores[8], scores[9])
 
     if __check_score(mon1, 3):
-        return __make_p_tag("침상에서 안정을 취한 후, 증상이 계속되면 산과 진료를 받는 것을 추천합니다!")
+        return {
+            "html": __make_p_tag("침상에서 안정을 취한 후, 증상이 계속되면 산과 진료를 받는 것을 추천합니다!"),
+            "action_code": "BED_REST"
+        }
     if __check_score(mon1, 2):
-        return __make_p_tag("침상에 누워 안정을 취하세요.❤️")
-    if __check_score(mon2, 3):
-        return __make_p_tag("침대에 누워 안정을 취하세요.❤️")
+        return {
+            "html": __make_p_tag("침상에 누워 안정을 취하세요.❤️"),
+            "action_code": "BED_REST"
+        }
     if __check_score(mon2, 2):
-        return __make_p_tag("앉아서 물을 한잔 마시세요.❤️")
+        return {
+            "html": __make_p_tag("앉아서 물을 한잔 마시세요.❤️"),
+            "action_code": "DRINK_WATER"
+        }
     if __check_score(mon3, 3):
-        return __make_p_tag("틈틈이 앉아 물을 마시세요.❤️")
+        return {
+            "html": __make_p_tag("틈틈이 앉아 물을 마시세요.❤️"),
+            "action_code": "DRINK_WATER_OFTEN"
+        }
     if __check_score(mon4, 3):
-        return __make_p_tag("물을 자주 마시고 심호흡을 해보세요.❤️")
+        return {
+            "html": __make_p_tag("물을 자주 마시고 심호흡을 해보세요.❤️"),
+            "action_code": "SIT_AND_DRINK_WATER"
+        }
     if __check_score(mon4, 2):
-        return __make_p_tag("편안함을 주는 음악을 들으세요.❤️")
-    return __make_p_tag("네 좋아요. 지금처럼 지내시면 됩니다.❤️")
+        return {
+            "html": __make_p_tag("편안함을 주는 음악을 들으세요.❤️"),
+            "action_code": "MUSIC"
+        }
+    return {
+        "html": __make_p_tag("네 좋아요. 지금처럼 지내시면 됩니다.❤️"),
+        "action_code": None
+        }
 
 def update_survey_scores():
     """기존 설문조사의 score가 저장되지 않은 유저 스트레스 점수 업데이트 함수"""

@@ -5,6 +5,7 @@ from .question_answer import QuestionAnswer
 from .answer import Answer
 from .user_survey import UserSurvey
 from .reply import Reply
+from .action_feedback import ActionFeedback
 
 __all__ = ["SurveyQuestion",
            "Survey",
@@ -12,5 +13,6 @@ __all__ = ["SurveyQuestion",
            "QuestionAnswer",
            "Answer",
            "UserSurvey",
-           "Reply"
+           "Reply",
+           "ActionFeedback"
             ]

@@ -11,14 +11,100 @@
               </svg>
             제출 완료
         </h1>
+
+        <!-- 결과 문구 -->
         <figure class="text-center mb-5">
             {{ result|safe }}
         </figure>
+
+        <!-- 행동 수행 확인 영역 -->
+        {% if action_message %}
+        <div class="text-center mt-4">
+            <p class="fw-semibold fs-6 mb-3">
+                {{ action_message }}
+            </p>
+
+            <div class="d-flex justify-content-center gap-3">
+                <button id="btnYes"
+                        class="btn btn-outline-success px-4"
+                        onclick="selectAction(true)">
+                    예
+                </button>
+                <button id="btnNo"
+                        class="btn btn-outline-secondary px-4"
+                        onclick="selectAction(false)">
+                    아니오
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
         <p class="text-center fs-10">참여해 주셔서 감사합니다.</p>
     </div>
-    <div class="row justify-content-center">
-            <a href="{% url 'home' %}" class="btn btn-primary btn-lg text-center" tabindex="-1" role="button">돌아가기</a>
+
+
+    <!--  돌아가기 버튼 (처음엔 비활성화) -->
+    <div class="row justify-content-center mt-3">
+        <a id="backBtn"
+        href="javascript:void(0);"
+        class="btn btn-secondary btn-lg disabled mt-3"
+        tabindex="-1"
+        aria-disabled="true"
+        onclick="submitActionFeedback()">
+            돌아가기
+        </a>
     </div>
+
 </div>
+
+<script>
+    const userSurveyId = Number("{{ user_survey_id }}");
+    let selectedPerformed = null;
+
+    function selectAction(performed) {
+        selectedPerformed = performed;
+
+        const btnYes = document.getElementById("btnYes");
+        const btnNo = document.getElementById("btnNo");
+        const backBtn = document.getElementById("backBtn");
+
+        if (performed === true) {
+            btnYes.classList.replace("btn-outline-success", "btn-success");
+            btnNo.classList.replace("btn-secondary", "btn-outline-secondary");
+        } else {
+            btnNo.classList.replace("btn-outline-secondary", "btn-secondary");
+            btnYes.classList.replace("btn-success", "btn-outline-success");
+        }
+
+        // 돌아가기 버튼 활성화 + 파란색
+        backBtn.classList.remove("disabled", "btn-secondary");
+        backBtn.classList.add("btn-primary");
+        backBtn.removeAttribute("aria-disabled");
+        backBtn.tabIndex = 0;   
+    }
+
+    function submitActionFeedback() {
+        if (selectedPerformed === null) return;
+
+        fetch("{% url 'survey:update_action_feedback' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                performed: selectedPerformed,
+                user_survey_id: userSurveyId
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("failed");
+            window.location.href = "{% url 'home' %}";
+        })
+        .catch(() => {
+            alert("수행 여부 저장 중 오류가 발생했습니다.");
+        });
+    }
+</script>
 
 {% endblock content %}

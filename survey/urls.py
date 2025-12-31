@@ -2,6 +2,7 @@ from django.urls import path
 from django.views.generic import TemplateView
 from survey.views import SurveyListView, SurveyDetailView, SurveyFormView, UserSurveyListView, SurveyListAdminView, \
     UserSurveyListAdminView, UserSurveyCsvView
+from . import views
 
 app_name = 'survey'
 
@@ -12,4 +13,6 @@ urlpatterns = [
     path('user/<int:pk>/', SurveyListAdminView.as_view(), name='survey-list-admin'),
     path('<int:survey_pk>/user/<int:user_pk>/', UserSurveyListAdminView.as_view(), name='user-survey-list-admin'),
     path('<int:survey_pk>/user/<int:user_pk>/csv/', UserSurveyCsvView.as_view(), name='user-survey-csv'),
+    path("action-feedback/", views.update_action_feedback, name="update_action_feedback"),
+    path("update-action-feedback/", views.update_action_feedback, name="update_action_feedback"),
 ]
