@@ -1074,59 +1074,111 @@ class ScoreChartData(LoginRequiredMixin, View):
         return windows
 
 #설문 그래프 디테일 뷰
-class WeeklyScoreDetailView(LoginRequiredMixin, View):
-    def get(self, request, pk):
-        user = get_object_or_404(get_user_model(), pk=pk)
-        if (request.user != user) and (not request.user.is_superuser):
-            return JsonResponse({"error": "forbidden"}, status=403)
+# class WeeklyScoreDetailView(LoginRequiredMixin, View):
+#     def get(self, request, pk):
+#         user = get_object_or_404(get_user_model(), pk=pk)
+#         if (request.user != user) and (not request.user.is_superuser):
+#             return JsonResponse({"error": "forbidden"}, status=403)
 
-        start = parse_date(request.GET.get("start"))
-        end   = parse_date(request.GET.get("end"))
-        metric = (request.GET.get("metric") or "stress").lower()
+#         start = parse_date(request.GET.get("start"))
+#         end   = parse_date(request.GET.get("end"))
+#         metric = (request.GET.get("metric") or "stress").lower()
 
-        survey_filter = SURVEY_FILTERS.get(metric)
-        if not start or not end or not survey_filter:
-            return JsonResponse({"error": "bad request"}, status=400)
+#         survey_filter = SURVEY_FILTERS.get(metric)
+#         if not start or not end or not survey_filter:
+#             return JsonResponse({"error": "bad request"}, status=400)
 
-        # 1. 해당 기간의 설문들 조회
-        qs = (
-            UserSurvey.objects
-            .filter(user=user)
-            .filter(survey_filter)
-            .filter(create_at__date__range=(start, end))
-            .select_related("survey")
-        )
+#         # 1. 해당 기간의 설문들 조회
+#         qs = (
+#             UserSurvey.objects
+#             .filter(user=user)
+#             .filter(survey_filter)
+#             .filter(create_at__date__range=(start, end))
+#             .select_related("survey")
+#         )
 
-        surveys = []
-        survey_ids = []
-        for us in qs:
-            survey_ids.append(us.id)
-            surveys.append({
-                "id": us.id,
-                "title": us.survey.title,
-                "score": us.score,
-                "created": us.create_at.strftime('%Y-%m-%d'),
-            })
+#         surveys = []
+#         survey_ids = []
+#         for us in qs:
+#             survey_ids.append(us.id)
+#             surveys.append({
+#                 "id": us.id,
+#                 "title": us.survey.title,
+#                 "score": us.score,
+#                 "created": us.create_at.strftime('%Y-%m-%d'),
+#             })
 
-        # 2. ActionFeedback 조회
-        # 1주일간 여러 개가 있을 수 있으므로 리스트로 반환하거나 가장 최근 것을 반환
-        action_qs = ActionFeedback.objects.filter(user_survey_id__in=survey_ids).order_by('-created_at')
+#         # 2. ActionFeedback 조회
+#         # 1주일간 여러 개가 있을 수 있으므로 리스트로 반환하거나 가장 최근 것을 반환
+#         action_qs = ActionFeedback.objects.filter(user_survey_id__in=survey_ids).order_by('-created_at')
         
-        actions = []
-        for af in action_qs:
-            actions.append({
-                "action_code": af.action_code,
-                "performed": af.performed, # 1: 예, 0: 아니오
-                "created_at": af.created_at.strftime('%Y-%m-%d %H:%M')
+#         actions = []
+#         for af in action_qs:
+#             actions.append({
+#                 "action_code": af.action_code,
+#                 "performed": af.performed, # 1: 예, 0: 아니오
+#                 "created_at": af.created_at.strftime('%Y-%m-%d %H:%M')
+#             })
+
+#         return JsonResponse({
+#             "range": {"start": start.isoformat(), "end": end.isoformat()},
+#             "surveys": surveys,
+#             "actions": actions  # 행동 요령 리스트 전달
+#         })
+
+class WeeklyScoreDetailView(View):
+    def get(self, request, pk):
+        start = request.GET.get('start')
+        end = request.GET.get('end')
+        metric = request.GET.get('metric') # 'stress', 'quipp', 'preterm' 중 하나가 들어옴
+
+        # 1. metric 값에 따른 설문 필터링 조건 설정
+        # DB의 survey_id 값은 프로젝트 설정에 따라 다를 수 있으니 확인이 필요합니다.
+        survey_filter = {}
+        if metric == 'stress':
+            # 설문 제목에 '스트레스'가 포함된 경우만 필터링
+            survey_filter['survey__title__icontains'] = '스트레스'
+        elif metric == 'quipp':
+            # 설문 제목에 'QUIPP'가 포함된 경우만 필터링
+            survey_filter['survey__title__icontains'] = 'QUIPP'
+        elif metric == 'preterm':
+            # 설문 제목에 '조기진통'이 포함된 경우만 필터링
+            survey_filter['survey__title__icontains'] = '조기진통'
+
+        # 2. 해당 기간 및 필터 조건에 맞는 설문만 조회
+        surveys = UserSurvey.objects.filter(
+            user_id=pk,
+            create_at__date__range=(start, end),
+            **survey_filter # 위에서 설정한 필터 적용
+        ).order_by('-create_at')
+
+        history_data = []
+        for us in surveys:
+            # ActionFeedback 직접 조회 (에러 방지용)
+            feedback = ActionFeedback.objects.filter(user_survey_id=us.id).first()
+            
+            history_data.append({
+                "created_at": us.create_at.strftime('%Y-%m-%d %H:%M'),
+                "title": us.survey.title if us.survey else "설문",
+                "score": us.score if us.score is not None else 0,
+                "has_feedback": True if feedback else False,
+                "action_code": feedback.action_code if feedback else None,
+                "performed": feedback.performed if feedback else 0,
+                "action_msg": get_feedback_message(feedback.action_code) if feedback else "기록된 행동 요령이 없습니다."
             })
 
-        return JsonResponse({
-            "range": {"start": start.isoformat(), "end": end.isoformat()},
-            "surveys": surveys,
-            "actions": actions  # 행동 요령 리스트 전달
-        })
+        return JsonResponse({"history": history_data})
 
-
+def get_feedback_message(code):
+    MESSAGE_MAP = {
+        "MUSIC": "마음이 차분해지는 음악을 들어보세요♪",
+        "SIT_AND_BREATH": "하던 일을 멈추고 심호흡을 해보세요.❤️",
+        "BED_REST": "침상에 누워 안정을 취하세요.❤️",
+        "DRINK_WATER": "앉아서 물을 한잔 마시세요.❤️",
+        "DRINK_WATER_OFTEN": "틈틈이 앉아 물을 마시세요.❤️",
+        "SIT_AND_DRINK_WATER": "잠깐 앉아서 물을 마시고 심호흡 하셨나요?❤️",
+    }
+    return MESSAGE_MAP.get(code, "지금처럼 편안하게 지내세요.❤️")
 
 #로그인 방식 선택
 def login_select(request):
