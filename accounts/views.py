@@ -54,8 +54,7 @@ from django.db.models.functions import TruncDate, TruncMonth
 
 from survey.models import UserSurvey
 from fitbit.models import FitbitMinuteMetric, FitbitAccount
-from django.db.models import Avg
-from django.db.models import Q
+from django.db.models import Avg, Max, Q
 from survey.models import ActionFeedback
 
 # 공용 타깃 선택 함수
@@ -882,6 +881,8 @@ class FitbitCallbackView(View):
         print("Fitbit OAuth 성공 - 홈으로 리디렉트 시도")
         return redirect(reverse("home"))
 
+
+
     
 def _month_start(d: date) -> date:
     return d.replace(day=1)
@@ -953,9 +954,9 @@ class ScoreChartData(LoginRequiredMixin, View):
 
             labels, values, meta= [], [], []
             for (start, end) in windows:
-                # 이 7일 구간의 평균(없으면 None)
+                # 변경: Avg -> Max (그 주의 가장 높은 점수를 가져옴)
                 row = (qs.filter(create_at__date__range=(start, end))
-                         .aggregate(value=Avg("score")))
+                        .aggregate(value=Max("score")))
                 v = row["value"]
                 # 라벨: "MM/DD~MM/DD (임신 N주)"
                 if preg_start:
