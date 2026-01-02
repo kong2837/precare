@@ -11,6 +11,8 @@ def __make_p_tag(origin: str) -> str:
     )
     return f'<p style="{style}"><strong>{origin}</strong></p>'
 
+
+
 ACTION_MESSAGES = {
     "BED_REST": "침상에 누워 충분한 안정을 취하셨나요?",
     "DRINK_WATER": "물 한 잔 마시셨나요?",

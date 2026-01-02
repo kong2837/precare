@@ -46,4 +46,5 @@ urlpatterns = [
     path("admin/login/", LoginView.as_view(), name="admin_login"),
     path("<int:pk>/stress-data/", accounts_views.ScoreChartData.as_view(), name="score_data_chart"),
     path("charts/<int:pk>", ScoreChartData.as_view(), name="score-chart"),
+    path(  "charts/<int:pk>/weekly-detail/", accounts_views.WeeklyScoreDetailView.as_view(),name="weekly_score_detail")
 ]
