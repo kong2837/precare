@@ -923,79 +923,62 @@ class ScoreChartData(LoginRequiredMixin, View):
         if survey_filter is None:
             return JsonResponse({"error": f"unknown metric: {metric}"}, status=400)
 
-        # ----- 이 유저의 해당 설문 점수만 조회 (score 사용! 중요) -----
-        #     ※ 핵심: 세 설문 모두 user_survey.score 에 저장되므로
-        #       필드명은 'score' 고정, 설문 구분은 survey_filter 로만!
+        # 모든 쿼리셋에 한국 시간 기준 날짜(local_date) 주입
         qs = (UserSurvey.objects
               .filter(user_id=user.id)
               .filter(survey_filter)
-              .filter(score__isnull=False))
+              .filter(score__isnull=False)
+              .annotate(local_date=TruncDate('create_at', tzinfo=timezone.get_current_timezone())))
 
-        # ----- 최근 동기화 날짜 불러오기: last_synced(fitbit) / sync_date(huami) & datetime-> date type 전환 -----
-        target = _get_research_target(user)
+        # 기준일(anchor)을 한국 시간 날짜로 결정
+        last_dt = qs.order_by("-create_at").values_list("create_at", flat=True).first()
+        last_data_date = timezone.localtime(last_dt).date() if last_dt else None
+        
         sync_date = None
         if target:
-            sync_date = getattr(target, "last_synced", None) or getattr(target, "sync_date", None)
+            sd = getattr(target, "last_synced", None) or getattr(target, "sync_date", None)
+            if sd: sync_date = timezone.localtime(sd).date()
         
-        anchor = _to_date(sync_date)
+        today = timezone.localdate()
+        # 데이터 마지막 날, 동기화 날, 오늘 중 가장 미래인 날 선택
+        anchor = max(filter(None, [last_data_date, sync_date, today]))
 
-        # 실제 설문 데이터(qs) 중 가장 마지막 날짜 확인
-        # 만약 동기화 날짜보다 더 최신 설문 데이터가 있다면 그것을 기준으로 삼음
-        last_data_dt = qs.order_by("-create_at").values_list("create_at", flat=True).first()
-        last_data_date = _to_date(last_data_dt)
-
-        # anchor를 둘 중 더 최신인 날짜로 강제 업데이트
-        if last_data_date and (not anchor or last_data_date > anchor):
-            anchor = last_data_date
-
-        # 만약 둘 다 없으면 오늘 날짜
-        if not anchor:
-            anchor = timezone.localdate()
-        
-
-        # ---------------------- 주간: 기준일 포함 7일 (0~40점 스케일) ----------------------
         rng = (request.GET.get("range") or "weekly").lower()
+
+        # ---------------------- 주간: 최고점(Max) 기준 ----------------------
         if rng == "weekly":
-            # 전체 데이터의 최소일 (없으면 anchor만)
-            first_day = qs.order_by("create_at").values_list("create_at", flat=True).first()
-            first_day = _to_date(first_day) or anchor
+            first_dt = qs.order_by("create_at").values_list("create_at", flat=True).first()
+            first_day = timezone.localtime(first_dt).date() if first_dt else anchor
 
-            # anchor 기준으로 7일씩 끊은 윈도우들 생성 (최신 idx=0 → 과거로 증가)
             windows = self._build_weekly_windows(anchor, first_day)
-            windows = list(reversed(windows))  # x축을 과거→현재 순서로
+            windows = list(reversed(windows))
 
-            labels, values, meta= [], [], []
+            labels, values, meta = [], [], []
             for (start, end) in windows:
-                # 변경: Avg -> Max (그 주의 가장 높은 점수를 가져옴)
-                row = (qs.filter(create_at__date__range=(start, end))
-                        .aggregate(value=Max("score")))
+                # [핵심 3] 주입된 local_date로 필터링하여 자정 데이터 구제
+                row = (qs.filter(local_date__range=(start, end))
+                         .aggregate(value=Max("score")))
                 v = row["value"]
-                # 라벨: "MM/DD~MM/DD (임신 N주)"
+                
+                label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')}"
                 if preg_start:
-                    # 주의 ‘시작일’을 기준으로 임신 n주 표기
                     week_no = cal_gestational_week(preg_start, start)
-                    if week_no >= 0:
-                        label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')} ({week_no}주)"
-                    else:
-                        label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')} (-)"
-                else:
-                    label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')}"
+                    label += f" ({week_no}주)" if week_no >= 0 else " (-)"
                     
                 labels.append(label)
-                values.append(round(float(v), 1) if v is not None else None)
-                meta.append({
-                    "start": start.isoformat(),
-                    "end": end.isoformat()
-                })
+                values.append(int(v) if v is not None else None)
+                meta.append({"start": start.isoformat(), "end": end.isoformat()})
 
-            return JsonResponse({
-                "labels": labels,
-                "values": values,
-                "meta": meta, # 각 점의 날짜 정보 리스트 [{"start":..., "end":...}, ...]
-                "scale_max": 40
-            })
+            return JsonResponse({"labels": labels, "values": values, "meta": meta, "scale_max": 40})
+        
+        
         # ---------------------- 월간: 기준일 포함 최근 12개월 (0~40점 스케일) ----------------------
         if rng == "monthly":
+            
+            # 월간 역시 local_date 기준으로 그룹화
+            day_rows = (qs.values("local_date")
+                        .annotate(value=Avg("score"))
+                        .order_by("local_date"))
         # 1) 이 유저의 설문 기록 범위를 전부 계산
             first_dt = qs.order_by("create_at").values_list("create_at", flat=True).first()
             last_dt  = qs.order_by("-create_at").values_list("create_at", flat=True).first()
@@ -1138,48 +1121,44 @@ class ScoreChartData(LoginRequiredMixin, View):
 #             "surveys": surveys,
 #             "actions": actions  # 행동 요령 리스트 전달
 #         })
-
 class WeeklyScoreDetailView(View):
     def get(self, request, pk):
         start = request.GET.get('start')
         end = request.GET.get('end')
-        metric = request.GET.get('metric') # 'stress', 'quipp', 'preterm' 중 하나가 들어옴
+        metric = request.GET.get('metric')
 
-        # 1. metric 값에 따른 설문 필터링 조건 설정
-        # DB의 survey_id 값은 프로젝트 설정에 따라 다를 수 있으니 확인이 필요합니다.
-        survey_filter = {}
+        survey_filter = Q()
         if metric == 'stress':
-            # 설문 제목에 '스트레스'가 포함된 경우만 필터링
-            survey_filter['survey__title__icontains'] = '스트레스'
+            survey_filter = Q(survey__title__icontains='스트레스')
         elif metric == 'quipp':
-            # 설문 제목에 'QUIPP'가 포함된 경우만 필터링
-            survey_filter['survey__title__icontains'] = 'QUIPP'
+            survey_filter = Q(survey__title__icontains='QUIPP')
         elif metric == 'preterm':
-            # 설문 제목에 '조기진통'이 포함된 경우만 필터링
-            survey_filter['survey__title__icontains'] = '조기진통'
+            survey_filter = Q(survey__title__icontains='조기진통')
 
-        # 2. 해당 기간 및 필터 조건에 맞는 설문만 조회
-        surveys = UserSurvey.objects.filter(
-            user_id=pk,
-            create_at__date__range=(start, end),
-            **survey_filter # 위에서 설정한 필터 적용
+        # [핵심] 조희 시에도 TruncDate를 사용하여 한국 시간 날짜 범위를 정확히 타격
+        surveys = UserSurvey.objects.filter(user_id=pk).annotate(
+            local_date=TruncDate('create_at', tzinfo=timezone.get_current_timezone())
+        ).filter(
+            local_date__range=(start, end),
+            **{k: v for k, v in survey_filter.children} if isinstance(survey_filter, Q) else {}
         ).order_by('-create_at')
+
+        # 만약 위 필터 방식이 복잡하다면 아래처럼 단순화 가능:
+        # surveys = UserSurvey.objects.filter(user_id=pk, create_at__date__range=(start, end))... 
+        # 단, TruncDate 방식이 가장 정확합니다.
 
         history_data = []
         for us in surveys:
-            # ActionFeedback 직접 조회 (에러 방지용)
             feedback = ActionFeedback.objects.filter(user_survey_id=us.id).first()
-            
             history_data.append({
-                "created_at": us.create_at.strftime('%Y-%m-%d %H:%M'),
+                "created_at": timezone.localtime(us.create_at).strftime('%Y-%m-%d %H:%M'),
                 "title": us.survey.title if us.survey else "설문",
-                "score": us.score if us.score is not None else 0,
-                "has_feedback": True if feedback else False,
+                "score": us.score or 0,
+                "has_feedback": bool(feedback),
                 "action_code": feedback.action_code if feedback else None,
                 "performed": feedback.performed if feedback else 0,
                 "action_msg": get_feedback_message(feedback.action_code) if feedback else "기록된 행동 요령이 없습니다."
             })
-
         return JsonResponse({"history": history_data})
 
 def get_feedback_message(code):
