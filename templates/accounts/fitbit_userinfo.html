@@ -4,20 +4,19 @@
   <a class="btn btn-secondary mb-3" href="javascript:history.go(-1)">목록으로</a>
 
   <div class="row">
-    
     <div class="col-lg-8">
-      <div class="card mb-4 border-0 shadow-sm">
+      <div class="card mb-4">
         <div class="card-body">
-          <div class="d-flex w-100 justify-content-between align-items-center">
-            <h3 class="card-title mb-0">{{ userInfo.fitbit.full_name|default:userInfo.username }}</h3>
+          <div class="d-flex w-100 justify-content-between">
+            <h3 class="card-title">{{ userInfo.fitbit.full_name|default:userInfo.username }}</h3>
             <small class="text-muted">마지막 동기화: {{ userInfo.fitbit.last_synced|default:"기록 없음" }}</small>
           </div>
 
-          <form action="{% url 'accounts:updateNote' userInfo.pk %}" method="post" class="mt-4">
+          <form action="{% url 'accounts:updateNote' userInfo.pk %}" method="post" class="mt-3">
             {% csrf_token %}
             <div class="form-group">
               <label for="note" class="fw-bold mb-1">참고사항</label>
-              <textarea class="form-control" id="note" rows="4" name="note">{{ userInfo.fitbit.note }}</textarea>
+              <textarea class="form-control" id="note" rows="5" name="note">{{ userInfo.fitbit.note }}</textarea>
             </div>
             <button type="submit" class="btn btn-primary mt-2">수정하기</button>
           </form>
@@ -77,7 +76,7 @@
     </div>
 
     <div class="col-lg-4">
-      <div id="detailSection" class="card shadow-sm sticky-top d-none" style="top: 20px; border: none; border-radius: 12px;">
+      <div id="detailSection" class="card shadow-sm sticky-top d-none" style="top: 20px; border-radius: 12px;">
         <div class="card-header bg-white d-flex justify-content-between align-items-center pt-3 border-0">
           <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-info-circle me-2"></i>상세 기록</h5>
           <button type="button" class="btn-close" onclick="document.getElementById('detailSection').classList.add('d-none')"></button>
@@ -85,19 +84,12 @@
         <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
           <h6 id="detailTitle" class="text-primary fw-bold mb-3">날짜 정보</h6>
           
-          <div class="mb-4">
-            <h6 class="fw-bold small text-muted text-uppercase mb-2">설문 목록</h6>
-            <ul id="modalSurveyList" class="list-group list-group-flush border-top border-bottom"></ul>
-          </div>
-
-          <div>
-            <h6 class="fw-bold small text-muted text-uppercase mb-2">당시 안내된 행동 요령</h6>
-            <div id="modalActionArea"></div>
+          <div id="modalHistoryArea">
+            <p class="text-muted small">항목을 클릭하면 상세 기록이 표시됩니다.</p>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -110,15 +102,6 @@
   }
   #detailSection .card-body::-webkit-scrollbar { width: 5px; }
   #detailSection .card-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
-  
-  /* utils.py의 p 태그 스타일 조정 */
-  #modalActionArea p {
-    font-size: 0.95rem !important;
-    text-align: left !important;
-    padding: 0 !important;
-    margin-bottom: 0.5rem;
-    line-height: 1.4 !important;
-  }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -127,7 +110,6 @@
   const uid  = Number("{{ userInfo.pk }}");
   const base = "{% url 'accounts:score_data_chart' 0 %}".replace('/0/', `/${uid}/`);
 
-  // 1. 차트 그리기 함수 (spanGaps 적용)
   function drawLine(canvas, key, labels, values, labelText, scaleMax, metaData){
     if (!canvas) return;
     if (canvas._chart) canvas._chart.destroy();
@@ -145,14 +127,20 @@
           tension: 0.3,
           pointRadius: 5,
           pointHoverRadius: 8,
-          spanGaps: true, // 끊긴 구간 연결
+          spanGaps: true,
           fill: false
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, max: scaleMax ?? 40 } },
+        scales: { 
+          y: { 
+            beginAtZero: true, 
+            max: scaleMax ?? 40,
+            ticks: { stepSize: 5 }
+          } 
+        },
         onClick: (evt, elements) => {
           if (elements.length > 0) {
             const index = elements[0].index;
@@ -166,7 +154,6 @@
     });
   }
 
-  // 2. 상세 영역 업데이트 (HTML 메시지 포함)
   async function updateDetailArea(start, end, metric, dateLabel) {
     const detailUrl = `{% url 'accounts:weekly_score_detail' userInfo.pk %}?start=${start}&end=${end}&metric=${metric}`;
     try {
@@ -174,53 +161,46 @@
       const data = await res.json();
 
       const sectionEl = document.getElementById('detailSection');
-      const listEl = document.getElementById('modalSurveyList');
-      const actionEl = document.getElementById('modalActionArea');
+      const historyArea = document.getElementById('modalHistoryArea');
       
       document.getElementById('detailTitle').innerText = dateLabel;
       sectionEl.classList.remove('d-none');
+      historyArea.innerHTML = '';
 
-      listEl.innerHTML = '';
-      actionEl.innerHTML = '';
-
-      if (!data.surveys || data.surveys.length === 0) {
-        listEl.innerHTML = '<li class="list-group-item text-muted small px-0">기록 없음</li>';
-      } else {
-        data.surveys.forEach(s => {
-          listEl.innerHTML += `
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
-              <span class="small">${s.title}</span>
-              <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">${s.score}점</span>
-            </li>`;
-        });
+      if (!data.history || data.history.length === 0) {
+        historyArea.innerHTML = '<p class="text-muted small">기록이 없습니다.</p>';
+        return;
       }
 
-      if (!data.actions || data.actions.length === 0) {
-        actionEl.innerHTML = '<p class="text-muted small mt-2">수행 기록 없음</p>';
-      } else {
-        data.actions.forEach(a => {
-          const isDone = a.performed === 1;
-          actionEl.innerHTML += `
-            <div class="p-3 mb-3 rounded border-start border-4 ${isDone ? 'border-success bg-light' : 'border-secondary bg-white shadow-sm'}">
-              <div class="d-flex justify-content-between mb-2">
-                <span class="badge ${isDone ? 'bg-success' : 'bg-secondary'}" style="font-size: 0.65rem;">
-                  ${isDone ? '완료' : '미수행'}
-                </span>
-                <small class="text-muted" style="font-size: 0.7rem;">${a.created_at}</small>
-              </div>
-              <div class="feedback-content">${a.detail_msg || "내용 없음"}</div>
-              <div class="text-end mt-2 pt-2 border-top border-light" style="font-size: 0.7rem; color: #ccc;">
-                Code: ${a.action_code}
-              </div>
+      // 하단 코드의 타임라인 카드 방식 적용
+      data.history.forEach(item => {
+        const isDone = item.performed === 1;
+        const statusBadge = item.has_feedback 
+            ? `<span class="badge ${isDone ? 'bg-success' : 'bg-secondary'}">${isDone ? '수행' : '미수행'}</span>`
+            : `<span class="badge bg-light text-dark border">기록없음</span>`;
+
+        historyArea.innerHTML += `
+            <div class="mb-4 pb-2 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-dark" style="font-size: 0.85rem;">${item.created_at}</span>
+                    <div>
+                        <span class="badge bg-primary me-1">${item.score}점</span>
+                        ${statusBadge}
+                    </div>
+                </div>
+                <div class="p-2 rounded bg-light" style="font-size: 0.8rem;">
+                    <div class="text-muted mb-1" style="font-size: 0.7rem;">[${item.title}] 안내 내용:</div>
+                    <div class="fw-medium text-dark">${item.action_msg || "당시 안내된 메시지가 없습니다."}</div>
+                    ${item.action_code ? `<div class="text-end mt-1" style="font-size: 0.65rem; color: #ccc;">Code: ${item.action_code}</div>` : ''}
+                </div>
             </div>`;
-        });
-      }
+      });
     } catch (e) {
-      console.error(e);
+      console.error("데이터 로드 중 오류:", e);
     }
   }
 
-  // 3. 초기화 함수
+  // [변경됨] 하단 코드의 activate(range) 헬퍼 함수를 포함한 초기화 로직
   function initSection({metric, title, tabsId, weeklyId, monthlyId, emptyId}) {
     const tabs = document.querySelectorAll(`#${tabsId} .chart-link`);
     const weeklyCV = document.getElementById(weeklyId);
@@ -234,9 +214,11 @@
       const res = await fetch(`${base}?metric=${metric}&range=weekly`);
       const data = await res.json();
       const hasData = data.values && data.values.length > 0;
+      
       emptyEl.classList.toggle('d-none', hasData);
       weeklyCV.classList.toggle('d-none', !hasData);
       monthlyCV.classList.add('d-none');
+
       if (hasData) {
         const enrichedMeta = data.meta.map((m, i) => ({ ...m, label: data.labels[i] }));
         drawLine(weeklyCV, 'weekly', data.labels, data.values, title, data.scale_max || 40, enrichedMeta);
@@ -247,20 +229,23 @@
       const res = await fetch(`${base}?metric=${metric}&range=monthly`);
       const data = await res.json();
       const hasData = data.values && data.values.length > 0;
+      
       emptyEl.classList.toggle('d-none', hasData);
       monthlyCV.classList.toggle('d-none', !hasData);
       weeklyCV.classList.add('d-none');
-      if (hasData) drawLine(monthlyCV, 'monthly', data.labels, data.values, title, data.scale_max || 40, null);
+
+      if (hasData) {
+        drawLine(monthlyCV, 'monthly', data.labels, data.values, title, data.scale_max || 40, null);
+      }
     }
 
-    tabs.forEach(btn => {
-      btn.addEventListener('click', () => {
-        tabs.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        if (btn.dataset.range === 'weekly') loadWeekly(); else loadMonthly();
-      });
-    });
-    loadWeekly();
+    function activate(range){
+      tabs.forEach(b => b.classList.toggle('active', b.dataset.range === range));
+      if (range === 'weekly') loadWeekly(); else loadMonthly();
+    }
+
+    tabs.forEach(btn => btn.addEventListener('click', () => activate(btn.dataset.range)));
+    activate('weekly');
   }
 
   initSection({ metric: 'stress', title: '스트레스 점수', tabsId: 'stressTabs', weeklyId: 'stressWeekly', monthlyId: 'stressMonthly', emptyId: 'stressEmpty' });
