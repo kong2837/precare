@@ -932,17 +932,29 @@ class ScoreChartData(LoginRequiredMixin, View):
               .filter(score__isnull=False))
 
         # ----- 최근 동기화 날짜 불러오기: last_synced(fitbit) / sync_date(huami) & datetime-> date type 전환 -----
-        last_synced = None
-        if target is not None:
-            last_synced = getattr(target, "last_synced", None) or getattr(target, "sync_date", None)
-        anchor = _to_date(last_synced)
+        target = _get_research_target(user)
+        sync_date = None
+        if target:
+            sync_date = getattr(target, "last_synced", None) or getattr(target, "sync_date", None)
+        
+        anchor = _to_date(sync_date)
 
-        if not anchor: # 혹시 최근 동기화가 저장되어있지 않은 경우 현재 날짜까지 표시
+        # 실제 설문 데이터(qs) 중 가장 마지막 날짜 확인
+        # 만약 동기화 날짜보다 더 최신 설문 데이터가 있다면 그것을 기준으로 삼음
+        last_data_dt = qs.order_by("-create_at").values_list("create_at", flat=True).first()
+        last_data_date = _to_date(last_data_dt)
+
+        # anchor를 둘 중 더 최신인 날짜로 강제 업데이트
+        if last_data_date and (not anchor or last_data_date > anchor):
+            anchor = last_data_date
+
+        # 만약 둘 다 없으면 오늘 날짜
+        if not anchor:
             anchor = timezone.localdate()
-
-        rng = (request.GET.get("range") or "weekly").lower()
+        
 
         # ---------------------- 주간: 기준일 포함 7일 (0~40점 스케일) ----------------------
+        rng = (request.GET.get("range") or "weekly").lower()
         if rng == "weekly":
             # 전체 데이터의 최소일 (없으면 anchor만)
             first_day = qs.order_by("create_at").values_list("create_at", flat=True).first()
