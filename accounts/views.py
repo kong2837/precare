@@ -975,7 +975,7 @@ class ScoreChartData(LoginRequiredMixin, View):
         # ---------------------- 월간: 기준일 포함 최근 12개월 (0~40점 스케일) ----------------------
         if rng == "monthly":
             
-            # 월간 역시 local_date 기준으로 그룹화
+            # 월간 local_date 기준으로 그룹화
             day_rows = (qs.values("local_date")
                         .annotate(value=Avg("score"))
                         .order_by("local_date"))
@@ -1068,59 +1068,8 @@ class ScoreChartData(LoginRequiredMixin, View):
             if end < first_day:
                 break
         return windows
-
-#설문 그래프 디테일 뷰
-# class WeeklyScoreDetailView(LoginRequiredMixin, View):
-#     def get(self, request, pk):
-#         user = get_object_or_404(get_user_model(), pk=pk)
-#         if (request.user != user) and (not request.user.is_superuser):
-#             return JsonResponse({"error": "forbidden"}, status=403)
-
-#         start = parse_date(request.GET.get("start"))
-#         end   = parse_date(request.GET.get("end"))
-#         metric = (request.GET.get("metric") or "stress").lower()
-
-#         survey_filter = SURVEY_FILTERS.get(metric)
-#         if not start or not end or not survey_filter:
-#             return JsonResponse({"error": "bad request"}, status=400)
-
-#         # 1. 해당 기간의 설문들 조회
-#         qs = (
-#             UserSurvey.objects
-#             .filter(user=user)
-#             .filter(survey_filter)
-#             .filter(create_at__date__range=(start, end))
-#             .select_related("survey")
-#         )
-
-#         surveys = []
-#         survey_ids = []
-#         for us in qs:
-#             survey_ids.append(us.id)
-#             surveys.append({
-#                 "id": us.id,
-#                 "title": us.survey.title,
-#                 "score": us.score,
-#                 "created": us.create_at.strftime('%Y-%m-%d'),
-#             })
-
-#         # 2. ActionFeedback 조회
-#         # 1주일간 여러 개가 있을 수 있으므로 리스트로 반환하거나 가장 최근 것을 반환
-#         action_qs = ActionFeedback.objects.filter(user_survey_id__in=survey_ids).order_by('-created_at')
-        
-#         actions = []
-#         for af in action_qs:
-#             actions.append({
-#                 "action_code": af.action_code,
-#                 "performed": af.performed, # 1: 예, 0: 아니오
-#                 "created_at": af.created_at.strftime('%Y-%m-%d %H:%M')
-#             })
-
-#         return JsonResponse({
-#             "range": {"start": start.isoformat(), "end": end.isoformat()},
-#             "surveys": surveys,
-#             "actions": actions  # 행동 요령 리스트 전달
-#         })
+    
+    
 class WeeklyScoreDetailView(View):
     def get(self, request, pk):
         start = request.GET.get('start')
@@ -1135,7 +1084,7 @@ class WeeklyScoreDetailView(View):
         elif metric == 'preterm':
             survey_filter = Q(survey__title__icontains='조기진통')
 
-        # [핵심] 조희 시에도 TruncDate를 사용하여 한국 시간 날짜 범위를 정확히 타격
+        # 조희 시에도 TruncDate를 사용하여 한국 시간 날짜 범위를 정확히 타격
         surveys = UserSurvey.objects.filter(user_id=pk).annotate(
             local_date=TruncDate('create_at', tzinfo=timezone.get_current_timezone())
         ).filter(
@@ -1143,20 +1092,22 @@ class WeeklyScoreDetailView(View):
             **{k: v for k, v in survey_filter.children} if isinstance(survey_filter, Q) else {}
         ).order_by('-create_at')
 
-        # 만약 위 필터 방식이 복잡하다면 아래처럼 단순화 가능:
-        # surveys = UserSurvey.objects.filter(user_id=pk, create_at__date__range=(start, end))... 
-        # 단, TruncDate 방식이 가장 정확합니다.
-
         history_data = []
         for us in surveys:
-            feedback = ActionFeedback.objects.filter(user_survey_id=us.id).first()
+
+            feedback = getattr(us, 'action_feedback', None)
+            
+            is_performed = 0
+            if feedback and feedback.performed:
+                is_performed = 1
+
             history_data.append({
                 "created_at": timezone.localtime(us.create_at).strftime('%Y-%m-%d %H:%M'),
                 "title": us.survey.title if us.survey else "설문",
                 "score": us.score or 0,
                 "has_feedback": bool(feedback),
                 "action_code": feedback.action_code if feedback else None,
-                "performed": feedback.performed if feedback else 0,
+                "performed": is_performed,
                 "action_msg": get_feedback_message(feedback.action_code) if feedback else "기록된 행동 요령이 없습니다."
             })
         return JsonResponse({"history": history_data})
