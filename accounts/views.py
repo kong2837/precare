@@ -56,6 +56,7 @@ from survey.models import UserSurvey
 from fitbit.models import FitbitMinuteMetric, FitbitAccount
 from django.db.models import Avg
 from django.db.models import Q
+from survey.models import ActionFeedback
 
 # 공용 타깃 선택 함수
 def _get_research_target(user):
@@ -950,7 +951,7 @@ class ScoreChartData(LoginRequiredMixin, View):
             windows = self._build_weekly_windows(anchor, first_day)
             windows = list(reversed(windows))  # x축을 과거→현재 순서로
 
-            labels, values = [], []
+            labels, values, meta= [], [], []
             for (start, end) in windows:
                 # 이 7일 구간의 평균(없으면 None)
                 row = (qs.filter(create_at__date__range=(start, end))
@@ -969,11 +970,16 @@ class ScoreChartData(LoginRequiredMixin, View):
                     
                 labels.append(label)
                 values.append(round(float(v), 1) if v is not None else None)
+                meta.append({
+                    "start": start.isoformat(),
+                    "end": end.isoformat()
+                })
 
             return JsonResponse({
                 "labels": labels,
                 "values": values,
-                "meta": {"scale_max": 40}
+                "meta": meta, # 각 점의 날짜 정보 리스트 [{"start":..., "end":...}, ...]
+                "scale_max": 40
             })
         # ---------------------- 월간: 기준일 포함 최근 12개월 (0~40점 스케일) ----------------------
         if rng == "monthly":
@@ -1066,6 +1072,59 @@ class ScoreChartData(LoginRequiredMixin, View):
             if end < first_day:
                 break
         return windows
+
+#설문 그래프 디테일 뷰
+class WeeklyScoreDetailView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        user = get_object_or_404(get_user_model(), pk=pk)
+        if (request.user != user) and (not request.user.is_superuser):
+            return JsonResponse({"error": "forbidden"}, status=403)
+
+        start = parse_date(request.GET.get("start"))
+        end   = parse_date(request.GET.get("end"))
+        metric = (request.GET.get("metric") or "stress").lower()
+
+        survey_filter = SURVEY_FILTERS.get(metric)
+        if not start or not end or not survey_filter:
+            return JsonResponse({"error": "bad request"}, status=400)
+
+        # 1. 해당 기간의 설문들 조회
+        qs = (
+            UserSurvey.objects
+            .filter(user=user)
+            .filter(survey_filter)
+            .filter(create_at__date__range=(start, end))
+            .select_related("survey")
+        )
+
+        surveys = []
+        survey_ids = []
+        for us in qs:
+            survey_ids.append(us.id)
+            surveys.append({
+                "id": us.id,
+                "title": us.survey.title,
+                "score": us.score,
+                "created": us.create_at.strftime('%Y-%m-%d'),
+            })
+
+        # 2. ActionFeedback 조회
+        # 1주일간 여러 개가 있을 수 있으므로 리스트로 반환하거나 가장 최근 것을 반환
+        action_qs = ActionFeedback.objects.filter(user_survey_id__in=survey_ids).order_by('-created_at')
+        
+        actions = []
+        for af in action_qs:
+            actions.append({
+                "action_code": af.action_code,
+                "performed": af.performed, # 1: 예, 0: 아니오
+                "created_at": af.created_at.strftime('%Y-%m-%d %H:%M')
+            })
+
+        return JsonResponse({
+            "range": {"start": start.isoformat(), "end": end.isoformat()},
+            "surveys": surveys,
+            "actions": actions  # 행동 요령 리스트 전달
+        })
 
 
 
