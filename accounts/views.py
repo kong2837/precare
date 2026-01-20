@@ -940,8 +940,12 @@ class ScoreChartData(LoginRequiredMixin, View):
             if sd: sync_date = timezone.localtime(sd).date()
         
         today = timezone.localdate()
+        
         # 데이터 마지막 날, 동기화 날, 오늘 중 가장 미래인 날 선택
-        anchor = max(filter(None, [last_data_date, sync_date, today]))
+        # anchor = max(filter(None, [last_data_date, sync_date, today]))]
+        
+        # 데이터 마지막 날을 선택하도록 변경
+        anchor = last_data_date
 
         rng = (request.GET.get("range") or "weekly").lower()
 
@@ -955,7 +959,7 @@ class ScoreChartData(LoginRequiredMixin, View):
 
             labels, values, meta = [], [], []
             for (start, end) in windows:
-                # [핵심 3] 주입된 local_date로 필터링하여 자정 데이터 구제
+                # 주입된 local_date로 필터링하여 자정 데이터 구제
                 row = (qs.filter(local_date__range=(start, end))
                          .aggregate(value=Max("score")))
                 v = row["value"]
@@ -974,11 +978,11 @@ class ScoreChartData(LoginRequiredMixin, View):
         
         # ---------------------- 월간: 기준일 포함 최근 12개월 (0~40점 스케일) ----------------------
         if rng == "monthly":
-            
-            # 월간 local_date 기준으로 그룹화
-            day_rows = (qs.values("local_date")
-                        .annotate(value=Avg("score"))
-                        .order_by("local_date"))
+        
+        # # 월간 local_date 기준으로 그룹화
+        # day_rows = (qs.values("local_date")
+        #             .annotate(value=Avg("score"))
+        #             .order_by("local_date"))
         # 1) 이 유저의 설문 기록 범위를 전부 계산
             first_dt = qs.order_by("create_at").values_list("create_at", flat=True).first()
             last_dt  = qs.order_by("-create_at").values_list("create_at", flat=True).first()
