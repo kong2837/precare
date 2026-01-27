@@ -63,7 +63,7 @@ def get_step_count_intraday(date, account):
         if refresh_token(account):
             return get_step_count_intraday(date, account)
         else:
-            print("❌ 토큰 갱신 실패. 요청 중단.")
+            print("❌ 토큰 갱신 실패. 요청 중단.  steps")
             return None
 
     else:

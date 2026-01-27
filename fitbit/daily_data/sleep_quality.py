@@ -89,7 +89,7 @@ def get_sleep_stage(date, account):
         print(f"⚠️ {account.user.username} | 액세스 토큰 만료. 다시 갱신 시도 중...")
         if refresh_token(account):
             return get_sleep_stage(date, account)
-        print("❌ 토큰 갱신 실패. 요청 중단.")
+        print("❌ 토큰 갱신 실패. 요청 중단. sleep rate")
         return None
 
     else:
