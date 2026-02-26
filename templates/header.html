@@ -82,6 +82,16 @@
                             설문조사
                         </a>
                     </li>
+                    <li>
+                        <a href="{% url 'archive:index' %}" class="nav-link">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" 
+                                class="bi bi-file-earmark-zip-fill" viewBox="0 0 16 16">
+                            <path d="M5.5 9.438V8.5h1v.938a1 1 0 0 0 .03.243l.4 1.595c.084.336-.183.624-.518.624H5.088c-.335 0-.602-.288-.518-.624l.4-1.595a1 1 0 0 0 .03-.243z"/>
+                            <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 11.293 4zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1m-4 0h1v1h-1zM4 5h1v1H4zm1 1h1v1H5zm-1 1h1v1H4zm1 1h1v1H5zm-1 1h1v1H4zm1 1h1v1H5zm-1 1h1v1H4z"/>
+                            </svg>
+                            자료실
+                        </a>
+                    </li>
                     {% if user.is_superuser %}
                     <li>
                         <a href="{% url 'accounts:fitbitUserManage' %}?page=1&order_by=fitbit__full_name&direction=asc"
