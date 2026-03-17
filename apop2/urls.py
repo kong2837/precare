@@ -26,5 +26,6 @@ urlpatterns = [
     path('survey/', include('survey.urls')),
     path('accounts/', include('accounts.urls')),
     path('information/', include('information.urls', namespace='information')),
+    path('archive/', include('archive.urls', namespace='archive')),
     path('', HomeView.as_view(), name='home'),
 ]
