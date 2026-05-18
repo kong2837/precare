@@ -87,6 +87,52 @@
 <!-- 2025.11.10(월) 추가 -->
 <section class="container py-5">
   <h2 class="fw-bold text-center mb-4">임신 주수별 산모 및 태아정보를 확인하세요.</h2>
+    {% if current_week and info %}
+    <div class="text-center mb-5">
+      <h1 class="fw-bold mb-4">
+
+        <span style="color:#888888;">
+          당신은 현재
+        </span>
+
+        <span style="color:#E85D75;">
+          임신 {{ current_week }}주차
+        </span>
+
+        <span style="color:#888888;">
+          입니다.
+        </span>
+
+      </h1>
+    </div>
+
+    <div class="row g-4 mb-5">
+      <div class="col-md-4">
+        <div class="p-4 rounded-4 h-100" style="background:#E1FAF6;">
+          <h5 class="fw-bold mb-2">👶 태아 정보</h5>
+          <p class="mb-0">{{ info.baby }}</p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="p-4 rounded-4 h-100" style="background:#FFF1E6;">
+          <h5 class="fw-bold mb-2">🤰 임부 정보</h5>
+          <p class="mb-0">{{ info.mother }}</p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="p-4 rounded-4 h-100" style="background:#F0ECFF;">
+          <h5 class="fw-bold mb-2">💡 주수별 관리 TIP</h5>
+          <p class="mb-0">{{ info.tip }}</p>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-center text-muted mb-5">
+      임신 시작일 정보가 등록되면 현재 주차에 맞는 정보가 표시됩니다.
+    </p>
+{% endif %}
   <div class="row g-4 justify-content-center">
     <div class="col-12 col-md-4">
       <a href="{% url 'information:early' %}" class="text-decoration-none w-100 d-block">
