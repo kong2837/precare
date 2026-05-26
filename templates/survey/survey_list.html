@@ -54,7 +54,7 @@
 
     {% load static %}
     {% for survey in object_list %}
-        <a href="{% url 'survey:survey-detail' survey.pk %}" class="text-decoration-none w-100 d-flex justify-content-center">
+        <a href="{% url 'survey:survey-detail' survey.pk %}" class="text-decoration-none w-100 d-flex justify-content-center" onclick="saveClickLog('mother_fetus_info_click')">
             <div class="card mb-2 survey-card">
                 <div class="survey-label 
                     {% if survey.title == "[상시]QUIPP" %}label-quipp
