@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+
+  <a class="btn btn-secondary mb-3" href="javascript:history.go(-1)">
+    목록으로
+  </a>
+
+  <h3 class="fw-bold mb-4">
+    {{ userInfo.fitbit.full_name|default:userInfo.username }} 로그 목록
+  </h3>
+
+  <div class="card">
+    <div class="card-body">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>로그 종류</th>
+            <th>클릭 날짜</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+            <tr>
+              <td>{{ log.get_log_type_display }}</td>
+              <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="2" class="text-center text-muted">
+                저장된 로그가 없습니다.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
