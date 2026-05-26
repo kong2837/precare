@@ -57,6 +57,10 @@ from fitbit.models import FitbitMinuteMetric, FitbitAccount
 from django.db.models import Avg, Max, Q
 from survey.models import ActionFeedback
 
+from .models import UserClickLog
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+
 # 공용 타깃 선택 함수
 def _get_research_target(user):
     """
@@ -1126,6 +1130,46 @@ def get_feedback_message(code):
         "SIT_AND_DRINK_WATER": "잠깐 앉아서 물을 마시고 심호흡 하셨나요?❤️",
     }
     return MESSAGE_MAP.get(code, "지금처럼 편안하게 지내세요.❤️")
+
+# 로그 불러오는 함수 (fitbit 유저 관리 페이지에서 사용됨)
+def user_click_logs(request, user_pk):
+    user_info = get_object_or_404(get_user_model(), pk=user_pk)
+
+    logs = UserClickLog.objects.filter(
+        user=user_info
+    ).order_by("-created_at")
+
+    return render(request, "accounts/user_click_logs.html", {
+        "userInfo": user_info,
+        "logs": logs,
+    })
+
+# 로그 DB에 저장 API 함수
+@login_required
+@require_POST
+def save_click_log(request):
+    try:
+        data = json.loads(request.body)
+
+        log_type = data.get("log_type")
+
+        valid_log_types = [
+            "survey_click",
+            "mother_fetus_info_click",
+        ]
+
+        if log_type not in valid_log_types:
+            return JsonResponse({"success": False, "error": "invalid log_type"}, status=400)
+
+        UserClickLog.objects.create(
+            user=request.user,
+            log_type=log_type,
+        )
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 #로그인 방식 선택
 def login_select(request):

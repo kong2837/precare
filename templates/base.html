@@ -38,6 +38,42 @@
 
 </head>
 
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+
+  return cookieValue;
+}
+
+function saveClickLog(logType) {
+  fetch("{% url 'accounts:save_click_log' %}", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    },
+    body: JSON.stringify({
+      log_type: logType,
+    }),
+  }).catch(error => {
+    console.error("클릭 로그 저장 실패:", error);
+  });
+}
+</script>
+
 <body>
     {% include 'header.html' %}
 

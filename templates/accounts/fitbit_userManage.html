@@ -25,6 +25,7 @@
                 <tr>
                     <th scope="col">설문</th>
                     <th scope="col">건강 데이터</th>
+                    <th scope="col">로그 데이터</th>
                     <th scope="col" data-column="name">이름</th>
                     <th scope="col" data-column="age">생년월일</th>
                     <th scope="col" data-column="research_status">연구 상태</th>
@@ -55,6 +56,9 @@
                         </td>
                         <td>
                             <a class="btn btn-primary" href="{% url 'accounts:fitbit_csvDownload' user.pk %}">CSV로 저장</a>
+                        </td>
+                        <td>
+                            <a class="btn btn-primary" href="{% url 'accounts:user_click_logs' user.pk %}">로그 보기</a>
                         </td>
                         <td>{{ user.fitbit.full_name|default:user.username }}</td>
                         <td>{{ user.fitbit.birthday|date:'Y-m-d' }}</td>

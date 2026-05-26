@@ -11,6 +11,7 @@
             <h3 class="card-title">{{ userInfo.fitbit.full_name|default:userInfo.username }}</h3>
             <small class="text-muted">마지막 동기화: {{ userInfo.fitbit.last_synced|default:"기록 없음" }}</small>
           </div>
+          
 
           <form action="{% url 'accounts:updateNote' userInfo.pk %}" method="post" class="mt-3">
             {% csrf_token %}
