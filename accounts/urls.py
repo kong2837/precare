@@ -8,6 +8,9 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
     HuamiAccountRecertificationView, UserResearchStatus, UserResearchDate, UserPhoneNumberChangeView, \
     select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear, \
     FitbitLoginView, FitbitCallbackView, FitbitUserManageView, FitbitUserInfoView, FitbitHealthDataCsvDownloadView, ScoreChartData
+
+from .views import GoogleHealthLoginView, GoogleHealthCallbackView
+
 app_name = 'accounts'
 urlpatterns = [
     path("signup/", SignUpView.as_view(), name="signup"),
@@ -48,4 +51,6 @@ urlpatterns = [
     path(  "charts/<int:pk>/weekly-detail/", accounts_views.WeeklyScoreDetailView.as_view(),name="weekly_score_detail"),
     path("user/<int:user_pk>/click-logs/", accounts_views.user_click_logs, name="user_click_logs"),
     path("click-log/save/", accounts_views.save_click_log, name="save_click_log"),
+    path("google-health/login/",GoogleHealthLoginView.as_view(),name="google_health_login"),
+    path("google-health/callback/",GoogleHealthCallbackView.as_view(),name="google_health_callback"),
 ]
