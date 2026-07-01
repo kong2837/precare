@@ -6,7 +6,7 @@ from django.conf import settings
 
 
 def refresh_token(account):
-    """FitbitAccount 인스턴스를 이용해 access_token 갱신"""
+    """access_token 갱신"""
     url = "https://api.fitbit.com/oauth2/token"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded"
