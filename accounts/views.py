@@ -1183,12 +1183,6 @@ class GoogleHealthLoginView(View):
             "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly",
             "https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly",
             "https://www.googleapis.com/auth/googlehealth.sleep.readonly",
-            
-            # 사용자 프로필을 위한 People API
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/user.birthday.read",
-            "https://www.googleapis.com/auth/user.gender.read",
         ]
 
         params = {
@@ -1202,7 +1196,8 @@ class GoogleHealthLoginView(View):
 
         auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
         return redirect(auth_url)
-    
+
+
 class GoogleHealthCallbackView(View):
     def get(self, request):
         code = request.GET.get("code")
@@ -1240,15 +1235,12 @@ class GoogleHealthCallbackView(View):
             "Accept": "application/json",
         }
 
-        # Google Health 사용자 식별자
         identity_response = requests.get(
             "https://health.googleapis.com/v4/users/me/identity",
             headers=headers,
         )
 
-        identity_data = {}
-        if identity_response.status_code == 200:
-            identity_data = identity_response.json()
+        identity_data = identity_response.json() if identity_response.status_code == 200 else {}
 
         google_user_id = (
             identity_data.get("googleUserId")
@@ -1257,62 +1249,19 @@ class GoogleHealthCallbackView(View):
             or get_random_string(12)
         )
 
-        # People API 프로필
-        people_response = requests.get(
-            "https://people.googleapis.com/v1/people/me",
-            headers=headers,
-            params={"personFields": "names,emailAddresses,birthdays,genders"},
-        )
-
-        people_data = {}
-        if people_response.status_code == 200:
-            people_data = people_response.json()
-        else:
-            print("People API 실패:", people_response.status_code, people_response.text)
-
-        full_name = None
-        names = people_data.get("names", [])
-        if names:
-            full_name = names[0].get("displayName")
-
-        gender = None
-        genders = people_data.get("genders", [])
-        if genders:
-            gender = genders[0].get("value")
-
-        birthday = None
-        birthdays = people_data.get("birthdays", [])
-        if birthdays:
-            date_obj = birthdays[0].get("date", {})
-            year = date_obj.get("year")
-            month = date_obj.get("month")
-            day = date_obj.get("day")
-
-            if year and month and day:
-                birthday = f"{year:04d}-{month:02d}-{day:02d}"
-
-        email = None
-        emails = people_data.get("emailAddresses", [])
-        if emails:
-            email = emails[0].get("value")
-
         username = f"google_health_{google_user_id}"
 
         user, created = User.objects.get_or_create(
             username=username,
             defaults={
-                "first_name": full_name or "Google Health User",
-                "email": email or "",
+                "first_name": "Google Health User",
+                "email": "",
             },
         )
 
         if created:
             user.set_password(get_random_string(length=12))
             user.save()
-
-        if full_name and user.first_name != full_name:
-            user.first_name = full_name
-            user.save(update_fields=["first_name"])
 
         existing_account = FitbitAccount.objects.filter(user=user).first()
         final_refresh_token = refresh_token or (
@@ -1328,131 +1277,42 @@ class GoogleHealthCallbackView(View):
                 "expires_at": now() + timedelta(seconds=expires_in),
                 "scope": scope,
                 "token_type": token_type,
-                "full_name": full_name,
-                "gender": gender,
-                "birthday": birthday,
-                "height": None,
-                "weight": None,
             },
         )
-        
-        print("People status:", people_response.status_code)
-
-        print("People text:", people_response.text)
 
         login(request, user)
-        return redirect(reverse("home"))
 
-# class GoogleHealthCallbackView(View):
-#     def get(self, request):
-#         code = request.GET.get("code")
-#         if not code:
-#             return JsonResponse({"error": "Authorization code not found"}, status=400)
+        account = FitbitAccount.objects.filter(user=user).first()
 
-#         token_response = requests.post(
-#             "https://oauth2.googleapis.com/token",
-#             data={
-#                 "code": code,
-#                 "client_id": settings.GOOGLE_HEALTH_CLIENT_ID,
-#                 "client_secret": settings.GOOGLE_HEALTH_CLIENT_SECRET,
-#                 "redirect_uri": settings.GOOGLE_HEALTH_REDIRECT_URI,
-#                 "grant_type": "authorization_code",
-#             },
-#         )
+        if account and account.full_name:
 
-#         if token_response.status_code != 200:
-#             return JsonResponse({
-#                 "error": "Failed to retrieve token",
-#                 "status": token_response.status_code,
-#                 "details": token_response.text,
-#             }, status=token_response.status_code)
+            return redirect(reverse("home"))
 
-#         token_data = token_response.json()
+        else:
 
-#         access_token = token_data["access_token"]
-#         refresh_token = token_data.get("refresh_token")
-#         expires_in = token_data["expires_in"]
-#         scope = token_data.get("scope", "")
-#         token_type = token_data.get("token_type", "Bearer")
-
-#         headers = {
-#             "Authorization": f"Bearer {access_token}",
-#             "Accept": "application/json",
-#         }
-
-#         # Google Health 사용자 식별자 조회
-#         identity_response = requests.get(
-#             "https://health.googleapis.com/v4/users/me/identity",
-#             headers=headers,
-#         )
-
-#         if identity_response.status_code != 200:
-#             return JsonResponse({
-#                 "error": "Failed to fetch Google Health identity",
-#                 "status": identity_response.status_code,
-#                 "details": identity_response.text,
-#             }, status=identity_response.status_code)
-
-#         identity_data = identity_response.json()
-
-#         google_user_id = (
-#             identity_data.get("googleUserId")
-#             or identity_data.get("fitbitUserId")
-#             or identity_data.get("legacyFitbitUserId")
-#             or f"google_health_{request.user.id if request.user.is_authenticated else get_random_string(12)}"
-#         )
-
-#         # 프로필 조회
-#         profile_response = requests.get(
-#             "https://health.googleapis.com/v4/users/me/profile",
-#             headers=headers,
-#         )
-
-#         profile_data = {}
-#         if profile_response.status_code == 200:
-#             profile_data = profile_response.json()
-            
-
-#         full_name = profile_data.get("fullName")
-#         gender = profile_data.get("gender")
-#         birthday = profile_data.get("dateOfBirth")
-#         height = profile_data.get("height")
-#         weight = profile_data.get("weight")
-
-#         age = profile_data.get("age")
-
-#         # 유저 생성 또는 가져오기
-#         user, created = User.objects.get_or_create(
-#             username=f"google_health_{google_user_id}",
-#             defaults={"first_name": "Google Health User"}
-#         )
-
-#         if created:
-#             user.set_password(get_random_string(length=12))
-#             user.save()
-
-#         # refresh_token은 재동의 상황이 아니면 안 올 수도 있으므로 기존 값 보존
-#         existing_account = FitbitAccount.objects.filter(user=user).first()
-#         final_refresh_token = refresh_token or (existing_account.refresh_token if existing_account else "")
-
-#         account, _ = FitbitAccount.objects.update_or_create(
-#             user=user,
-#             defaults={
-#                 "fitbit_user_id": str(google_user_id),
-#                 "access_token": access_token,
-#                 "refresh_token": final_refresh_token,
-#                 "expires_at": now() + timedelta(seconds=expires_in),
-#                 "scope": scope,
-#                 "token_type": token_type,
-#                 "full_name": full_name,
-#                 "gender": gender,
-#                 "birthday": birthday,
-#                 "height": height,
-#                 "weight": weight,
-#             }
-#         )
-        
-#         login(request, user)
-#         print("Google Health OAuth 성공 - 홈으로 리디렉트")
-#         return redirect(reverse("home"))
+            return redirect(reverse("accounts:google_health_profile_setup"))
     
+    
+# google people api와 google health 를 하나의 동일한 토큰으로 OAuth 인증할 수 없기 때문에,
+# 사용자 이름과 생년월일은 직접 입력하도록 함.
+class GoogleHealthProfileSetupView(View):
+    def get(self, request):
+        return render(request, "accounts/google_health_profile_setup.html")
+
+    def post(self, request):
+        account = request.user.fitbit
+
+        full_name = request.POST.get("full_name")
+        gender = request.POST.get("gender")
+        birthday = request.POST.get("birthday")
+
+        account.full_name = full_name
+        account.gender = gender
+        account.birthday = birthday or None
+        account.save(update_fields=["full_name", "gender", "birthday"])
+
+        if full_name:
+            request.user.first_name = full_name
+            request.user.save(update_fields=["first_name"])
+
+        return redirect(reverse("home"))

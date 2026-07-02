@@ -9,7 +9,7 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
     select_password_reset_request, email_password_reset_request, phone_number_password_reset_request, UserResearchYear, \
     FitbitLoginView, FitbitCallbackView, FitbitUserManageView, FitbitUserInfoView, FitbitHealthDataCsvDownloadView, ScoreChartData
 
-from .views import GoogleHealthLoginView, GoogleHealthCallbackView
+from .views import GoogleHealthLoginView, GoogleHealthCallbackView, GoogleHealthProfileSetupView
 
 app_name = 'accounts'
 urlpatterns = [
@@ -53,4 +53,6 @@ urlpatterns = [
     path("click-log/save/", accounts_views.save_click_log, name="save_click_log"),
     path("google-health/login/",GoogleHealthLoginView.as_view(),name="google_health_login"),
     path("google-health/callback/",GoogleHealthCallbackView.as_view(),name="google_health_callback"),
+    path("google-health/profile-setup/",GoogleHealthProfileSetupView.as_view(),name="google_health_profile_setup",
+),
 ]
