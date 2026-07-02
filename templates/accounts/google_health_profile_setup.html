@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+
+  body {
+
+    background: linear-gradient(135deg,
+
+      rgba(255, 255, 255, 0.35) 0%,
+
+      rgba(74, 179, 198, 0.25) 30%,
+
+      rgba(255, 148, 114, 0.25) 70%,
+
+      rgba(255, 255, 255, 0.35) 100%);
+
+  }
+
+  .profile-setup-wrapper {
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+  }
+
+  .profile-setup-card {
+
+    background-color: white;
+
+    border-radius: 1.5rem;
+
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+
+    padding: 3rem 2rem;
+
+    max-width: 500px;
+
+    width: 100%;
+
+  }
+
+  .profile-setup-title {
+
+    font-size: 1.8rem;
+
+    font-weight: bold;
+
+    color: #1F3A5F;
+
+    text-align: center;
+
+    margin-bottom: 0.8rem;
+
+  }
+
+  .profile-setup-subtext {
+
+    color: #777;
+
+    font-size: 1rem;
+
+    text-align: center;
+
+    margin-bottom: 2rem;
+
+  }
+
+  .form-label {
+
+    font-weight: 600;
+
+    color: #3BAEA0;
+
+    margin-bottom: 0.4rem;
+
+  }
+
+  .form-control,
+
+  .form-select {
+
+    border-radius: 0.75rem;
+
+    padding: 0.75rem 1rem;
+
+    margin-bottom: 1.2rem;
+
+  }
+
+  .btn-save {
+
+    width: 100%;
+
+    padding: 0.75rem 1rem;
+
+    font-weight: 600;
+
+    font-size: 1rem;
+
+    border-radius: 0.75rem;
+
+    background-color: #4db6ac;
+
+    color: white;
+
+    border: none;
+
+    transition: all 0.3s ease;
+
+  }
+
+  .btn-save:hover {
+
+    background-color: #00897b;
+
+  }
+
+</style>
+
+<div class="profile-setup-wrapper">
+
+  <div class="profile-setup-card">
+
+    <div class="profile-setup-title">Google Health 프로필 입력</div>
+
+    <div class="profile-setup-subtext">연구 참여자 정보를 입력해주세요</div>
+
+    <form method="post">
+
+      {% csrf_token %}
+
+      <label class="form-label">이름</label>
+
+      <input type="text" name="full_name" class="form-control" required>
+
+      <label class="form-label">성별</label>
+
+      <select name="gender" class="form-select">
+
+        <option value="">선택 안 함</option>
+
+        <option value="FEMALE">여성</option>
+
+        <option value="MALE">남성</option>
+
+        <option value="OTHER">기타</option>
+
+      </select>
+
+      <label class="form-label">생년월일</label>
+
+      <input type="date" name="birthday" class="form-control">
+
+      <button type="submit" class="btn-save">저장</button>
+
+    </form>
+
+  </div>
+
+</div>
+
+{% endblock %}
