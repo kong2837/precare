@@ -64,7 +64,7 @@ def get_heart_rate(date, account):
     elif response.status_code == 401:
         print(f"⚠️ {account.user.username} | Google Health 토큰 만료. 갱신 시도 중...")
         if refresh_google_health_token(account):
-            return get_heart_rate_intraday(date, account)
+            return get_heart_rate(date, account)
         print("❌ 토큰 갱신 실패. 요청 중단. heart rate")
         return None
 
