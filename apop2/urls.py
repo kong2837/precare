@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from .views import HomeView
+from django.views.generic import TemplateView
 
 app_name = 'apop'
 
@@ -27,5 +28,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('information/', include('information.urls', namespace='information')),
     path('archive/', include('archive.urls', namespace='archive')),
+    path("terms.html",TemplateView.as_view(template_name="terms.html"),name="terms"),
+    path("privacy.html",TemplateView.as_view(template_name="privacy.html"),name="privacy"),
     path('', HomeView.as_view(), name='home'),
 ]
