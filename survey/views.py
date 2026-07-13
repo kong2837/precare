@@ -5,6 +5,7 @@ import json
 from tempfile import NamedTemporaryFile
 from typing import Any
 
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models.query import QuerySet
@@ -345,7 +346,9 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
 
             # 응답 매핑 후 행 추가
             reply_dict = {r.survey_question.question.title: r.content for r in us.replies.all()}
-            row = [us.create_at, *[reply_dict.get(t, '') for t in titles]]
+            created_at = timezone.localtime(us.create_at).replace(tzinfo=None)
+                 
+            row = [created_at, *[reply_dict.get(t, '') for t in titles]]
             if s_label:
                 row.append(us.score)  # 해당 설문만 점수 값 추가
             ws.append(row)
