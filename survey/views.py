@@ -104,27 +104,64 @@ class SurveyListAdminView(SuperuserRequiredMixin, ListView):
 
 class UserSurveyCsvView(SuperuserRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        user_surveys = UserSurvey.objects.filter(user__pk=self.kwargs.get('user_pk'),
-                                                 survey__pk=self.kwargs.get('survey_pk'))
+        user_pk = self.kwargs.get('user_pk')
+        survey_pk = self.kwargs.get('survey_pk')
 
-        filename = "-".join((HuamiAccount.objects.get(user_id=self.kwargs.get('user_pk')).fullname
-                             , Survey.objects.get(pk=self.kwargs.get('survey_pk')).title))
-        response = HttpResponse(headers={
-            'Content-Type': 'text/csv',
-            'Content-Disposition': f'attachment; filename="{filename}.csv"'})
+        user = get_user_model().objects.get(pk=user_pk)
+        survey = Survey.objects.get(pk=survey_pk)
 
-        file = csv.writer(response)
-        head_line = ['pk']
+        user_surveys = UserSurvey.objects.filter(
+            user_id=user_pk,
+            survey_id=survey_pk
+        ).order_by('create_at')
 
-        for question in Survey.objects.get(pk=self.kwargs.get('survey_pk')).questions.all():
-            head_line.append(question.title)
-        file.writerow(head_line)
+        # 사용자 이름 결정
+        try:
+            name = user.huami.fullname
+        except Exception:
+            try:
+                name = user.fitbit.full_name
+            except Exception:
+                name = user.username
+
+        filename = f"{name}-{survey.title}"
+
+        response = HttpResponse(
+            content_type='text/csv; charset=utf-8'
+        )
+        response['Content-Disposition'] = (
+            f"attachment; filename*=UTF-8''"
+            f"{urllib.parse.quote(filename)}.csv"
+        )
+
+        # 한글 Excel 깨짐 방지
+        response.write('\ufeff')
+
+        writer = csv.writer(response)
+
+        questions = list(
+            survey.questions.order_by('surveyquestion__order')
+        )
+
+        writer.writerow([
+            'pk',
+            '작성시간',
+            *[question.title for question in questions]
+        ])
 
         for user_survey in user_surveys:
-            line = []
-            for reply in user_survey.replies.all():
-                line.append(reply.content)
-            file.writerow(line)
+            reply_dict = {
+                reply.survey_question.question_id: reply.content
+                for reply in user_survey.replies.select_related(
+                    'survey_question__question'
+                )
+            }
+
+            writer.writerow([
+                user_survey.pk,
+                user_survey.create_at.strftime('%Y-%m-%d %H:%M:%S'),
+                *[reply_dict.get(question.id, '') for question in questions]
+            ])
 
         return response
 
