@@ -177,7 +177,7 @@
       data.history.forEach(item => {
         const isDone = item.performed === 1;
         const statusBadge = item.has_feedback 
-            ? `<span class="badge ${isDone ? 'bg-success' : 'bg-secondary'}">${isDone ? '수행' : '미수행'}</span>`
+            ? `<span class="badge ${isDone ? 'bg-success' : 'bg-secondary'}">${isDone ? '수행완료' : '미수행'}</span>`
             : `<span class="badge bg-light text-dark border">기록없음</span>`;
 
         historyArea.innerHTML += `
