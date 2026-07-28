@@ -188,3 +188,22 @@ FITBIT_CLIENT_SECRET = os.getenv("FITBIT_CLIENT_SECRET")
 GOOGLE_HEALTH_CLIENT_ID = os.getenv("GOOGLE_HEALTH_CLIENT_ID")
 GOOGLE_HEALTH_CLIENT_SECRET = os.getenv("GOOGLE_HEALTH_CLIENT_SECRET")
 GOOGLE_HEALTH_REDIRECT_URI = os.getenv("GOOGLE_HEALTH_REDIRECT_URI")
+
+"""
+보안 관련 설정
+"""
+#  Django가 프록시 서버 뒤에서 실행될 때 HTTPS를 사용하도록 설정
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO",
+    "https",
+)
+
+#  Django에서 HTTPS를 사용하도록 설정
+SECURE_SSL_REDIRECT = True
+
+#  세션 쿠키와 CSRF 쿠키를 HTTPS에서만 전송하도록 설정
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+#  HSTS(HTTP Strict Transport Security) 설정
+SECURE_HSTS_SECONDS = 3600
