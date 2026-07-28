@@ -1,65 +1,87 @@
+import base64
 import csv
 import hashlib
 import json
-import base64
 import urllib.parse
-from urllib.parse import quote as urlquote
+from collections import defaultdict
+from datetime import date
 
-
-import requests.exceptions
+import requests
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.views import LoginView as Login, LogoutView as Logout, PasswordChangeView
+from django.contrib.auth.views import (
+    LoginView as Login,
+    LogoutView as Logout,
+    PasswordChangeView,
+)
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
-from django.http import HttpRequest, HttpResponse
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
-from django.shortcuts import render
-from django.urls import reverse_lazy
-from django.utils.encoding import force_str, force_bytes
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.views.generic import View, TemplateView, ListView, DetailView
+from django.db.models import Avg, Max, Q
+from django.db.models.functions import TruncDate
+from django.http import (
+    Http404,
+    HttpRequest,
+    HttpResponse,
+    HttpResponseForbidden,
+    JsonResponse,
+)
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.utils.crypto import get_random_string
+from django.utils.dateparse import parse_date
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.timezone import localtime, now, timedelta
+from django.views.decorators.http import require_POST
+from django.views.generic import DetailView, ListView, TemplateView, View
 
 from accounts.utils import make_csv_response
-from huami.forms import HuamiAccountCreationForm, HuamiAccountCertificationForm
+from fitbit.models import FitbitAccount, FitbitMinuteMetric
+from huami.forms import (
+    HuamiAccountCertificationForm,
+    HuamiAccountCreationForm,
+)
 from huami.models import HuamiAccount
 from huami.models.healthdata import HealthData
-from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
-from .forms import EmailPasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm,PhoneNumberPasswordResetRequestForm
-from .models import Profile
-from .utils import generate_verification_code, _to_date, cal_gestational_week, cal_gestational_month
-
-from django.contrib.auth import login
-from django.utils import timezone
-from django.utils.timezone import now, timedelta, datetime, localtime
-from datetime import date
-from django.utils.crypto import get_random_string
-from django.contrib.auth import login
-from django.shortcuts import redirect
-from django.urls import reverse
-import requests
-import base64
-from django.views import View
-from django.http import JsonResponse
-from django.contrib.auth.models import User
-from django.utils.dateparse import parse_date
-from django.core.exceptions import ObjectDoesNotExist 
-from collections import defaultdict
-from django.db.models.functions import TruncDate, TruncMonth
-
 from survey.models import UserSurvey
-from fitbit.models import FitbitMinuteMetric, FitbitAccount
-from django.db.models import Avg, Max, Q
-from survey.models import ActionFeedback
 
-from .models import UserClickLog
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
+from .forms import (
+    EmailPasswordResetRequestForm,
+    FindUsernameForm,
+    MyAuthenticationForm,
+    MyLoginForm,
+    PhoneNumberChangeForm,
+    PhoneNumberPasswordResetRequestForm,
+    SetPasswordForm,
+    VerifyCodeForm,
+)
+from .models import Profile, UserClickLog
+from .utils import (
+    _to_date,
+    cal_gestational_month,
+    cal_gestational_week,
+    generate_verification_code,
+)
+
+TAC_ASSESSMENT_USERNAME = getattr(
+    settings,
+    "TAC_ASSESSMENT_USERNAME",
+    "tac_scan",
+)
+
+
+def is_tac_assessment_user(user):
+    return (
+        user.is_authenticated
+        and user.username == TAC_ASSESSMENT_USERNAME
+    )
 
 # 공용 타깃 선택 함수
 def _get_research_target(user):
@@ -151,18 +173,38 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
     """관리자만 접근하도록 지정하는 믹스인
     """
 
+    raise_exception = True
+
     def test_func(self):
-        return self.request.user.is_superuser
+        return (
+            self.request.user.is_authenticated
+            and self.request.user.is_superuser
+        )
+    
+class RealResearchDataBlockedForTacMixin:
+    """
+    TAC 평가용 계정은 실제 연구 참여자 데이터와
+    변경,다운로드 기능에 접근하지 못하도록 차단
+    """
+
+    def dispatch(self, request, *args, **kwargs):
+        if is_tac_assessment_user(request.user):
+            return HttpResponseForbidden(
+                "Access to real research participant data is disabled "
+                "for this security assessment account."
+            )
+
+        return super().dispatch(request, *args, **kwargs)
 
 
-class UserInfoView(SuperuserRequiredMixin, DetailView):
+class UserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, View,):
     """유저 정보를 제공하기 위한 클래스 기반 뷰
     """
     model = get_user_model()
     context_object_name = 'userInfo'
     template_name = 'accounts/userInfo.html'
 
-class FitbitUserInfoView(SuperuserRequiredMixin, DetailView):
+class FitbitUserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, View,):
     """유저 정보를 제공하기 위한 클래스 기반 뷰
     """
     model = get_user_model()
@@ -170,70 +212,115 @@ class FitbitUserInfoView(SuperuserRequiredMixin, DetailView):
     template_name = 'accounts/fitbit_userinfo.html'
 
 
-class UserManageView(SuperuserRequiredMixin, ListView):
-    """HuamiAccount가 연결된 유저들만 리스트로 제공"""
-    template_name = 'accounts/userManage.html'
-    model = get_user_model()  # settings.AUTH_USER_MODEL보다 명시적
-    context_object_name = 'users'
-    queryset = get_user_model().objects.filter(is_superuser=False,huami__isnull=False).select_related('huami')
+class UserManageView(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    ListView,
+):
+    """Huami 계정이 연결된 일반 사용자 목록."""
+
+    template_name = "accounts/userManage.html"
+    model = get_user_model()
+    context_object_name = "users"
     paginate_by = 10
 
     def get_queryset(self):
-        query_set = get_user_model().objects.filter(
-            is_superuser=False,
-            huami__isnull=False
-        ).select_related('huami', 'fitbit')
-
-        query_set = super().get_queryset().select_related('huami', 'fitbit')
-
-        search_query = self.request.GET.get('search', '')
-        if search_query:
-            from django.db.models import Q
-            query_set = query_set.filter(
-                Q(huami__name__icontains=search_query) |
-                Q(huami__email__icontains=search_query)
-            )
-
-        order_by = self.request.GET.get('order_by', 'huami__name')
-        direction = self.request.GET.get('direction', 'asc')
-        if direction == 'desc':
-            order_by = f'-{order_by}'
-
-        return query_set.order_by(order_by)
-
-from django.db.models import Q
-class FitbitUserManageView(ListView):
-    """관리자 전용 - Fitbit 계정이 연결된 유저 리스트 뷰"""
-    template_name = 'accounts/fitbit_userManage.html'
-    model = settings.AUTH_USER_MODEL
-    context_object_name = 'users'
-    paginate_by = 10
-
-    def get_queryset(self):
-        qs = (
+        queryset = (
             get_user_model()
             .objects
-            .filter(is_superuser=False, fitbit__isnull=False)
-            .select_related('fitbit')
+            .filter(
+                is_superuser=False,
+                huami__isnull=False,
+            )
+            .select_related("huami", "fitbit")
         )
 
-        search_query = self.request.GET.get('search', '')
+        search_query = self.request.GET.get("search", "").strip()
         if search_query:
-            qs = qs.filter(
-                Q(fitbit__full_name__icontains=search_query) |
-                Q(username__icontains=search_query) |
-                Q(email__icontains=search_query)
+            queryset = queryset.filter(
+                Q(huami__name__icontains=search_query)
+                | Q(huami__email__icontains=search_query)
             )
 
-        order_by = self.request.GET.get('order_by', 'fitbit__full_name')
-        direction = self.request.GET.get('direction', 'asc')
-        if direction == 'desc':
-            order_by = f'-{order_by}'
+        allowed_order_fields = {
+            "huami__name",
+            "huami__email",
+            "username",
+            "date_joined",
+        }
 
-        return qs.order_by(order_by)
+        order_by = self.request.GET.get(
+            "order_by",
+            "huami__name",
+        )
 
+        if order_by not in allowed_order_fields:
+            order_by = "huami__name"
 
-class UserNoteUpdateView(SuperuserRequiredMixin, View):
+        direction = self.request.GET.get("direction", "asc")
+        if direction == "desc":
+            order_by = f"-{order_by}"
+
+        return queryset.order_by(order_by)
+
+from django.db.models import Q
+class FitbitUserManageView(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    ListView,
+):
+    """Fitbit 계정이 연결된 일반 사용자 목록."""
+
+    template_name = "accounts/fitbit_userManage.html"
+    model = get_user_model()
+    context_object_name = "users"
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = (
+            get_user_model()
+            .objects
+            .filter(
+                is_superuser=False,
+                fitbit__isnull=False,
+            )
+            .select_related("fitbit")
+        )
+
+        search_query = self.request.GET.get("search", "").strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(fitbit__full_name__icontains=search_query)
+                | Q(username__icontains=search_query)
+                | Q(email__icontains=search_query)
+            )
+
+        allowed_order_fields = {
+            "fitbit__full_name",
+            "username",
+            "email",
+            "date_joined",
+        }
+
+        order_by = self.request.GET.get(
+            "order_by",
+            "fitbit__full_name",
+        )
+
+        if order_by not in allowed_order_fields:
+            order_by = "fitbit__full_name"
+
+        direction = self.request.GET.get("direction", "asc")
+        if direction == "desc":
+            order_by = f"-{order_by}"
+
+        return queryset.order_by(order_by)
+
+class UserNoteUpdateView(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     """유저에 대한 비고란을 수정하기 위한 클래스 기반 뷰
     post요청만 지원
     """
@@ -269,7 +356,11 @@ class UserNoteUpdateView(SuperuserRequiredMixin, View):
 
 
 
-class UserHealthNoteUpdateView(SuperuserRequiredMixin, View):
+class UserHealthNoteUpdateView(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     """유저가 가진 건강 정보의 비고란을 수정하기 위한 클래스 기반 뷰
     post요청만 지원
     """
@@ -281,7 +372,11 @@ class UserHealthNoteUpdateView(SuperuserRequiredMixin, View):
         return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': health_data.huami_account.user.pk}))
 
 
-class UserHealthDataSyncView(SuperuserRequiredMixin, View):
+class UserHealthDataSyncView(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     """유저의 데이터 동기화를 위한 클래스 기반 뷰
     get요청만 지원
     """
@@ -302,7 +397,11 @@ class UserHealthDataSyncView(SuperuserRequiredMixin, View):
         return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': pk}))
 
 
-class HealthDataCsvDownloadView(SuperuserRequiredMixin, View):
+class HealthDataCsvDownloadView(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     """유저 데이터를 csv로 전달하는 클래스 기반 뷰
     get요청만 지원
     """
@@ -318,7 +417,11 @@ class HealthDataCsvDownloadView(SuperuserRequiredMixin, View):
 
 
 
-class FitbitHealthDataCsvDownloadView(SuperuserRequiredMixin, View):
+class FitbitHealthDataCsvDownloadView(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     """
     FitbitMinuteMetric 데이터를 CSV로 내려주는 관리자 전용 뷰
     GET 요청만 지원
@@ -382,15 +485,23 @@ class FitbitHealthDataCsvDownloadView(SuperuserRequiredMixin, View):
 
 
 class AuthKeyRequiredMixin(UserPassesTestMixin):
-    """headers에 auth-key가 존재하는지 여부 확인
-    """
+    """요청 헤더의 auth-key를 확인한다."""
+
+    raise_exception = True
 
     def test_func(self):
-        return self.request.headers.get('auth-key') == settings.AUTH_KEY
+        configured_key = getattr(settings, "AUTH_KEY", "")
+        request_key = self.request.headers.get("auth-key", "")
+
+        return (
+            bool(configured_key)
+            and request_key == configured_key
+        )
 
     def handle_no_permission(self):
-        return HttpResponse("You have not permission")
-
+        return HttpResponseForbidden(
+            "You do not have permission."
+        )
 
 class HealthDataCsvDownloadAPIView(AuthKeyRequiredMixin, View):
     """데이터를 가져올 유저의 pk를 리스트로 받아서 해당하는 유저들의 데이터를 csv파일로 전달하는 API 클래스 기반 뷰
@@ -702,7 +813,11 @@ def verify_username_code(request, email):
     return render(request, 'accounts/verify_username_code.html', {'email': email})
 
 
-class UserResearchStatus(SuperuserRequiredMixin, View):
+class UserResearchStatus(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     def post(self, request):
         data = json.loads(request.body)
         user_id = data.get('user_id')
@@ -721,7 +836,11 @@ class UserResearchStatus(SuperuserRequiredMixin, View):
         target.save(update_fields=['research_status'])
         return JsonResponse({'success': 'True'})
 
-class UserResearchYear(SuperuserRequiredMixin, View):
+class UserResearchYear(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     def post(self, request):
         data = json.loads(request.body)
         user_id = data.get('user_id')
@@ -741,7 +860,11 @@ class UserResearchYear(SuperuserRequiredMixin, View):
         return JsonResponse({'success': True})
 
 
-class UserResearchDate(SuperuserRequiredMixin, View):
+class UserResearchDate(
+    RealResearchDataBlockedForTacMixin,
+    SuperuserRequiredMixin,
+    View,
+):
     def post(self, request):
         data = json.loads(request.body)
 
@@ -903,7 +1026,11 @@ SURVEY_FILTERS = {
     "preterm": Q(survey__title__icontains="조기진통"),
 }
 
-class ScoreChartData(LoginRequiredMixin, View):
+class ScoreChartData(
+    RealResearchDataBlockedForTacMixin,
+    LoginRequiredMixin,
+    View,
+):
     """
       1) 0~40점
       2) weekly -> 첫 점수 등록 날짜 ~ 마지막 동기화 날짜 기간동안의 점수를 주단위로 끊어서 표시
@@ -1078,46 +1205,85 @@ class ScoreChartData(LoginRequiredMixin, View):
         return windows
     
     
-class WeeklyScoreDetailView(View):
+class WeeklyScoreDetailView(
+    RealResearchDataBlockedForTacMixin,
+    LoginRequiredMixin,
+    View,
+):
     def get(self, request, pk):
-        start = request.GET.get('start')
-        end = request.GET.get('end')
-        metric = request.GET.get('metric')
+        if request.user.pk != pk and not request.user.is_superuser:
+            return JsonResponse(
+                {"error": "forbidden"},
+                status=403,
+            )
 
-        survey_filter = Q()
-        if metric == 'stress':
-            survey_filter = Q(survey__title__icontains='스트레스')
-        elif metric == 'quipp':
-            survey_filter = Q(survey__title__icontains='QUIPP')
-        elif metric == 'preterm':
-            survey_filter = Q(survey__title__icontains='조기진통')
+        start = request.GET.get("start")
+        end = request.GET.get("end")
+        metric = (request.GET.get("metric") or "").lower()
 
-        # 조희 시에도 TruncDate를 사용하여 한국 시간 날짜 범위를 정확히 타격
-        surveys = UserSurvey.objects.filter(user_id=pk).annotate(
-            local_date=TruncDate('create_at', tzinfo=timezone.get_current_timezone())
-        ).filter(
-            local_date__range=(start, end),
-            **{k: v for k, v in survey_filter.children} if isinstance(survey_filter, Q) else {}
-        ).order_by('-create_at')
+        if not start or not end:
+            return JsonResponse(
+                {"error": "start and end are required"},
+                status=400,
+            )
+
+        survey_filter = SURVEY_FILTERS.get(metric)
+        if survey_filter is None:
+            return JsonResponse(
+                {"error": f"unknown metric: {metric}"},
+                status=400,
+            )
+
+        surveys = (
+            UserSurvey.objects
+            .filter(user_id=pk)
+            .filter(survey_filter)
+            .annotate(
+                local_date=TruncDate(
+                    "create_at",
+                    tzinfo=timezone.get_current_timezone(),
+                )
+            )
+            .filter(local_date__range=(start, end))
+            .select_related("survey")
+            .order_by("-create_at")
+        )
 
         history_data = []
-        for us in surveys:
 
-            feedback = getattr(us, 'action_feedback', None)
-            
-            is_performed = 0
-            if feedback and feedback.performed:
-                is_performed = 1
+        for user_survey in surveys:
+            feedback = getattr(
+                user_survey,
+                "action_feedback",
+                None,
+            )
 
             history_data.append({
-                "created_at": timezone.localtime(us.create_at).strftime('%Y-%m-%d %H:%M'),
-                "title": us.survey.title if us.survey else "설문",
-                "score": us.score or 0,
+                "created_at": timezone.localtime(
+                    user_survey.create_at
+                ).strftime("%Y-%m-%d %H:%M"),
+                "title": (
+                    user_survey.survey.title
+                    if user_survey.survey
+                    else "설문"
+                ),
+                "score": user_survey.score or 0,
                 "has_feedback": bool(feedback),
-                "action_code": feedback.action_code if feedback else None,
-                "performed": is_performed,
-                "action_msg": get_feedback_message(feedback.action_code) if feedback else "기록된 행동 요령이 없습니다."
+                "action_code": (
+                    feedback.action_code
+                    if feedback
+                    else None
+                ),
+                "performed": int(
+                    bool(feedback and feedback.performed)
+                ),
+                "action_msg": (
+                    get_feedback_message(feedback.action_code)
+                    if feedback
+                    else "기록된 행동 요령이 없습니다."
+                ),
             })
+
         return JsonResponse({"history": history_data})
 
 def get_feedback_message(code):
@@ -1132,17 +1298,38 @@ def get_feedback_message(code):
     return MESSAGE_MAP.get(code, "지금처럼 편안하게 지내세요.❤️")
 
 # 로그 불러오는 함수 (fitbit 유저 관리 페이지에서 사용됨)
+@login_required
 def user_click_logs(request, user_pk):
-    user_info = get_object_or_404(get_user_model(), pk=user_pk)
+    if not request.user.is_superuser:
+        return HttpResponseForbidden(
+            "Administrator access is required."
+        )
 
-    logs = UserClickLog.objects.filter(
-        user=user_info
-    ).order_by("-created_at")
+    if is_tac_assessment_user(request.user):
+        return HttpResponseForbidden(
+            "Access to real participant activity logs is disabled "
+            "for this security assessment account."
+        )
 
-    return render(request, "accounts/user_click_logs.html", {
-        "userInfo": user_info,
-        "logs": logs,
-    })
+    user_info = get_object_or_404(
+        get_user_model(),
+        pk=user_pk,
+    )
+
+    logs = (
+        UserClickLog.objects
+        .filter(user=user_info)
+        .order_by("-created_at")
+    )
+
+    return render(
+        request,
+        "accounts/user_click_logs.html",
+        {
+            "userInfo": user_info,
+            "logs": logs,
+        },
+    )
 
 # 로그 DB에 저장 API 함수
 @login_required
@@ -1324,21 +1511,49 @@ class GoogleHealthCallbackView(View):
     
 # google people api와 google health 를 하나의 동일한 토큰으로 OAuth 인증할 수 없기 때문에,
 # 사용자 이름과 생년월일은 직접 입력하도록 함.
-class GoogleHealthProfileSetupView(View):
+class GoogleHealthProfileSetupView(LoginRequiredMixin, View):
+    template_name = "accounts/google_health_profile_setup.html"
+
     def get(self, request):
-        return render(request, "accounts/google_health_profile_setup.html")
+        if not hasattr(request.user, "fitbit"):
+            return HttpResponseForbidden(
+                "Google Health account is not connected."
+            )
+
+        return render(request, self.template_name)
 
     def post(self, request):
+        if not hasattr(request.user, "fitbit"):
+            return HttpResponseForbidden(
+                "Google Health account is not connected."
+            )
+
         account = request.user.fitbit
 
-        full_name = request.POST.get("full_name")
-        gender = request.POST.get("gender")
-        birthday = request.POST.get("birthday")
+        full_name = request.POST.get("full_name", "").strip()
+        gender = request.POST.get("gender", "").strip()
+        birthday_text = request.POST.get("birthday", "").strip()
+
+        birthday = (
+            parse_date(birthday_text)
+            if birthday_text
+            else None
+        )
+
+        if birthday_text and birthday is None:
+            return JsonResponse(
+                {"error": "invalid birthday"},
+                status=400,
+            )
 
         account.full_name = full_name
         account.gender = gender
-        account.birthday = birthday or None
-        account.save(update_fields=["full_name", "gender", "birthday"])
+        account.birthday = birthday
+        account.save(update_fields=[
+            "full_name",
+            "gender",
+            "birthday",
+        ])
 
         if full_name:
             request.user.first_name = full_name

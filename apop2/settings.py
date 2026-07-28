@@ -208,3 +208,6 @@ SESSION_COOKIE_HTTPONLY = True
 
 #  HSTS(HTTP Strict Transport Security) 설정
 SECURE_HSTS_SECONDS = 3600
+
+# TAC 테스트 계정
+TAC_ASSESSMENT_USERNAME = "tac_scan"
