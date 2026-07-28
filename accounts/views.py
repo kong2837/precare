@@ -197,14 +197,14 @@ class RealResearchDataBlockedForTacMixin:
         return super().dispatch(request, *args, **kwargs)
 
 
-class UserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, View,):
+class UserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, DetailView,):
     """유저 정보를 제공하기 위한 클래스 기반 뷰
     """
     model = get_user_model()
     context_object_name = 'userInfo'
     template_name = 'accounts/userInfo.html'
 
-class FitbitUserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, View,):
+class FitbitUserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, DetailView,):
     """유저 정보를 제공하기 위한 클래스 기반 뷰
     """
     model = get_user_model()
