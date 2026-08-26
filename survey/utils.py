@@ -69,6 +69,14 @@ def pbras_result(scores: tuple) -> str:
             "html": __make_p_tag("침상에 누워 안정을 취하세요.❤️"),
             "action_code": "BED_REST"
         }
+    if __check_score(mon2, 3):
+        return {
+            "html": __make_p_tag(
+                "침대에 누워<br>"
+                "안정을 취하세요.❤️"
+            ),
+            "action_code": "BED_REST"
+        }
     if __check_score(mon2, 2):
         return {
             "html": __make_p_tag("앉아서 물을 한잔 마시세요.❤️"),
