@@ -429,14 +429,18 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
             # ------------------------------------------------
 
             for reply in replies:
-
-                answer = Answer.objects.filter(
+                answer = reply.survey_question.question.answers.get(
                     description=reply.content
-                ).get()
-
-                scores.append(
-                    answer.value
                 )
+
+                if answer.value is None:
+                    raise ValueError(
+                        f"점수가 없는 답변입니다. "
+                        f"question_id={reply.survey_question.question_id}, "
+                        f"answer='{reply.content}'"
+                    )
+
+                scores.append(answer.value)
 
             # ------------------------------------------------
             # 총점
@@ -461,10 +465,6 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
                     tuple(scores)
                 )
 
-            # 기존 코드에서는 여기서 무조건
-            # stress_result()를 다시 호출하고 있었음.
-            # 해당 코드는 삭제함.
-
             result_html = result_data.get(
                 "html"
             )
@@ -477,11 +477,12 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
             # 행동 수행 여부 저장
             # ------------------------------------------------
 
-            ActionFeedback.objects.create(
-                user_survey=user_survey,
-                action_code=action_code,
-                performed=False,
-            )
+            if action_code is not None:
+                ActionFeedback.objects.create(
+                    user_survey=user_survey,
+                    action_code=action_code,
+                    performed=False,
+                )
 
         # ----------------------------------------------------
         # 설문 완료 페이지
