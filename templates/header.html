@@ -1,8 +1,10 @@
 {% load static %}
 
 <style>
-    {% comment %} ✅ 기본 설정: Paybooc Medium (500) 적용 {% endcomment %}
-    header {
+    /* =========================
+       공통 / 데스크톱 헤더
+    ========================== */
+    .site-header {
         background-color: #4AB3C6;
         font-family: 'Paybooc', sans-serif;
         font-weight: 500;
@@ -12,21 +14,23 @@
         font-weight: 800;
     }
 
-    .nav-link {
+    .site-header .nav-link {
         color: #FFFDF8 !important;
         transition: color 0.2s;
     }
 
-    .nav-link:hover {
+    .site-header .nav-link:hover {
         color: #FFE3D6 !important;
     }
 
-    .btn-login, .btn-logout {
+    .btn-login,
+    .btn-logout {
         background-color: #FFFDF8;
         color: #4AB3C6;
         border: none;
         border-radius: 1.5rem;
         padding: 0.4rem 1rem;
+        font-weight: 600;
     }
 
     .btn-login:hover,
@@ -35,107 +39,459 @@
         color: white;
     }
 
-    .nav svg {
+    .desktop-header .nav svg {
         margin-right: 5px;
         vertical-align: middle;
+    }
+
+    /* 모바일 헤더는 기본적으로 숨김 */
+    .mobile-header {
+        display: none;
+    }
+
+    /* =========================
+       모바일 사이드 메뉴
+    ========================== */
+
+    .mobile-menu {
+        font-family: 'Paybooc', sans-serif;
+        width: min(82vw, 340px) !important;
+        border-left: none !important;
+    }
+
+    .mobile-menu .offcanvas-header {
+        padding: 1.4rem 1.4rem 0.7rem;
+    }
+
+    .mobile-menu .offcanvas-body {
+        display: flex;
+        flex-direction: column;
+        padding: 0 1.4rem 1.5rem;
+    }
+
+    .mobile-menu-logo {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+    }
+
+    .mobile-menu-nav {
+        margin-top: 1.7rem;
+    }
+
+    .mobile-menu-link {
+        display: block;
+        padding: 0.8rem 0;
+        color: #202020;
+        font-size: 1.05rem;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .mobile-menu-link:hover {
+        color: #4AB3C6;
+    }
+
+    .mobile-account-btn {
+        width: 100%;
+        padding: 0.8rem 0;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        color: #202020;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .mobile-account-btn::after {
+        content: '⌄';
+        float: right;
+        color: #777;
+    }
+
+    .mobile-account-content {
+        padding: 0.2rem 0 0.7rem 0.6rem;
+    }
+
+    .mobile-user-name {
+        color: #777;
+        font-size: 0.9rem;
+        margin-bottom: 0.45rem;
+    }
+
+    .mobile-sub-link {
+        display: block;
+        color: #555;
+        text-decoration: none;
+        padding: 0.45rem 0;
+        font-size: 0.95rem;
+    }
+
+    .mobile-sub-link:hover {
+        color: #4AB3C6;
+    }
+
+    .mobile-logout {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #555;
+        font-size: 0.95rem;
+    }
+
+    .mobile-bottom-links {
+        margin-top: auto;
+        padding-top: 2rem;
+    }
+
+    .mobile-bottom-links a {
+        display: block;
+        color: #222;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.55rem 0;
+    }
+
+    /* =========================
+       모바일
+    ========================== */
+    @media (max-width: 767.98px) {
+        .site-header {
+            background: #F7F7F7;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .desktop-header {
+            display: none !important;
+        }
+
+        .mobile-header {
+            height: 72px;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mobile-header-logo {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+
+        .mobile-menu-button {
+            width: 48px;
+            height: 48px;
+            padding: 6px;
+            border: 0;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .mobile-menu-button span {
+            display: block;
+            width: 30px;
+            height: 3px;
+            border-radius: 3px;
+            background-color: #222;
+        }
     }
 </style>
 
 
-<header>
-    <div class="px-3 py-2 border-bottom">
+<header class="site-header">
+
+    <!-- =====================================
+         데스크톱 헤더
+    ====================================== -->
+    <div class="desktop-header px-3 py-2 border-bottom">
         <div class="container">
             <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+
                 <a href="{% url 'home' %}"
                    class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
-                    <img src="{% static 'IC_LOGO.png' %}" width="52" height="52" alt="중견연구 아이콘" />
-                <span class="ms-2 precare-logo" style="font-size: 1.3rem;">조기진통 감지 및 스트레스 완화</span>
 
+                    <img
+                        src="{% static 'IC_LOGO.png' %}"
+                        width="52"
+                        height="52"
+                        alt="중견연구 아이콘"
+                    >
+
+                    <span class="ms-2 precare-logo" style="font-size:1.3rem;">
+                        조기진통 감지 및 스트레스 완화
+                    </span>
                 </a>
 
+
                 <ul class="nav col-12 col-lg-auto my-2 justify-content-center my-md-0 text-small">
+
                     <li>
                         <a href="/" class="nav-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                                 class="bi bi-house-door-fill" viewBox="0 0 16 16">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 width="20"
+                                 height="20"
+                                 fill="currentColor"
+                                 viewBox="0 0 16 16">
                                 <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5"/>
                             </svg>
                             홈
                         </a>
                     </li>
+
                     <li>
-                    <a href="{% url 'information:index' %}" class="nav-link">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                            class="bi bi-heart-pulse-fill" viewBox="0 0 16 16">
-                        <path d="M6.5 8.5 8 4l2.5 7L12 8h3a5.5 5.5 0 1 1-9.33 4.115"/>
-                        </svg>
-                        산모 및 태아정보
-                    </a>
+                        <a href="{% url 'information:index' %}" class="nav-link">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 width="20"
+                                 height="20"
+                                 fill="currentColor"
+                                 viewBox="0 0 16 16">
+                                <path d="M6.5 8.5 8 4l2.5 7L12 8h3a5.5 5.5 0 1 1-9.33 4.115"/>
+                            </svg>
+                            산모 및 태아정보
+                        </a>
                     </li>
+
                     <li>
                         <a href="{% url 'survey:survey-list' %}" class="nav-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                                 class="bi bi-file-post" viewBox="0 0 16 16">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 width="20"
+                                 height="20"
+                                 fill="currentColor"
+                                 viewBox="0 0 16 16">
                                 <path d="M4 3.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z"/>
                                 <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1"/>
                             </svg>
                             설문조사
                         </a>
                     </li>
+
                     <li>
                         <a href="{% url 'archive:index' %}" class="nav-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" 
-                                class="bi bi-file-earmark-zip-fill" viewBox="0 0 16 16">
-                            <path d="M5.5 9.438V8.5h1v.938a1 1 0 0 0 .03.243l.4 1.595c.084.336-.183.624-.518.624H5.088c-.335 0-.602-.288-.518-.624l.4-1.595a1 1 0 0 0 .03-.243z"/>
-                            <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 11.293 4zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1m-4 0h1v1h-1zM4 5h1v1H4zm1 1h1v1H5zm-1 1h1v1H4zm1 1h1v1H5zm-1 1h1v1H4zm1 1h1v1H5zm-1 1h1v1H4z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 width="20"
+                                 height="20"
+                                 fill="currentColor"
+                                 viewBox="0 0 16 16">
+                                <path d="M5.5 9.438V8.5h1v.938a1 1 0 0 0 .03.243l.4 1.595c.084.336-.183.624-.518.624H5.088c-.335 0-.602-.288-.518-.624l.4-1.595a1 1 0 0 0 .03-.243z"/>
+                                <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 11.293 4zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1"/>
                             </svg>
                             자료실
                         </a>
                     </li>
+
+
+                    <!-- 관리자 메뉴: 데스크톱에만 존재 -->
                     {% if user.is_superuser %}
+
                     <li>
                         <a href="{% url 'accounts:fitbitUserManage' %}?page=1&order_by=fitbit__full_name&direction=asc"
                            class="nav-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                                 class="bi bi-people-fill" viewBox="0 0 16 16">
-                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
-                            </svg>
                             fitbit 참여자 관리
                         </a>
                     </li>
+
                     <li>
                         <a href="{% url 'accounts:userManage' %}?page=1&order_by=huami__name&direction=asc"
                            class="nav-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                                 class="bi bi-people-fill" viewBox="0 0 16 16">
-                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
-                            </svg>
                             huami 참여자 관리
                         </a>
                     </li>
+
                     {% endif %}
+
+
                     {% if user.is_authenticated %}
                     <li>
                         <a href="{% url 'accounts:user_profile' %}" class="nav-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                                 class="bi bi-person-fill" viewBox="0 0 16 16">
-                                <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
-                            </svg>
                             {{ user.fitbit.full_name|default:user.username }}
                         </a>
                     </li>
                     {% endif %}
+
                 </ul>
 
+
                 {% if user.is_authenticated %}
-                <form method="post" action="{% url 'accounts:logout' %}" style="display: inline;">
+
+                <form method="post"
+                      action="{% url 'accounts:logout' %}"
+                      style="display:inline;">
+
                     {% csrf_token %}
-                    <button class="btn btn-logout" type="submit">로그아웃</button>
+
+                    <button class="btn btn-logout" type="submit">
+                        로그아웃
+                    </button>
+
                 </form>
+
                 {% else %}
-                <a class="btn btn-login" href="{% url 'accounts:login' %}" role="button">로그인</a>
+
+                <a class="btn btn-login"
+                   href="{% url 'accounts:login' %}">
+                    로그인
+                </a>
+
                 {% endif %}
+
             </div>
         </div>
     </div>
+
+
+    <!-- =====================================
+         모바일 헤더
+    ====================================== -->
+    <div class="mobile-header">
+
+        <a href="{% url 'home' %}">
+            <img
+                src="{% static 'IC_LOGO.png' %}"
+                class="mobile-header-logo"
+                alt="조기진통 감지 및 스트레스 완화"
+            >
+        </a>
+
+
+        <button
+            class="mobile-menu-button"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#mobileMenu"
+            aria-controls="mobileMenu"
+            aria-label="메뉴 열기"
+        >
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+    </div>
+
 </header>
+
+
+<!-- =====================================
+     모바일 오른쪽 사이드 메뉴
+====================================== -->
+<div
+    class="offcanvas offcanvas-end mobile-menu"
+    tabindex="-1"
+    id="mobileMenu"
+    aria-labelledby="mobileMenuLabel"
+>
+
+    <div class="offcanvas-header">
+
+        <img
+            src="{% static 'IC_LOGO.png' %}"
+            class="mobile-menu-logo"
+            alt="로고"
+        >
+
+        <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="offcanvas"
+            aria-label="닫기">
+        </button>
+
+    </div>
+
+
+    <div class="offcanvas-body">
+
+        <nav class="mobile-menu-nav">
+
+            <a href="{% url 'home' %}" class="mobile-menu-link">
+                홈
+            </a>
+
+            <a href="{% url 'information:index' %}" class="mobile-menu-link">
+                산모·태아정보
+            </a>
+
+            <a href="{% url 'survey:survey-list' %}" class="mobile-menu-link">
+                설문조사
+            </a>
+
+            <a href="{% url 'archive:index' %}" class="mobile-menu-link">
+                자료실
+            </a>
+
+
+            {% if user.is_authenticated %}
+
+            <button
+                class="mobile-account-btn"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mobileAccountMenu"
+                aria-expanded="false"
+            >
+                내 계정
+            </button>
+
+
+            <div class="collapse mobile-account-content" id="mobileAccountMenu">
+
+                <div class="mobile-user-name">
+                    {{ user.fitbit.full_name|default:user.username }}
+                </div>
+
+                <a
+                    href="{% url 'accounts:user_profile' %}"
+                    class="mobile-sub-link"
+                >
+                    내 정보
+                </a>
+
+
+                <form
+                    method="post"
+                    action="{% url 'accounts:logout' %}"
+                >
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="mobile-logout"
+                    >
+                        로그아웃
+                    </button>
+                </form>
+
+            </div>
+
+            {% else %}
+
+            <a href="{% url 'accounts:login' %}"
+               class="mobile-menu-link">
+                로그인
+            </a>
+
+            {% endif %}
+
+        </nav>
+
+
+        <div class="mobile-bottom-links">
+
+            <a href="/privacy.html">
+                개인정보 처리방침
+            </a>
+
+            <a href="/terms.html">
+                서비스 이용약관
+            </a>
+
+        </div>
+
+    </div>
+</div>
