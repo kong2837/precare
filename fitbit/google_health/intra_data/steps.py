@@ -22,7 +22,6 @@ def get_step_count(date, account):
 
         if not datapoints:
             print(f"ℹ️ {account.user.username} | {date} | 걸음수 데이터 없음.")
-            update_last_synced(account)
             return None
 
         saved_count = 0
@@ -61,7 +60,6 @@ def get_step_count(date, account):
                 saved_count += 1
 
         print(f"✅ {account.user.username} | {date} | 걸음수 {saved_count}건 저장 완료.")
-        update_last_synced(account)
         return data
 
     elif response.status_code == 401:

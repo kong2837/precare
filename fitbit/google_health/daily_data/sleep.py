@@ -32,7 +32,6 @@ def get_sleep_stage(date, account):
 
         if not sessions:
             print(f"ℹ️ {account.user.username} | {date} | 수면 세션 없음.")
-            update_last_synced(account)
             return None
 
         saved_stage_count = 0
@@ -85,7 +84,6 @@ def get_sleep_stage(date, account):
                             saved_stage_count += 1
 
         print(f"✅ {account.user.username} | {date} | 수면 단계 {saved_stage_count}건 저장 완료.")
-        update_last_synced(account)
         return data
 
     elif response.status_code == 401:

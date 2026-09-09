@@ -22,7 +22,6 @@ def get_respiratory_rate(date, account):
 
         if not datapoints:
             print(f"ℹ️ {account.user.username} | {date} | 호흡수 데이터 없음.")
-            update_last_synced(account)
             return None
 
         target_value = None
@@ -40,7 +39,6 @@ def get_respiratory_rate(date, account):
 
         if target_value is None:
             print(f"ℹ️ {account.user.username} | {date} | 호흡수 해당 날짜 데이터 없음.")
-            update_last_synced(account)
             return None
 
         target_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
@@ -63,7 +61,6 @@ def get_respiratory_rate(date, account):
         else:
             print(f"⚠️ {date} | 수면 데이터가 없어 호흡수를 채울 수 없습니다. 수면 데이터를 먼저 수집하세요.")
 
-        update_last_synced(account)
         return data
 
     elif response.status_code == 401:
