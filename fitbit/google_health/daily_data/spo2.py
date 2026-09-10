@@ -22,7 +22,6 @@ def get_spo2(date, account):
 
         if not datapoints:
             print(f"ℹ️ {account.user.username} | {date} | SpO₂ 데이터 없음.")
-            update_last_synced(account)
             return None
 
         saved = 0
@@ -57,7 +56,6 @@ def get_spo2(date, account):
                 saved += 1
 
         print(f"✅ {account.user.username} | {date} | SpO₂ {saved}건 저장 완료.")
-        update_last_synced(account)
         return data
 
     elif response.status_code == 401:

@@ -22,10 +22,10 @@ def get_heart_rate(date, account):
 
         if not datapoints:
             print(f"ℹ️ {account.user.username} | {date} | 심박수 데이터 없음.")
-            update_last_synced(account)
             return None
 
         saved_count = 0
+        latest_hr_dt = None
 
         for point in datapoints:
             hr = point.get("heartRate", {})
@@ -39,6 +39,9 @@ def get_heart_rate(date, account):
             dt_raw = google_time_to_kst_naive(physical_time)
             if dt_raw is None or dt_raw.date().isoformat() != date:
                 continue
+            
+            if latest_hr_dt is None or dt_raw > latest_hr_dt:
+                latest_hr_dt = dt_raw
 
             dt = normalize_to_minute(dt_raw)
             bpm = int(bpm)
@@ -56,9 +59,11 @@ def get_heart_rate(date, account):
                     saved_count += 1
             else:
                 saved_count += 1
+                
+        if latest_hr_dt is not None:
+            update_last_synced(account, latest_hr_dt)
 
         print(f"✅ {account.user.username} | {date} | 심박수 {saved_count}건 저장 완료.")
-        update_last_synced(account)
         return data
 
     elif response.status_code == 401:

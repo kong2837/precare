@@ -23,7 +23,6 @@ def get_skin_temperature(date, account):
 
         if not datapoints:
             print(f"ℹ️ {account.user.username} | {date} | skin temp 데이터 없음.")
-            update_last_synced(account)
             return None
 
         target = None
@@ -41,14 +40,12 @@ def get_skin_temperature(date, account):
 
         if not target:
             print(f"ℹ️ {account.user.username} | {date} | skin temp 해당 날짜 데이터 없음.")
-            update_last_synced(account)
             return None
 
         value = target.get("nightlyTemperatureCelsius")
 
         if value is None or value == "NaN":
             print(f"ℹ️ {account.user.username} | {date} | skin temp 값 없음.")
-            update_last_synced(account)
             return None
 
         base_dt = datetime.datetime.strptime(date, "%Y-%m-%d")
@@ -70,7 +67,6 @@ def get_skin_temperature(date, account):
                 saved_count = 1
 
         print(f"✅ {account.user.username} | {date} | skin temp {saved_count}건 저장 완료. ({value})")
-        update_last_synced(account)
         return data
 
     elif response.status_code == 401:
