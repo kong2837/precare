@@ -91,6 +91,14 @@ class FitbitAccount(models.Model):
         blank=True,
         help_text="임신 시작일을 입력해주세요"
     )
+    
+    gestational_age = models.IntegerField(
+        db_column="gestational_age",
+        db_comment="임신 주차",
+        null=True,
+        blank=True,
+        help_text="연구 시작 시점의 임신 주차를 입력해주세요"
+    )
 
     research_status = models.CharField(
         db_column="research_status",
