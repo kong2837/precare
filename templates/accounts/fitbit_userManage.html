@@ -31,7 +31,8 @@
                     <th scope="col" data-column="research_status">연구 상태</th>
                     <th scope="col" data-column="research_year">연구 년도 </th>
                     <th scope="col" data-column="pregnancy_start_date">임신 시작일</th>
-                    <th scope="col" data-column="join_date">연구 시작일</th>
+                    <th scope="col" data-column="join_date">연구 시작일</th>    
+                    <th scope="col">연구 시작일 기준 임신 주수</th>
                     <th scope="col" data-column="end_date">연구 종료일</th>
                     <th scope="col" data-column="showed_sync_status">마지막 동기화</th>
                     <th scope="col" data-column="note">노트</th>
@@ -95,19 +96,51 @@
                             </option>
                         </select></td>
                         <td>
-                            <input type="date" class="form-control pregnancy_start_date"
-                                   data-user-id="{{ user.pk }}"
-                                   value="{{ user.fitbit.pregnancy_start_date|date:'Y-m-d' }}">
+                            <input type="date"
+                                class="form-control pregnancy_start_date"
+                                data-user-id="{{ user.pk }}"
+                                value="{{ user.fitbit.pregnancy_start_date|date:'Y-m-d' }}">
                         </td>
+
                         <td>
-                            <input type="date" class="form-control start-date"
-                                   data-user-id="{{ user.pk }}"
-                                   value="{{ user.fitbit.join_date|date:'Y-m-d' }}">
+                            <input type="date"
+                                class="form-control start-date"
+                                data-user-id="{{ user.pk }}"
+                                value="{{ user.fitbit.join_date|date:'Y-m-d' }}">
                         </td>
+
+                        <!-- 연구 시작일 기준 임신 주수 -->
                         <td>
-                            <input type="date" class="form-control end-date"
-                                   data-user-id="{{ user.pk }}"
-                                   value="{{ user.fitbit.end_date|date:'Y-m-d' }}">
+                            <div class="d-flex align-items-center gap-1"
+                                style="min-width: 190px;">
+
+                                <input type="number"
+                                    class="form-control pregnancy-week"
+                                    data-user-id="{{ user.pk }}"
+                                    min="0"
+                                    max="45"
+                                    value="{{ user.fitbit.pregnancy_week_at_join|default_if_none:'' }}"
+                                    style="width: 70px;">
+
+                                <span>주</span>
+
+                                <input type="number"
+                                    class="form-control pregnancy-day"
+                                    data-user-id="{{ user.pk }}"
+                                    min="0"
+                                    max="6"
+                                    value="{{ user.fitbit.pregnancy_day_at_join|default_if_none:'' }}"
+                                    style="width: 65px;">
+
+                                <span>일</span>
+                            </div>
+                        </td>
+
+                        <td>
+                            <input type="date"
+                                class="form-control end-date"
+                                data-user-id="{{ user.pk }}"
+                                value="{{ user.fitbit.end_date|date:'Y-m-d' }}">
                         </td>
                         <td>{{ user.fitbit.last_synced|date:'Y-m-d' }}</td>
 
@@ -227,6 +260,111 @@
                     .forEach(el => update_research_date(el, 'join_date'));
                 document.querySelectorAll('.end-date')
                     .forEach(el => update_research_date(el, 'end_date'));
+                // 임신 주수(주 + 일) 업데이트
+                const updatePregnancyWeek = (userId) => {
+
+                    const weekElement = document.querySelector(
+                        `.pregnancy-week[data-user-id="${userId}"]`
+                    );
+
+                    const dayElement = document.querySelector(
+                        `.pregnancy-day[data-user-id="${userId}"]`
+                    );
+
+                    let pregnancyWeek = weekElement.value;
+                    let pregnancyDay = dayElement.value;
+
+                    // 둘 다 비어있으면 DB 값 삭제
+                    if (pregnancyWeek === '' && pregnancyDay === '') {
+                        pregnancyWeek = null;
+                        pregnancyDay = null;
+                    }
+
+                    // 주만 입력하고 일을 비워두면 0일로 처리
+                    else if (pregnancyWeek !== '' && pregnancyDay === '') {
+                        pregnancyDay = 0;
+                        dayElement.value = 0;
+                    }
+
+                    // 일만 입력된 경우
+                    else if (pregnancyWeek === '' && pregnancyDay !== '') {
+                        alert('임신 주수를 먼저 입력해주세요.');
+                        return;
+                    }
+
+                    // 입력값 검사
+                    if (
+                        pregnancyWeek !== null &&
+                        (Number(pregnancyWeek) < 0 || Number(pregnancyWeek) > 45)
+                    ) {
+                        alert('임신 주수는 0~45주 사이로 입력해주세요.');
+                        return;
+                    }
+
+                    if (
+                        pregnancyDay !== null &&
+                        (Number(pregnancyDay) < 0 || Number(pregnancyDay) > 6)
+                    ) {
+                        alert('일수는 0~6일 사이로 입력해주세요.');
+                        return;
+                    }
+
+                    fetch("{% url 'accounts:update_pregnancy_week' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            pregnancy_week: pregnancyWeek,
+                            pregnancy_day: pregnancyDay
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('임신 주수가 업데이트되었습니다.');
+                        } else {
+                            alert(
+                                '임신 주수 업데이트 실패: ' +
+                                (data.error || '')
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('임신 주수 업데이트 중 오류가 발생했습니다.');
+                    });
+                };
+
+
+                // 주 입력칸
+                document.querySelectorAll('.pregnancy-week')
+                    .forEach(element => {
+
+                        stopBubbling(element);
+
+                        element.addEventListener('change', function () {
+                            updatePregnancyWeek(
+                                this.getAttribute('data-user-id')
+                            );
+                        });
+                    });
+
+
+                // 일 입력칸
+                document.querySelectorAll('.pregnancy-day')
+                    .forEach(element => {
+
+                        stopBubbling(element);
+
+                        element.addEventListener('change', function () {
+                            updatePregnancyWeek(
+                                this.getAttribute('data-user-id')
+                            );
+                        });
+                    });
         });
         
     </script>
