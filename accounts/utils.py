@@ -122,3 +122,77 @@ def generate_verification_code(length=8):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
+
+def cal_gestational_age_from_join(
+    join_date,
+    pregnancy_week_at_join,
+    pregnancy_day_at_join,
+    particular_date
+):
+    """
+    연구 시작일 당시 입력한 임신 주수(주, 일)를 기준으로
+    특정 날짜의 임신 주수(주, 일)를 계산하는 함수
+    """
+
+    join_date = _to_date(join_date)
+    particular_date = _to_date(particular_date)
+
+    if (
+        join_date is None
+        or pregnancy_week_at_join is None
+        or pregnancy_day_at_join is None
+        or particular_date is None
+    ):
+        return None, None
+
+    base_days = (
+        pregnancy_week_at_join * 7
+        + pregnancy_day_at_join
+    )
+
+    passed_days = (particular_date - join_date).days
+
+    gestational_days = base_days + passed_days
+
+    if gestational_days < 0:
+        return None, None
+
+    week = gestational_days // 7
+    day = gestational_days % 7
+
+    return week, day
+
+def cal_gestational_week_from_join(
+    join_date,
+    pregnancy_week_at_join,
+    pregnancy_day_at_join,
+    particular_date
+):
+    week, day = cal_gestational_age_from_join(
+        join_date,
+        pregnancy_week_at_join,
+        pregnancy_day_at_join,
+        particular_date
+    )
+
+    return week
+
+def cal_gestational_month_from_join(
+    join_date,
+    pregnancy_week_at_join,
+    pregnancy_day_at_join,
+    particular_date
+):
+    week, day = cal_gestational_age_from_join(
+        join_date,
+        pregnancy_week_at_join,
+        pregnancy_day_at_join,
+        particular_date
+    )
+
+    if week is None:
+        return None
+
+    total_days = week * 7 + day
+
+    return total_days // 30 + 1

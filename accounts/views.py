@@ -50,6 +50,44 @@ from huami.forms import (
 )
 from huami.models import HuamiAccount
 from huami.models.healthdata import HealthData
+from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
+from .forms import EmailPasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm,PhoneNumberPasswordResetRequestForm
+from .models import Profile
+from .utils import (
+    generate_verification_code,
+    _to_date,
+    cal_gestational_week,
+    cal_gestational_month,
+    cal_gestational_age_from_join,
+    cal_gestational_week_from_join,
+    cal_gestational_month_from_join,
+)
+from django.contrib.auth import login
+from django.utils import timezone
+from django.utils.timezone import now, timedelta, datetime, localtime
+from datetime import date
+from django.utils.crypto import get_random_string
+from django.contrib.auth import login
+from django.shortcuts import redirect
+from django.urls import reverse
+import requests
+import base64
+from django.views import View
+from django.http import JsonResponse
+from django.contrib.auth.models import User
+from django.utils.dateparse import parse_date
+from django.core.exceptions import ObjectDoesNotExist 
+from collections import defaultdict
+from django.db.models.functions import TruncDate, TruncMonth
+
+from survey.models import UserSurvey
+from fitbit.models import FitbitMinuteMetric, FitbitAccount
+from django.db.models import Avg, Max, Q
+from survey.models import ActionFeedback
+
+from .models import UserClickLog
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 from survey.models import UserSurvey
 
 from .forms import (
@@ -330,11 +368,18 @@ class UserNoteUpdateView(
         note = request.POST.get('note', '').strip()
 
         target = _get_research_target(user)
-        
+
         if target is None:
-            messages.error(request, '연결된 프로필(huami/fitbit)이 없습니다.')
-            # 프로필 없을 때는 기본 userInfo로
-            return redirect(reverse_lazy('accounts:userInfo', kwargs={'pk': pk}))
+            messages.error(
+                request,
+                '연결된 프로필(huami/fitbit)이 없습니다.'
+            )
+            return redirect(
+                reverse_lazy(
+                    'accounts:userInfo',
+                    kwargs={'pk': pk}
+                )
+            )
 
         target.note = note
         target.save(update_fields=['note'])
@@ -892,6 +937,103 @@ class UserResearchDate(
         setattr(target, norm_type, parsed)
         target.save(update_fields=[norm_type])
         return JsonResponse({'success': True})
+    
+    
+class UserPregnancyWeekUpdate(SuperuserRequiredMixin, View):
+
+    def post(self, request):
+        data = json.loads(request.body)
+
+        user_id = data.get("user_id")
+        pregnancy_week = data.get("pregnancy_week")
+        pregnancy_day = data.get("pregnancy_day")
+
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "User not found"
+                },
+                status=404
+            )
+
+        target = _get_research_target(user)
+
+        if target is None:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "no linked profile (huami/fitbit)"
+                },
+                status=400
+            )
+
+        # 둘 다 비워서 보내면 임신 주수 정보 삭제
+        if (
+            pregnancy_week in (None, "")
+            and pregnancy_day in (None, "")
+        ):
+            target.pregnancy_week_at_join = None
+            target.pregnancy_day_at_join = None
+
+            target.save(
+                update_fields=[
+                    "pregnancy_week_at_join",
+                    "pregnancy_day_at_join",
+                ]
+            )
+
+            return JsonResponse({
+                "success": True
+            })
+
+        try:
+            pregnancy_week = int(pregnancy_week)
+            pregnancy_day = int(pregnancy_day)
+        except (TypeError, ValueError):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "invalid pregnancy week/day"
+                },
+                status=400
+            )
+
+        # 임신 주수 검증
+        if pregnancy_week < 0 or pregnancy_week > 45:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "pregnancy week must be between 0 and 45"
+                },
+                status=400
+            )
+
+        # 일수는 반드시 0~6
+        if pregnancy_day < 0 or pregnancy_day > 6:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "pregnancy day must be between 0 and 6"
+                },
+                status=400
+            )
+
+        target.pregnancy_week_at_join = pregnancy_week
+        target.pregnancy_day_at_join = pregnancy_day
+
+        target.save(
+            update_fields=[
+                "pregnancy_week_at_join",
+                "pregnancy_day_at_join",
+            ]
+        )
+
+        return JsonResponse({
+            "success": True
+        })
 
 
 class FitbitLoginView(View):
@@ -1032,178 +1174,430 @@ class ScoreChartData(
     View,
 ):
     """
-      1) 0~40점
-      2) weekly -> 첫 점수 등록 날짜 ~ 마지막 동기화 날짜 기간동안의 점수를 주단위로 끊어서 표시
-      3) monthly -> 월 단위로 끊어서 기록된 모든 달을 표시
+    1) 점수 범위: 0~40점
+    2) weekly:
+       첫 점수 등록 날짜 ~ 마지막 점수 등록 날짜를
+       주 단위로 끊어서 최고점(Max) 표시
+    3) monthly:
+       기록된 전체 기간을 월 단위로 표시
     """
+
     def get(self, request, pk):
         user = get_object_or_404(get_user_model(), pk=pk)
+
         if (request.user != user) and (not request.user.is_superuser):
-            return JsonResponse({"error": "forbidden"}, status=403)
-
-        # ----- 임신 시작일 fitbit/huami DB에서 선택하여 불러오기 & datetime -> date로 type 전환 -----
-        target = _get_research_target(user)
-        preg_start = None
-        if target is not None:
-            ps = getattr(target, "pregnancy_start_date", None)
-            preg_start = _to_date(ps)
-
-        # ----- metric 결정: 기본 stress -----
-        metric = (request.GET.get("metric") or "stress").lower()
-        survey_filter = SURVEY_FILTERS.get(metric)
-        if survey_filter is None:
-            return JsonResponse({"error": f"unknown metric: {metric}"}, status=400)
-
-        # 모든 쿼리셋에 한국 시간 기준 날짜(local_date) 주입
-        qs = (UserSurvey.objects
-              .filter(user_id=user.id)
-              .filter(survey_filter)
-              .filter(score__isnull=False)
-              .annotate(local_date=TruncDate('create_at', tzinfo=timezone.get_current_timezone())))
-
-        # 기준일(anchor)을 한국 시간 날짜로 결정
-        last_dt = qs.order_by("-create_at").values_list("create_at", flat=True).first()
-        last_data_date = timezone.localtime(last_dt).date() if last_dt else None
-        
-        sync_date = None
-        if target:
-            sd = getattr(target, "last_synced", None) or getattr(target, "sync_date", None)
-            if sd: sync_date = timezone.localtime(sd).date()
-        
-        today = timezone.localdate()
-        
-        # 데이터 마지막 날, 동기화 날, 오늘 중 가장 미래인 날 선택
-        # anchor = max(filter(None, [last_data_date, sync_date, today]))]
-        
-        # 데이터 마지막 날을 선택하도록 변경
-        anchor = last_data_date
-
-        rng = (request.GET.get("range") or "weekly").lower()
-
-        # ---------------------- 주간: 최고점(Max) 기준 ----------------------
-        if rng == "weekly":
-            first_dt = qs.order_by("create_at").values_list("create_at", flat=True).first()
-            first_day = timezone.localtime(first_dt).date() if first_dt else anchor
-
-            windows = self._build_weekly_windows(anchor, first_day)
-            windows = list(reversed(windows))
-
-            labels, values, meta = [], [], []
-            for (start, end) in windows:
-                # 주입된 local_date로 필터링하여 자정 데이터 구제
-                row = (qs.filter(local_date__range=(start, end))
-                         .aggregate(value=Max("score")))
-                v = row["value"]
-                
-                label = f"{start.strftime('%m/%d')}~{end.strftime('%m/%d')}"
-                if preg_start:
-                    week_no = cal_gestational_week(preg_start, start)
-                    label += f" ({week_no}주)" if week_no >= 0 else " (-)"
-                    
-                labels.append(label)
-                values.append(int(v) if v is not None else None)
-                meta.append({"start": start.isoformat(), "end": end.isoformat()})
-
-            return JsonResponse({"labels": labels, "values": values, "meta": meta, "scale_max": 40})
-        
-        
-        # ---------------------- 월간: 기준일 포함 최근 12개월 (0~40점 스케일) ----------------------
-        if rng == "monthly":
-        
-        # # 월간 local_date 기준으로 그룹화
-        # day_rows = (qs.values("local_date")
-        #             .annotate(value=Avg("score"))
-        #             .order_by("local_date"))
-        # 1) 이 유저의 설문 기록 범위를 전부 계산
-            first_dt = qs.order_by("create_at").values_list("create_at", flat=True).first()
-            last_dt  = qs.order_by("-create_at").values_list("create_at", flat=True).first()
-
-            if not first_dt or not last_dt:
-                # 데이터가 없으면 빈 응답
-                return JsonResponse({"labels": [], "values": [], "meta": {"scale_max": 40}})
-
-            first_day = _to_date(first_dt)
-            last_day  = _to_date(last_dt)
-
-            # 월 시작일로 정규화
-            first_month = _month_start(first_day)
-            last_month  = _month_start(last_day)
-
-            # first_month ~ last_month(포함) 까지 모든 달 생성
-            months = []
-            m = first_month
-            while m <= last_month:
-                months.append(m)
-                m = _add_months(m, 1)
-
-            after_last = _add_months(last_month, 1)
-
-            # 2) 전체 구간의 일자 평균 로드 (일 단위 평균 → 주별 평균 → 월 평균)
-            day_rows = (
-                qs.filter(create_at__date__gte=first_month, create_at__date__lt=after_last)
-                .annotate(day=TruncDate("create_at"))
-                .values("day")
-                .annotate(value=Avg("score"))
-                .order_by("day")
+            return JsonResponse(
+                {"error": "forbidden"},
+                status=403
             )
 
-            # 월별: (ISO 연,주)로 묶어 '주간 평균'들을 모은 후, 그 주 평균들의 평균을 월 점수로
-            month_week_values = {m: defaultdict(list) for m in months}
-            for r in day_rows:
-                d = r["day"]
-                v = float(r["value"])
-                mstart = _month_start(d)
-                if mstart not in month_week_values:
-                    continue
-                iso = d.isocalendar()  # (year, week, weekday)
-                wkey = (iso.year, iso.week)
-                month_week_values[mstart][wkey].append(v)
+        # ============================================================
+        # 연구 시작일 기준 임신 주수 정보 불러오기
+        # ============================================================
+        target = _get_research_target(user)
 
-            labels, values = [], []
-            for mstart in months:
-                # 라벨: "MM월(임신 N개월)" 또는 임신 시작일 없으면 "MM월"
-                if preg_start:
-                    preg_month = cal_gestational_month(preg_start, mstart)
-                    if preg_month >= 0:
-                        label = f"{mstart.strftime('%m월')} ({preg_month}개월)"
+        join_date = None
+        pregnancy_week_at_join = None
+        pregnancy_day_at_join = None
+
+        if target is not None:
+            join_date = _to_date(
+                getattr(target, "join_date", None)
+            )
+
+            pregnancy_week_at_join = getattr(
+                target,
+                "pregnancy_week_at_join",
+                None
+            )
+
+            pregnancy_day_at_join = getattr(
+                target,
+                "pregnancy_day_at_join",
+                None
+            )
+
+        # ============================================================
+        # metric 결정
+        # ============================================================
+        metric = (
+            request.GET.get("metric")
+            or "stress"
+        ).lower()
+
+        survey_filter = SURVEY_FILTERS.get(metric)
+
+        if survey_filter is None:
+            return JsonResponse(
+                {
+                    "error": f"unknown metric: {metric}"
+                },
+                status=400
+            )
+
+        # ============================================================
+        # 설문 데이터 조회
+        # ============================================================
+        qs = (
+            UserSurvey.objects
+            .filter(user_id=user.id)
+            .filter(survey_filter)
+            .filter(score__isnull=False)
+            .annotate(
+                local_date=TruncDate(
+                    "create_at",
+                    tzinfo=timezone.get_current_timezone()
+                )
+            )
+        )
+
+        # ============================================================
+        # 설문 데이터가 하나도 없는 경우
+        # ============================================================
+        first_dt = (
+            qs
+            .order_by("create_at")
+            .values_list("create_at", flat=True)
+            .first()
+        )
+
+        last_dt = (
+            qs
+            .order_by("-create_at")
+            .values_list("create_at", flat=True)
+            .first()
+        )
+
+        if not first_dt or not last_dt:
+            return JsonResponse({
+                "labels": [],
+                "values": [],
+                "meta": [],
+                "scale_max": 40,
+            })
+
+        first_data_date = timezone.localtime(
+            first_dt
+        ).date()
+
+        last_data_date = timezone.localtime(
+            last_dt
+        ).date()
+
+        # 그래프 기준일
+        anchor = last_data_date
+
+        rng = (
+            request.GET.get("range")
+            or "weekly"
+        ).lower()
+
+        # ============================================================
+        # 주간 그래프
+        # ============================================================
+        if rng == "weekly":
+
+            windows = self._build_weekly_windows(
+                anchor,
+                first_data_date
+            )
+
+            # 오래된 날짜 → 최근 날짜 순으로 표시
+            windows = list(reversed(windows))
+
+            labels = []
+            values = []
+            meta = []
+
+            for start, end in windows:
+
+                # 해당 주간의 최고 점수
+                row = (
+                    qs
+                    .filter(
+                        local_date__range=(
+                            start,
+                            end
+                        )
+                    )
+                    .aggregate(
+                        value=Max("score")
+                    )
+                )
+
+                value = row["value"]
+
+                label = (
+                    f"{start.strftime('%m/%d')}"
+                    f"~"
+                    f"{end.strftime('%m/%d')}"
+                )
+
+                # ----------------------------------------------------
+                # 연구 시작일 기준 임신 주수 계산
+                # ----------------------------------------------------
+                if (
+                    join_date is not None
+                    and pregnancy_week_at_join is not None
+                    and pregnancy_day_at_join is not None
+                ):
+                    week_no, day_no = (
+                        cal_gestational_age_from_join(
+                            join_date,
+                            pregnancy_week_at_join,
+                            pregnancy_day_at_join,
+                            start
+                        )
+                    )
+
+                    if week_no is not None:
+                        label += (
+                            f" ({week_no}주 {day_no}일)"
+                        )
                     else:
-                        label = f"{mstart.strftime('%m월')} (-)"
-                else:
-                    label = f"{mstart.strftime('%m월')}"
+                        label += " (-)"
+
                 labels.append(label)
 
-                week_groups = month_week_values[mstart]
-                if not week_groups:
-                    values.append(0.0)  # 데이터 없는 달은 0
+                values.append(
+                    int(value)
+                    if value is not None
+                    else None
+                )
+
+                meta.append({
+                    "start": start.isoformat(),
+                    "end": end.isoformat(),
+                })
+
+            return JsonResponse({
+                "labels": labels,
+                "values": values,
+                "meta": meta,
+                "scale_max": 40,
+            })
+
+        # ============================================================
+        # 월간 그래프
+        # ============================================================
+        if rng == "monthly":
+
+            first_month = _month_start(
+                first_data_date
+            )
+
+            last_month = _month_start(
+                last_data_date
+            )
+
+            # --------------------------------------------------------
+            # 기록된 기간의 모든 월 생성
+            # --------------------------------------------------------
+            months = []
+
+            month = first_month
+
+            while month <= last_month:
+                months.append(month)
+                month = _add_months(
+                    month,
+                    1
+                )
+
+            after_last = _add_months(
+                last_month,
+                1
+            )
+
+            # --------------------------------------------------------
+            # 날짜별 평균 점수
+            # --------------------------------------------------------
+            day_rows = (
+                qs
+                .filter(
+                    local_date__gte=first_month,
+                    local_date__lt=after_last
+                )
+                .values("local_date")
+                .annotate(
+                    value=Avg("score")
+                )
+                .order_by("local_date")
+            )
+
+            # --------------------------------------------------------
+            # 월 → ISO 주 → 점수
+            #
+            # {
+            #   2026-09-01: {
+            #       (2026, 36): [10, 15],
+            #       (2026, 37): [20]
+            #   }
+            # }
+            # --------------------------------------------------------
+            month_week_values = {
+                month: defaultdict(list)
+                for month in months
+            }
+
+            for row in day_rows:
+                day = row["local_date"]
+                value = float(row["value"])
+
+                month_start = _month_start(day)
+
+                if month_start not in month_week_values:
                     continue
 
-                weekly_avgs = [sum(vals)/len(vals) for vals in week_groups.values()]  # 각 주 평균(0~40)
-                monthly_avg = round(sum(weekly_avgs)/len(weekly_avgs), 1)             # 주 평균들의 평균(0~40)
-                values.append(monthly_avg)
+                iso = day.isocalendar()
 
-            return JsonResponse({"labels": labels, "values": values, "meta": {"scale_max": 40}})
+                week_key = (
+                    iso.year,
+                    iso.week
+                )
 
-    # ---------- 내부 헬퍼들 ----------
-    def _build_weekly_windows(self, anchor, first_day):
+                month_week_values[
+                    month_start
+                ][week_key].append(value)
+
+            labels = []
+            values = []
+
+            for month_start in months:
+
+                # ----------------------------------------------------
+                # 월간 라벨의 임신 개월 계산
+                #
+                # 기존:
+                # pregnancy_start_date 기준
+                #
+                # 변경:
+                # join_date +
+                # pregnancy_week_at_join +
+                # pregnancy_day_at_join 기준
+                # ----------------------------------------------------
+                label = month_start.strftime(
+                    "%m월"
+                )
+
+                if (
+                    join_date is not None
+                    and pregnancy_week_at_join is not None
+                    and pregnancy_day_at_join is not None
+                ):
+                    pregnancy_month = (
+                        cal_gestational_month_from_join(
+                            join_date,
+                            pregnancy_week_at_join,
+                            pregnancy_day_at_join,
+                            month_start
+                        )
+                    )
+
+                    if pregnancy_month is not None:
+                        label += (
+                            f" ({pregnancy_month}개월)"
+                        )
+                    else:
+                        label += " (-)"
+
+                labels.append(label)
+
+                # ----------------------------------------------------
+                # 해당 월의 점수 계산
+                # ----------------------------------------------------
+                week_groups = (
+                    month_week_values[
+                        month_start
+                    ]
+                )
+
+                if not week_groups:
+                    values.append(0.0)
+                    continue
+
+                # 각 주의 평균
+                weekly_avgs = [
+                    sum(scores) / len(scores)
+                    for scores
+                    in week_groups.values()
+                ]
+
+                # 주 평균들의 평균 = 월 점수
+                monthly_avg = round(
+                    sum(weekly_avgs)
+                    / len(weekly_avgs),
+                    1
+                )
+
+                values.append(
+                    monthly_avg
+                )
+
+            return JsonResponse({
+                "labels": labels,
+                "values": values,
+                "meta": {
+                    "scale_max": 40
+                },
+                "scale_max": 40,
+            })
+
+        # ============================================================
+        # 잘못된 range
+        # ============================================================
+        return JsonResponse(
+            {
+                "error": f"unknown range: {rng}"
+            },
+            status=400
+        )
+
+    # ================================================================
+    # 내부 헬퍼
+    # ================================================================
+    def _build_weekly_windows(
+        self,
+        anchor,
+        first_day
+    ):
         """
-        anchor 포함 7일: [anchor-6, anchor]를 idx=0으로 하고,
-        과거로 7일씩 끊어서 데이터 시작일 이전까지 생성.
-        반환: [(start, end), ...]  # idx=0이 최신
+        anchor 포함 7일:
+        [anchor - 6일, anchor]
+
+        이후 과거 방향으로 7일씩 끊는다.
+
+        반환 예:
+        [
+            (start, end),
+            ...
+        ]
+
+        이 함수 자체의 반환 순서는
+        최신 → 과거 순이다.
         """
+
         windows = []
-        # 첫 윈도우(최신)
+
         end = anchor
         start = anchor - timedelta(days=6)
+
         while True:
-            windows.append((start, end))
-            # 다음(과거) 윈도우
+            windows.append(
+                (start, end)
+            )
+
+            # 한 주 이전으로 이동
             end = start - timedelta(days=1)
             start = end - timedelta(days=6)
-            # 더 내려가면 first_day 이전으로 완전히 벗어나는지 체크
+
+            # 데이터 시작일보다 완전히 이전으로 내려갔으면 종료
             if end < first_day:
                 break
+
         return windows
     
+class WeeklyScoreDetailView(View):
     
 class WeeklyScoreDetailView(
     RealResearchDataBlockedForTacMixin,

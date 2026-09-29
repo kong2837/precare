@@ -115,6 +115,22 @@ class HuamiAccount(models.Model):
         blank=True,
         help_text="임신 시작일을 입력해주세요"
     )
+    
+    pregnancy_week_at_join = models.PositiveSmallIntegerField(
+        db_column="pregnancy_week_at_join",
+        db_comment="연구 시작일 기준 임신 주수(주)",
+        null=True,
+        blank=True,
+        help_text="연구 시작일 당시 임신 주수를 입력해주세요"
+    )
+
+    pregnancy_day_at_join = models.PositiveSmallIntegerField(
+        db_column="pregnancy_day_at_join",
+        db_comment="연구 시작일 기준 임신 주수(일)",
+        null=True,
+        blank=True,
+        help_text="연구 시작일 당시 임신 주수의 일수를 입력해주세요 (0~6)"
+    )
 
     research_year = models.CharField(
         db_column="research_year",
