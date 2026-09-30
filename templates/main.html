@@ -41,6 +41,28 @@
     .info-card { border: none; background-color: #E1FAF6; border-radius: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.2s; min-height: 200px; }
     .info-card:hover { transform: translateY(-5px); }
 
+    /*
+    =========================
+       설문 결과 차트
+    ==========================
+    */
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 260px;
+        margin-top: 1.2rem;
+    }
+
+    .chart-empty {
+        height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        font-size: 0.9rem;
+        text-align: center;
+    }
+
     /* ==========================================
        MOBILE
     ========================================== */
@@ -76,6 +98,41 @@
         .info-card h5 { margin-bottom: 0.35rem; font-size: 1rem; }
         .info-card p { font-size: 0.85rem; line-height: 1.45; }
         .info-card img { width: 45px !important; }
+                .survey-chart-section {
+            margin-top: 8px;
+            padding: 1.8rem 0;
+        }
+
+        .survey-chart-title {
+            font-size: 1.35rem;
+        }
+
+        .survey-chart-subtitle {
+            font-size: 0.85rem;
+            margin-bottom: 1.3rem;
+        }
+
+        .survey-chart-card {
+            padding: 1rem;
+            border-radius: 0.8rem;
+        }
+
+        .survey-chart-card h5 {
+            font-size: 1rem;
+        }
+
+        .chart-wrapper {
+            height: 220px;
+        }
+
+        .chart-empty {
+            height: 220px;
+        }
+
+        .chart-range-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.72rem;
+        }
     }
     @media (max-width: 390px) {
         .hero-logo { width: 135px; }
@@ -86,6 +143,8 @@
         .week-info-card { padding-left: 0.45rem; padding-right: 0.45rem; }
         .week-info-card h5 { font-size: 0.72rem; }
         .week-info-card p { font-size: 0.65rem; }
+
+
     }
 </style>
 
@@ -102,6 +161,148 @@
         설문조사하러 가기
     </a>
 </section>
+
+<!-- ========================
+     내 설문 결과
+========================= -->
+{% if request.user.is_authenticated %}
+<section class="survey-chart-section">
+    <div class="container">
+
+        <div class="text-center">
+            <h2 class="survey-chart-title">
+                나의 설문 결과
+            </h2>
+            <p class="survey-chart-subtitle">
+                최근 설문 점수의 변화를 확인하세요.
+            </p>
+        </div>
+
+        <div class="row g-4">
+
+            <!-- 임신 스트레스 -->
+            <div class="col-12 col-lg-4">
+                <div class="survey-chart-card">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>임신 스트레스</h5>
+
+                        <div class="chart-range-btns">
+                            <button
+                                type="button"
+                                class="chart-range-btn active"
+                                data-chart="stress"
+                                data-range="weekly"
+                            >
+                                주간
+                            </button>
+
+                            <button
+                                type="button"
+                                class="chart-range-btn"
+                                data-chart="stress"
+                                data-range="monthly"
+                            >
+                                월간
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chart-wrapper">
+                        <canvas id="stressChart"></canvas>
+
+                        <div id="stressEmpty" class="chart-empty d-none">
+                            아직 임신 스트레스 설문 기록이 없습니다.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+
+            <!-- 조기진통 위험 -->
+            <div class="col-12 col-lg-4">
+                <div class="survey-chart-card">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>조기진통 위험</h5>
+
+                        <div class="chart-range-btns">
+                            <button
+                                type="button"
+                                class="chart-range-btn active"
+                                data-chart="preterm"
+                                data-range="weekly"
+                            >
+                                주간
+                            </button>
+
+                            <button
+                                type="button"
+                                class="chart-range-btn"
+                                data-chart="preterm"
+                                data-range="monthly"
+                            >
+                                월간
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chart-wrapper">
+                        <canvas id="pretermChart"></canvas>
+
+                        <div id="pretermEmpty" class="chart-empty d-none">
+                            아직 조기진통 위험 설문 기록이 없습니다.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+
+            <!-- QUIPP -->
+            <div class="col-12 col-lg-4">
+                <div class="survey-chart-card">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>QUIPP</h5>
+
+                        <div class="chart-range-btns">
+                            <button
+                                type="button"
+                                class="chart-range-btn active"
+                                data-chart="quipp"
+                                data-range="weekly"
+                            >
+                                주간
+                            </button>
+
+                            <button
+                                type="button"
+                                class="chart-range-btn"
+                                data-chart="quipp"
+                                data-range="monthly"
+                            >
+                                월간
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chart-wrapper">
+                        <canvas id="quippChart"></canvas>
+
+                        <div id="quippEmpty" class="chart-empty d-none">
+                            아직 QUIPP 설문 기록이 없습니다.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <!-- ========================
      임신 주수 정보
@@ -222,6 +423,226 @@
         </div>
     </div>
 </section>
+
+<!-- 차트 -->
+{% if request.user.is_authenticated %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const scoreDataUrl =
+        "{% url 'accounts:score_data_chart' request.user.pk %}";
+
+    const charts = {};
+
+    const chartConfig = {
+        stress: {
+            canvasId: "stressChart",
+            emptyId: "stressEmpty",
+            title: "임신 스트레스 점수"
+        },
+        preterm: {
+            canvasId: "pretermChart",
+            emptyId: "pretermEmpty",
+            title: "조기진통 위험 점수"
+        },
+        quipp: {
+            canvasId: "quippChart",
+            emptyId: "quippEmpty",
+            title: "QUIPP 점수"
+        }
+    };
+
+
+    async function loadChart(metric, range) {
+
+        const config = chartConfig[metric];
+
+        const canvas = document.getElementById(config.canvasId);
+        const empty = document.getElementById(config.emptyId);
+
+        try {
+
+            const response = await fetch(
+                `${scoreDataUrl}?metric=${metric}&range=${range}`
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    `설문 그래프 데이터 요청 실패: ${response.status}`
+                );
+            }
+
+            const data = await response.json();
+
+            const labels = data.labels || [];
+            const values = data.values || [];
+
+            /*
+             * 실제 설문 데이터 존재 여부 확인
+             *
+             * ScoreChartData에서 빈 구간을 0으로 줄 수도 있으므로
+             * labels/values 배열 자체가 있는지를 기준으로 확인합니다.
+             */
+            if (labels.length === 0 || values.length === 0) {
+
+                canvas.classList.add("d-none");
+                empty.classList.remove("d-none");
+
+                if (charts[metric]) {
+                    charts[metric].destroy();
+                    delete charts[metric];
+                }
+
+                return;
+            }
+
+            empty.classList.add("d-none");
+            canvas.classList.remove("d-none");
+
+
+            if (charts[metric]) {
+                charts[metric].destroy();
+            }
+
+
+            charts[metric] = new Chart(
+                canvas.getContext("2d"),
+                {
+                    type: "line",
+
+                    data: {
+                        labels: labels,
+
+                        datasets: [{
+                            label: config.title,
+                            data: values,
+
+                            borderColor: "#F29A68",
+                            backgroundColor: "rgba(242, 154, 104, 0.12)",
+
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+
+                            tension: 0.3,
+                            spanGaps: true,
+                            fill: true
+                        }]
+                    },
+
+                    options: {
+
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        interaction: {
+                            intersect: false,
+                            mode: "index"
+                        },
+
+                        plugins: {
+
+                            legend: {
+                                display: false
+                            },
+
+                            tooltip: {
+                                displayColors: false,
+
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.parsed.y}점`;
+                                    }
+                                }
+                            }
+
+                        },
+
+                        scales: {
+
+                            y: {
+                                beginAtZero: true,
+                                max: 40,
+
+                                ticks: {
+                                    stepSize: 5
+                                },
+
+                                grid: {
+                                    color: "rgba(0,0,0,0.05)"
+                                }
+                            },
+
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            canvas.classList.add("d-none");
+            empty.classList.remove("d-none");
+
+            empty.textContent =
+                "설문 결과를 불러오지 못했습니다.";
+        }
+
+    }
+
+
+    /*
+     * 주간 / 월간 버튼
+     */
+    document
+        .querySelectorAll(".chart-range-btn")
+        .forEach(function (button) {
+
+            button.addEventListener("click", function () {
+
+                const metric = this.dataset.chart;
+                const range = this.dataset.range;
+
+                document
+                    .querySelectorAll(
+                        `.chart-range-btn[data-chart="${metric}"]`
+                    )
+                    .forEach(function (btn) {
+                        btn.classList.remove("active");
+                    });
+
+                this.classList.add("active");
+
+                loadChart(metric, range);
+
+            });
+
+        });
+
+
+    /*
+     * 페이지 처음 진입했을 때
+     * 3개 모두 주간 그래프 표시
+     */
+    loadChart("stress", "weekly");
+    loadChart("preterm", "weekly");
+    loadChart("quipp", "weekly");
+
+});
+</script>
+{% endif %}
 
 <script>
 if ('serviceWorker' in navigator) {
