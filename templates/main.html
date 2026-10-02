@@ -41,23 +41,110 @@
     .info-card { border: none; background-color: #E1FAF6; border-radius: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.2s; min-height: 200px; }
     .info-card:hover { transform: translateY(-5px); }
 
-    /*
-    =========================
-       설문 결과 차트
-    ==========================
-    */
+    /* =========================
+    내 설문 결과
+    ========================== */
+    .survey-chart-section {
+        background-color: #FFFDFB;
+        padding: 5.5rem 0 4rem;
+    }
+
+    .survey-chart-title {
+        font-weight: 800;
+        color: #5A4A42;
+        word-break: keep-all;
+        margin-top: 1rem;
+        margin-bottom: 0;
+    }
+
+    .survey-chart-subtitle {
+        color: #888;
+        margin-top: 0.7rem;
+        margin-bottom: 2.2rem;
+    }
+
+
+    /* =========================
+    주간 / 월간 버튼
+    ========================== */
+    .chart-range-btns {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        padding: 3px;
+        background-color: #F4F4F4;
+        border-radius: 999px;
+    }
+
+    .chart-range-btn {
+        border: none;
+        background: transparent;
+        color: #8A8A8A;
+
+        padding: 0.4rem 0.8rem;
+
+        border-radius: 999px;
+
+        font-size: 0.78rem;
+        font-weight: 700;
+
+        line-height: 1.2;
+
+        cursor: pointer;
+
+        transition:
+            background-color 0.2s ease,
+            color 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .chart-range-btn:hover {
+        color: #5A4A42;
+    }
+
+    .chart-range-btn.active {
+        background-color: #FFFFFF;
+        color: #E88955;
+
+        box-shadow:
+            0 2px 6px rgba(0, 0, 0, 0.10);
+    }
+
+
+    /* =========================
+    그래프 카드
+    ========================== */
+    .survey-chart-card {
+        background: #fff;
+        border: none;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        height: 100%;
+
+        box-shadow:
+            0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .survey-chart-card h5 {
+        font-weight: 800;
+        color: #5A4A42;
+        margin-bottom: 0;
+    }
+
     .chart-wrapper {
         position: relative;
         width: 100%;
         height: 260px;
-        margin-top: 1.2rem;
+        margin-top: 1.4rem;
     }
 
     .chart-empty {
         height: 260px;
+
         display: flex;
         align-items: center;
         justify-content: center;
+
         color: #999;
         font-size: 0.9rem;
         text-align: center;
@@ -98,36 +185,51 @@
         .info-card h5 { margin-bottom: 0.35rem; font-size: 1rem; }
         .info-card p { font-size: 0.85rem; line-height: 1.45; }
         .info-card img { width: 45px !important; }
-                .survey-chart-section {
-            margin-top: 8px;
-            padding: 1.8rem 0;
-        }
+        @media (max-width: 767.98px) {
 
-        .survey-chart-title {
-            font-size: 1.35rem;
-        }
+            .survey-chart-section {
+                margin-top: 8px;
+                padding: 3rem 0 2rem;
+            }
 
-        .survey-chart-subtitle {
-            font-size: 0.85rem;
-            margin-bottom: 1.3rem;
-        }
+            .survey-chart-title {
+                margin-top: 0.7rem;
+                font-size: 1.35rem;
+            }
 
-        .survey-chart-card {
-            padding: 1rem;
-            border-radius: 0.8rem;
-        }
+            .survey-chart-subtitle {
+                font-size: 0.85rem;
+                margin-top: 0.45rem;
+                margin-bottom: 1.5rem;
+            }
 
-        .survey-chart-card h5 {
-            font-size: 1rem;
-        }
+            .survey-chart-card {
+                padding: 1.1rem;
+                border-radius: 0.85rem;
+            }
 
-        .chart-wrapper {
-            height: 220px;
-        }
+            .survey-chart-card h5 {
+                font-size: 1rem;
+            }
 
-        .chart-empty {
-            height: 220px;
-        }
+            .chart-range-btns {
+                padding: 2px;
+            }
+
+            .chart-range-btn {
+                padding: 0.35rem 0.65rem;
+                font-size: 0.7rem;
+            }
+
+            .chart-wrapper {
+                height: 220px;
+                margin-top: 1.1rem;
+            }
+
+            .chart-empty {
+                height: 220px;
+            }
+}
 
         .chart-range-btn {
             padding: 0.25rem 0.5rem;
