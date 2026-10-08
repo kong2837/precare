@@ -1597,7 +1597,6 @@ class ScoreChartData(
 
         return windows
     
-class WeeklyScoreDetailView(View):
     
 class WeeklyScoreDetailView(
     RealResearchDataBlockedForTacMixin,
