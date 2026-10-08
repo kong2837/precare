@@ -4,24 +4,28 @@
 {% load static %}
 
 <html lang="ko">
+<html lang="ko">
 <head>
-    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>조기진통 감지 및 스트레스 완화</title>
 
+    <!-- 브라우저 아이콘 (favicon) -->
+    <link rel="icon" type="image/png" href="{% static 'IC_LOGO_192.png' %}">
+
     <!-- PWA 설정 -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
-
     <meta name="theme-color" content="#fffaf7">
 
-    <!-- iPhone, iPad 홈 화면 아이콘 -->
-    <link rel="apple-touch-icon" href="{% static 'IC_LOGO_192.png' %}">
-
+    <!-- 모바일 앱 설정 -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Precare">
+
+    <!-- iPhone, iPad 홈 화면 아이콘 -->
+    <link rel="apple-touch-icon" href="{% static 'IC_LOGO_192.png' %}">
 
     {% bootstrap_css %}
     {% bootstrap_javascript %}
