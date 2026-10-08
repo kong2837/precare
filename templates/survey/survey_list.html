@@ -54,8 +54,10 @@
 
     {% load static %}
     {% for survey in object_list %}
-        <a href="{% url 'survey:survey-detail' survey.pk %}" class="text-decoration-none w-100 d-flex justify-content-center" onclick="saveClickLog('survey_click')">
-            <div class="card mb-2 survey-card">
+        <a href="{% url 'survey:survey-detail' survey.pk %}"
+            class="text-decoration-none w-100 d-flex justify-content-center"
+            data-survey-title="{{ survey.title }}"
+            onclick="saveClickLog('survey_click', this.dataset.surveyTitle)">
                 <div class="survey-label 
                     {% if survey.title == "[상시]QUIPP" %}label-quipp
                     {% elif survey.title == "[상시]임신스트레스 10문항" %}label-stress
