@@ -746,11 +746,11 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 {% endif %}
 
-<script>
+<!-- <script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register("{% static 'service-worker.js' %}")
         .then(reg => console.log('SW registered:', reg))
         .catch(err => console.error('SW registration failed:', err));
 }
-</script>
+</script> -->
 {% endblock %}

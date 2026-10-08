@@ -5,9 +5,23 @@
 
 <html lang="ko">
 <head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>조기진통 감지 및 스트레스 완화</title>
+
+    <!-- PWA 설정 -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+
+    <meta name="theme-color" content="#fffaf7">
+
+    <!-- iPhone, iPad 홈 화면 아이콘 -->
+    <link rel="apple-touch-icon" href="{% static 'IC_LOGO_192.png' %}">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Precare">
 
     {% bootstrap_css %}
     {% bootstrap_javascript %}
@@ -71,6 +85,21 @@ function saveClickLog(logType) {
   }).catch(error => {
     console.error("클릭 로그 저장 실패:", error);
   });
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker
+            .register("{% static 'service-worker.js' %}")
+            .then(function(reg) {
+                console.log('SW registered:', reg.scope);
+            })
+            .catch(function(err) {
+                console.error('SW registration failed:', err);
+            });
+    });
 }
 </script>
 
