@@ -35,6 +35,13 @@ class UserClickLog(models.Model):
         on_delete=models.CASCADE,
         related_name="click_logs"
     )
+    
+    detail = models.CharField(
+    max_length=255,
+    blank=True,
+    default="",
+    verbose_name="세부정보"
+    )   
 
     log_type = models.CharField(max_length=50, choices=LOG_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)

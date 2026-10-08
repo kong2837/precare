@@ -1513,6 +1513,7 @@ def save_click_log(request):
         data = json.loads(request.body)
 
         log_type = data.get("log_type")
+        detail = str(data.get("detail", "")).strip()[:255]
 
         valid_log_types = [
             "survey_click",
@@ -1520,18 +1521,24 @@ def save_click_log(request):
         ]
 
         if log_type not in valid_log_types:
-            return JsonResponse({"success": False, "error": "invalid log_type"}, status=400)
+            return JsonResponse(
+                {"success": False, "error": "invalid log_type"},
+                status=400
+            )
 
         UserClickLog.objects.create(
             user=request.user,
             log_type=log_type,
+            detail=detail,
         )
 
         return JsonResponse({"success": True})
 
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
-
+        return JsonResponse(
+            {"success": False, "error": str(e)},
+            status=500
+        )
 #로그인 방식 선택
 def login_select(request):
     return render(request, 'accounts/login.html')

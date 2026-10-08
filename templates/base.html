@@ -4,7 +4,6 @@
 {% load static %}
 
 <html lang="ko">
-<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -76,7 +75,7 @@ function getCookie(name) {
   return cookieValue;
 }
 
-function saveClickLog(logType) {
+function saveClickLog(logType, detail = "") {
   fetch("{% url 'accounts:save_click_log' %}", {
     method: "POST",
     headers: {
@@ -85,6 +84,7 @@ function saveClickLog(logType) {
     },
     body: JSON.stringify({
       log_type: logType,
+      detail: detail,
     }),
   }).catch(error => {
     console.error("클릭 로그 저장 실패:", error);
