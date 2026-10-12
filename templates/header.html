@@ -425,6 +425,20 @@
                 자료실
             </a>
 
+            <!-- 관리자 전용 메뉴 -->
+            {% if user.is_superuser %}
+
+                <a href="{% url 'accounts:fitbitUserManage' %}?page=1&order_by=fitbit__full_name&direction=asc"
+                class="mobile-menu-link">
+                    fitbit 참여자 관리
+                </a>
+
+                <a href="{% url 'accounts:userManage' %}?page=1&order_by=huami__name&direction=asc"
+                class="mobile-menu-link">
+                    huami 참여자 관리
+                </a>
+
+            {% endif %}
 
             {% if user.is_authenticated %}
 
