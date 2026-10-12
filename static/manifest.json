@@ -1,11 +1,11 @@
 {
-  "name": "조기진통 감지 및 스트레스 완화",
-  "short_name": "조기진통 감지 및 스트레스 완화",
+  "name": "둥지 (NEST-P)",
+  "short_name": "둥지 (NEST-P)",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fffaf7",
   "theme_color": "#fffaf7",
-  "description": "조기진통 감지 및 스트레스 완화 어플",
+  "description": "둥지 (NEST-P) - 조기진통 감지 및 스트레스 완화 어플",
   "icons": [
     {
       "src": "/static/IC_LOGO_192.png",
