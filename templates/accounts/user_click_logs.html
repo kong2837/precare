@@ -1,43 +1,55 @@
 {% extends 'base.html' %}
+{% load static django_bootstrap5 %}
 {% block content %}
-<div class="container py-4">
-
-  <a class="btn btn-secondary mb-3" href="javascript:history.go(-1)">
-    목록으로
-  </a>
-
-  <h3 class="fw-bold mb-4">
-    {{ userInfo.fitbit.full_name|default:userInfo.username }} 로그 목록
-  </h3>
-
-  <div class="card">
-    <div class="card-body">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>로그 종류</th>
-            <th>세부정보</th>
-            <th>클릭 날짜</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in logs %}
-            <tr>
-              <td>{{ log.get_log_type_display }}</td>
-              <td>{{ log.detail|default:"-" }}</td>
-              <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="3" class="text-center text-muted">
-                저장된 로그가 없습니다.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<link rel="stylesheet" href="{% static 'css/admin_participant.css' %}">
+<div class="activity-page">
+  <header class="participant-heading">
+    <div>
+      <a class="small text-muted text-decoration-none d-inline-block mb-2" href="{{ manage_url }}">← 대상자 관리</a>
+      <h1>{{ participant_name }}님의 활동 로그</h1>
+      <div class="participant-meta"><span>아이디 · {{ userInfo.username }}</span><span>최근 기록부터 표시</span></div>
     </div>
+    <div class="participant-actions">
+      {% if userInfo.fitbit %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'accounts:fitbit_userInfo' userInfo.pk %}">그래프·메모</a>{% else %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'accounts:userInfo' userInfo.pk %}">그래프·메모</a>{% endif %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'survey:survey-list-admin' userInfo.pk %}">설문 결과</a>
+    </div>
+  </header>
+  <div class="activity-summary">
+    <span>조회 결과 <strong>{{ summary.total }}건</strong></span>
+    <span>설문조사 클릭 <strong>{{ summary.survey }}건</strong></span>
+    <span>산모·태아 정보 클릭 <strong>{{ summary.information }}건</strong></span>
   </div>
-
+  <form method="get" class="activity-filters">
+    {% bootstrap_form_errors filter_form type='non_fields' %}
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-lg-3"><label for="{{ filter_form.search.id_for_label }}">{{ filter_form.search.label }}</label>{{ filter_form.search }}{{ filter_form.search.errors }}</div>
+      <div class="col-12 col-sm-4 col-lg-2"><label for="{{ filter_form.log_type.id_for_label }}">{{ filter_form.log_type.label }}</label>{{ filter_form.log_type }}{{ filter_form.log_type.errors }}</div>
+      <div class="col-6 col-sm-4 col-lg-2"><label for="{{ filter_form.start_date.id_for_label }}">{{ filter_form.start_date.label }}</label>{{ filter_form.start_date }}{{ filter_form.start_date.errors }}</div>
+      <div class="col-6 col-sm-4 col-lg-2"><label for="{{ filter_form.end_date.id_for_label }}">{{ filter_form.end_date.label }}</label>{{ filter_form.end_date }}{{ filter_form.end_date.errors }}</div>
+      <div class="col-12 col-lg-3 d-flex gap-2"><button class="btn btn-primary" type="submit">조회</button><a class="btn btn-outline-secondary" href="{% url 'accounts:user_click_logs' userInfo.pk %}">초기화</a></div>
+    </div>
+  </form>
+  <div class="activity-table-wrap" tabindex="0" role="region" aria-label="활동 로그 목록">
+    <table class="table table-hover activity-table">
+      <colgroup><col style="width:190px"><col><col style="width:200px"></colgroup>
+      <thead><tr><th scope="col">로그 종류</th><th scope="col">세부정보</th><th scope="col">클릭 일시</th></tr></thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td><span class="activity-type{% if log.log_type == 'mother_fetus_info_click' %} info{% endif %}">{{ log.get_log_type_display }}</span></td>
+          <td>{{ log.detail|default:'세부정보 없음' }}</td>
+          <td><time datetime="{{ log.created_at|date:'c' }}">{{ log.created_at|date:'Y.m.d H:i:s' }}</time></td>
+        </tr>
+        {% empty %}<tr><td colspan="3" class="activity-empty">{% if filter_form.errors %}검색 조건을 확인해주세요.{% else %}조회 조건에 맞는 활동 로그가 없습니다.{% endif %}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="d-flex justify-content-center align-items-center gap-3 mt-3" aria-label="활동 로그 페이지">
+    {% if page_obj.has_previous %}<a class="btn btn-outline-secondary btn-sm" href="?{{ filter_query }}&page={{ page_obj.previous_page_number }}">← 이전</a>{% else %}<span class="btn btn-outline-secondary btn-sm disabled">← 이전</span>{% endif %}
+    <span class="small text-muted">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지</span>
+    {% if page_obj.has_next %}<a class="btn btn-outline-secondary btn-sm" href="?{{ filter_query }}&page={{ page_obj.next_page_number }}">다음 →</a>{% else %}<span class="btn btn-outline-secondary btn-sm disabled">다음 →</span>{% endif %}
+  </nav>
+  {% endif %}
 </div>
 {% endblock %}

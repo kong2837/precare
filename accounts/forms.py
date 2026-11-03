@@ -1,4 +1,18 @@
 from django import forms
+from .models import UserClickLog
+
+
+class ActivityLogFilterForm(forms.Form):
+    search = forms.CharField(required=False, label="세부정보 검색", widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "설문명 또는 클릭 내용"}))
+    log_type = forms.ChoiceField(required=False, label="로그 종류", choices=[("", "전체 종류"), *UserClickLog.LOG_TYPE_CHOICES], widget=forms.Select(attrs={"class": "form-select"}))
+    start_date = forms.DateField(required=False, label="시작일", widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}))
+    end_date = forms.DateField(required=False, label="종료일", widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}))
+
+    def clean(self):
+        data = super().clean()
+        if data.get("start_date") and data.get("end_date") and data["start_date"] > data["end_date"]:
+            raise forms.ValidationError("시작일은 종료일보다 늦을 수 없습니다.")
+        return data
 from django.contrib.auth.forms import SetPasswordForm as DjangoSetPasswordForm, AuthenticationForm, UsernameField
 from django.contrib.auth.forms import UserCreationForm
 

@@ -1,0 +1,41 @@
+.participant-detail, .activity-page { width: min(1800px, 100%); margin: auto; padding: 1.25rem clamp(1rem, 2.5vw, 2.5rem) 2rem; color: #354052; }
+.participant-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.participant-heading h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 .35rem; overflow-wrap: anywhere; }
+.participant-meta { display: flex; flex-wrap: wrap; gap: .4rem 1rem; font-size: .8rem; color: #6c7788; }
+.participant-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.participant-note { border: 1px solid #e2e6ed; border-radius: .65rem; background: white; margin-bottom: 1rem; }
+.participant-note summary { padding: .75rem 1rem; cursor: pointer; font-size: .875rem; }
+.participant-note-preview { display: inline-block; max-width: min(65vw, 800px); vertical-align: bottom; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #798391; margin-left: .7rem; }
+.participant-note[open] .participant-note-preview { display: none; }
+.participant-note form { padding: 0 1rem 1rem; }
+.participant-chart-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem; margin-bottom: .8rem; }
+.participant-chart-toolbar h2 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.participant-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 1rem; }
+.participant-chart-card { min-width: 0; background: white; border: 1px solid #e1e5ec; border-radius: .85rem; padding: 1rem; box-shadow: 0 2px 8px #25354c05; }
+.participant-chart-heading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; }
+.participant-chart-heading h3 { font-size: .95rem; font-weight: 700; margin: .25rem 0; line-height: 1.5; }
+.chart-range-group { display: inline-flex; padding: .15rem; border-radius: .45rem; background: #f1f3f7; flex-shrink: 0; }
+.chart-range-group button { border: 0; background: transparent; color: #637084; border-radius: .35rem; padding: .3rem .6rem; font-size: .8rem; }
+.chart-range-group button.active { background: white; color: #594370; box-shadow: 0 1px 3px #25354c15; font-weight: 700; }
+.chart-range-group button:focus-visible { outline: 2px solid #8562a1; }
+.participant-chart-canvas { position: relative; height: clamp(205px, 29vh, 280px); }
+.participant-chart-state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: .5rem; color: #7a8696; font-size: .875rem; text-align: center; }
+.participant-chart-hint { margin: .8rem 0 0; font-size: .8rem; color: #7a8696; }
+.participant-record-panel { width: min(460px, 94vw) !important; }
+.participant-history-item { padding: 1rem 0; border-bottom: 1px solid #e6eaf0; }
+.participant-history-item:first-child { padding-top: 0; }
+.participant-history-item h3 { font-size: .9rem; font-weight: 700; }
+.participant-history-item details { margin-top: .65rem; font-size: .875rem; }
+.participant-history-item li { padding: .65rem 0; overflow-wrap: anywhere; }
+.activity-summary { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1rem; }
+.activity-summary span { padding: .5rem .85rem; font-size: .875rem; border: 1px solid #e2e6ed; border-radius: .5rem; background: #f7f8fb; }
+.activity-filters { background: #f7f8fb; border: 1px solid #e2e6ed; border-radius: .85rem; padding: 1rem; margin-bottom: 1rem; }
+.activity-filters label { font-size: .8rem; font-weight: 600; margin-bottom: .4rem; }
+.activity-table-wrap { border: 1px solid #e2e6ed; border-radius: .85rem; overflow: auto; }
+.activity-table { min-width: 650px; width: 100%; table-layout: fixed; margin: 0; }
+.activity-table th { background: #f1f4f8; padding: .8rem 1rem; color: #637084; font-size: .8rem; }
+.activity-table td { padding: 1rem; vertical-align: middle; font-size: .9rem; overflow-wrap: anywhere; }
+.activity-type { display: inline-block; padding: .3rem .6rem; border-radius: .4rem; font-size: .8rem; background: #f0eaf6; color: #78558d; }
+.activity-type.info { background: #eaf4f0; color: #3e7c67; }
+.activity-empty { padding: 3rem 1rem !important; text-align: center; color: #7a8696; }
+@media (max-width: 575px) { .participant-heading h1 { font-size: 1.3rem; } .participant-note-preview { max-width: 58vw; } .participant-chart-card { padding: .85rem; } }

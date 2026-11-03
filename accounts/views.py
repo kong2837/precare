@@ -21,8 +21,9 @@ from django.contrib.auth.views import (
     PasswordChangeView,
 )
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.paginator import Paginator
 from django.core.mail import send_mail
-from django.db.models import Avg, Max, Q
+from django.db.models import Avg, Max, Q, Count
 from django.db.models.functions import TruncDate
 from django.http import (
     Http404,
@@ -50,7 +51,7 @@ from huami.forms import (
 )
 from huami.models import HuamiAccount
 from huami.models.healthdata import HealthData
-from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm
+from .forms import MyAuthenticationForm, MyLoginForm, PhoneNumberChangeForm, ActivityLogFilterForm
 from .forms import EmailPasswordResetRequestForm, VerifyCodeForm, SetPasswordForm, FindUsernameForm,PhoneNumberPasswordResetRequestForm
 from .models import Profile
 from .utils import (
@@ -235,14 +236,47 @@ class RealResearchDataBlockedForTacMixin:
         return super().dispatch(request, *args, **kwargs)
 
 
-class UserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, DetailView,):
+def research_display_name(user, target=None):
+    target = target if target is not None else _get_research_target(user)
+    return (getattr(target, "full_name", None) or getattr(target, "name", None)
+            or (getattr(target, "fullname", "") or "").strip() or user.username)
+
+
+class ParticipantDetailContextMixin:
+    profile_kind = "fitbit"
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("fitbit", "huami")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.object
+        target = getattr(user, self.profile_kind, None)
+        context.update({
+            "profile": target,
+            "profile_kind": self.profile_kind,
+            "participant_name": research_display_name(user, target),
+            "last_synced": getattr(target, "last_synced" if self.profile_kind == "fitbit" else "sync_date", None),
+            "manage_url": reverse("accounts:fitbitUserManage" if self.profile_kind == "fitbit" else "accounts:userManage"),
+            "survey_charts": [
+                {"metric": "stress", "title": "임신 스트레스", "color": "#cc814a"},
+                {"metric": "preterm", "title": "조기진통 위험", "color": "#4e8f7b"},
+                {"metric": "epds", "title": "산후 우울척도 (K-EPDS)", "color": "#8562a1"},
+                {"metric": "quipp", "title": "QUIPP", "color": "#547ec2"},
+            ],
+        })
+        return context
+
+
+class UserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, ParticipantDetailContextMixin, DetailView,):
     """유저 정보를 제공하기 위한 클래스 기반 뷰
     """
     model = get_user_model()
     context_object_name = 'userInfo'
     template_name = 'accounts/userInfo.html'
+    profile_kind = "huami"
 
-class FitbitUserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, DetailView,):
+class FitbitUserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, ParticipantDetailContextMixin, DetailView,):
     """유저 정보를 제공하기 위한 클래스 기반 뷰
     """
     model = get_user_model()
@@ -387,7 +421,8 @@ class UserNoteUpdateView(
         user = get_object_or_404(get_user_model(), pk=pk)
         note = request.POST.get('note', '').strip()
 
-        target = _get_research_target(user)
+        profile_kind = request.POST.get("profile_kind")
+        target = getattr(user, profile_kind, None) if profile_kind in ("fitbit", "huami") else _get_research_target(user)
 
         if target is None:
             messages.error(
@@ -403,6 +438,7 @@ class UserNoteUpdateView(
 
         target.note = note
         target.save(update_fields=['note'])
+        messages.success(request, "관리 메모를 저장했습니다.")
 
         try:
             if target == user.fitbit:
@@ -1745,15 +1781,42 @@ def user_click_logs(request, user_pk):
     logs = (
         UserClickLog.objects
         .filter(user=user_info)
-        .order_by("-created_at")
+        .order_by("-created_at", "-pk")
     )
+
+    filter_form = ActivityLogFilterForm(request.GET)
+    if filter_form.is_valid():
+        filters = filter_form.cleaned_data
+        if filters["search"]:
+            logs = logs.filter(detail__icontains=filters["search"])
+        if filters["log_type"]:
+            logs = logs.filter(log_type=filters["log_type"])
+        if filters["start_date"]:
+            logs = logs.filter(created_at__date__gte=filters["start_date"])
+        if filters["end_date"]:
+            logs = logs.filter(created_at__date__lte=filters["end_date"])
+    else:
+        logs = logs.none()
+    summary = logs.aggregate(
+        total=Count("pk"), survey=Count("pk", filter=Q(log_type="survey_click")),
+        information=Count("pk", filter=Q(log_type="mother_fetus_info_click")),
+    )
+    page_obj = Paginator(logs, 30).get_page(request.GET.get("page"))
+    query = request.GET.copy()
+    query.pop("page", None)
 
     return render(
         request,
         "accounts/user_click_logs.html",
         {
             "userInfo": user_info,
-            "logs": logs,
+            "participant_name": research_display_name(user_info),
+            "logs": page_obj.object_list,
+            "page_obj": page_obj,
+            "summary": summary,
+            "filter_form": filter_form,
+            "filter_query": query.urlencode(),
+            "manage_url": reverse("accounts:fitbitUserManage" if hasattr(user_info, "fitbit") else "accounts:userManage"),
         },
     )
 
