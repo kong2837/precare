@@ -199,7 +199,7 @@ class EpdsFlowTests(TestCase):
         self.assertContains(response, "(0점)", count=3)
         self.assertContains(response, "(3점)", count=7)
         html = response.content.decode()
-        positions = [html.index(f"<mark>문항 {i}</mark>") for i in range(1, 11)]
+        positions = [html.index(f'<h3 class="results-question">문항 {i}</h3>') for i in range(1, 11)]
         self.assertEqual(positions, sorted(positions))
 
     def test_participant_home_and_admin_pages_include_epds_graph(self):
@@ -208,6 +208,24 @@ class EpdsFlowTests(TestCase):
         self.client.force_login(self.admin)
         for path in ("info", "fitbit_info"):
             self.assertContains(self.client.get(f"/accounts/{path}/{self.participant.pk}/"), 'id="epdsWeekly"')
+
+    def test_results_summary_counts_only_target_participant_and_keeps_zero_score(self):
+        self.submit()
+        self.submit()
+        latest = UserSurvey.objects.latest("pk")
+        UserSurvey.objects.filter(pk=latest.pk).update(score=0)
+        UserSurvey.objects.create(user=self.other, survey=self.survey, score=30)
+        self.client.force_login(self.admin)
+        response = self.client.get(f"/survey/user/{self.participant.pk}/")
+        self.assertEqual(response.context["user"].pk, self.admin.pk)
+        self.assertEqual(response.context["participant"].pk, self.participant.pk)
+        self.assertEqual(response.context["total_responses"], 2)
+        self.assertEqual(response.context["paginator"].count, 1)
+        summary = response.context["object_list"][0]
+        self.assertEqual(summary.response_count, 2)
+        self.assertEqual(summary.latest_score, 0)
+        response = self.client.get(f"/survey/{self.survey.pk}/user/{self.participant.pk}/")
+        self.assertEqual(response.context["object_list"][0].pk, latest.pk)
 
     def test_backfill_is_explicit_and_idempotent(self):
         self.submit()

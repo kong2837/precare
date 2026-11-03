@@ -1,59 +1,54 @@
 {% extends 'base.html' %}
-
 {% block content %}
-
-<div class="container py-4">
-    <h1>{{ survey.title }}</h1>
-    <div class="accordion" id="accordionUserSurvey">
-        {% for user_survey in object_list %}
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#{{ user_survey.pk }}" aria-expanded="true" aria-controls="{{ user_survey.pk }}">
-                    {{ user_survey.create_at }}
-                </button>
-            </h2>
-            <div id="{{ user_survey.pk }}" class="accordion-collapse collapse show"
-                data-bs-parent="#accordionUserSurvey">
-                <div class="accordion-body">
-                    {% if user_survey.score != None %}
-                        <p class="fw-bold">총점: {{ user_survey.score }}점</p>
-                    {% endif %}
-                    {% for reply in user_survey.replies.all %}
-                        <p>
-                            <mark>{{ reply.title }}</mark>
-                            <br>
-                            <small>{{ reply.content }}</small>
-                            {% if reply.score != None %}<small class="text-muted">({{ reply.score }}점)</small>{% endif %}
-                        </p> 
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page=1">&laquo; 처음으로</a></li>
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">이전</a>
-                    </li>
-                {% endif %}
-                {% for page_num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == page_num %}
-                        <li class="page-item active">
-                            {% else %}
-                        <li class="page-item">
-                    {% endif %}
-                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-                </li>
-                {% endfor %}
-                {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">다음</a></li>
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">마지막으로 &raquo;</a></li>
-                {% endif %}
-            </ul>
-        </nav>
+{% include 'survey/components/results_styles.html' %}
+<div class="container survey-results py-4">
+  {% if participant %}
+  <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'survey:survey-list-admin' participant.pk %}">← 설문 목록</a>
+  {% else %}
+  <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'survey:survey-list' %}">← 설문 목록</a>
+  {% endif %}
+  <header class="results-header mb-4">
+    {% if participant %}<div class="results-eyebrow mb-2">{{ participant_name }}님의 설문 결과</div>{% endif %}
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <h1 class="mb-0">{{ survey.title }}</h1>
+      {% if participant %}<a class="btn results-primary btn-sm" href="{% url 'survey:user-survey-csv' survey.pk participant.pk %}">CSV 다운로드</a>{% endif %}
     </div>
+    <div class="results-summary"><span>전체 응답 <strong>{{ paginator.count }}회</strong></span></div>
+  </header>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 fw-bold mb-0">응답 내역</h2>
+    {% if participant %}<span class="text-muted small">최근 응답순</span>{% endif %}
+  </div>
+  <div class="accordion" id="accordionUserSurvey">
+    {% for user_survey in object_list %}
+    <article class="accordion-item results-record">
+      <h2 class="accordion-header" id="response-heading-{{ user_survey.pk }}">
+        <button class="accordion-button{% if not forloop.first %} collapsed{% endif %}" type="button" data-bs-toggle="collapse"
+          data-bs-target="#response-{{ user_survey.pk }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="response-{{ user_survey.pk }}">
+          <span><time datetime="{{ user_survey.create_at|date:'c' }}" class="fw-semibold">{{ user_survey.create_at|date:'Y.m.d H:i' }}</time><span class="small text-muted ms-2">기록 #{{ user_survey.pk }}</span></span>
+          {% if user_survey.score != None %}<span class="results-score ms-auto me-2">{{ user_survey.score }}점</span>{% endif %}
+        </button>
+      </h2>
+      <div id="response-{{ user_survey.pk }}" class="accordion-collapse collapse{% if forloop.first %} show{% endif %}" aria-labelledby="response-heading-{{ user_survey.pk }}" data-bs-parent="#accordionUserSurvey">
+        <div class="accordion-body">
+          {% if user_survey.score != None %}<p class="fw-bold mb-1">총점: {{ user_survey.score }}점</p>{% endif %}
+          {% for reply in user_survey.replies.all %}
+          <div class="results-answer">
+            <span class="results-question-number" aria-label="문항 {{ reply.order }}">{{ reply.order }}</span>
+            <div>
+              <h3 class="results-question">{{ reply.title }}</h3>
+              <div class="results-answer-content">{{ reply.content|default:'응답 없음' }}</div>
+              {% if reply.score != None %}<span class="results-points">({{ reply.score }}점)</span>{% endif %}
+            </div>
+          </div>
+          {% empty %}<p class="text-muted mb-0">저장된 문항별 응답이 없습니다.</p>{% endfor %}
+        </div>
+      </div>
+    </article>
+    {% empty %}
+    <div class="results-empty"><h3 class="h5">아직 응답 기록이 없습니다.</h3></div>
+    {% endfor %}
+  </div>
+  {% include 'survey/components/results_pagination.html' %}
 </div>
-
 {% endblock content %}

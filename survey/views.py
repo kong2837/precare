@@ -8,14 +8,15 @@ from typing import Any
 
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Count, Max, OuterRef, Q, Subquery
+from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import QuerySet
 from django.core.exceptions import FieldError
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic.detail import DetailView
@@ -101,6 +102,19 @@ class SurveyDetailView(MyLoginRequiredMixin, DetailView):
 # Admin - User Survey List
 # ============================================================
 
+def participant_results_context(user_pk):
+    participant = get_object_or_404(get_user_model().objects.select_related("fitbit", "huami"), pk=user_pk)
+    fitbit = getattr(participant, "fitbit", None)
+    huami = getattr(participant, "huami", None)
+    name = (getattr(fitbit, "full_name", None) or getattr(huami, "name", None)
+            or (getattr(huami, "fullname", "") or "").strip() or participant.username)
+    return {
+        "participant": participant,
+        "participant_name": name,
+        "participant_manage_url": reverse("accounts:fitbitUserManage" if fitbit else "accounts:userManage"),
+    }
+
+
 class UserSurveyListAdminView(SuperuserRequiredMixin, ListView):
     """다른 유저가 작성한 설문 결과들을 제공하는 클래스 기반 뷰"""
 
@@ -115,7 +129,7 @@ class UserSurveyListAdminView(SuperuserRequiredMixin, ListView):
         ).prefetch_related(Prefetch(
             "replies",
             queryset=Reply.objects.select_related("survey_question__question").order_by("survey_question__order", "pk"),
-        )).order_by("create_at")
+        )).order_by("-create_at", "-pk")
 
         return queryset
 
@@ -125,6 +139,7 @@ class UserSurveyListAdminView(SuperuserRequiredMixin, ListView):
         context["survey"] = Survey.objects.get(
             pk=self.kwargs["survey_pk"]
         )
+        context.update(participant_results_context(self.kwargs["user_pk"]))
 
         return context
 
@@ -141,18 +156,23 @@ class SurveyListAdminView(SuperuserRequiredMixin, ListView):
     model = Survey
 
     def get_queryset(self) -> QuerySet[Survey]:
+        user_pk = self.kwargs["pk"]
+        latest = UserSurvey.objects.filter(user_id=user_pk, survey_id=OuterRef("pk")).order_by("-create_at", "-pk")
         queryset = Survey.objects.filter(
-            users__pk=self.kwargs.get("pk")
-        ).distinct()
+            users__pk=user_pk
+        ).annotate(
+            response_count=Count("usersurvey", filter=Q(usersurvey__user_id=user_pk), distinct=True),
+            last_submission=Max("usersurvey__create_at", filter=Q(usersurvey__user_id=user_pk)),
+            latest_score=Subquery(latest.values("score")[:1]),
+        ).order_by("-last_submission", "pk")
 
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context["user"] = get_user_model().objects.get(
-            pk=self.kwargs.get("pk")
-        )
+        context.update(participant_results_context(self.kwargs["pk"]))
+        context["total_responses"] = UserSurvey.objects.filter(user_id=self.kwargs["pk"]).count()
 
         return context
 

@@ -1,50 +1,49 @@
 {% extends 'base.html' %}
-
 {% block content %}
-    <div class="container py-4">
-        <div class="p-5 mb-4 bg-body-tertiary rounded-3">
-            <h1 class="text-center display-5 fw-bold">{{ user.fitbit.full_name|default:user.huami.fullname|default:user.username }}님의 설문조사 기록</h1>
-            <p class="text-center fs-4">참여한 설문조사 내역입니다.</p>
-        </div>
-        {% for survey in object_list %}
-            <a class="" href="{% url 'survey:user-survey-list-admin' survey.pk user.pk %}">
-            <div class="card mb-5">
-                <div class="row g-0">
-                    <div class="col">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ survey.title }}</h5>
-                            <p class="card-text">{{ survey.description }}</p>
-                            <p class="card-text"><small class="text-body-secondary">마지막 수정날짜 - {{ survey.updated_at }}</small></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            </a>
-            <a class="btn btn-primary" href="{% url 'survey:user-survey-csv' survey.pk user.pk %}" >
-                csv 다운로드
-            </a>
-        {% endfor %}
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page=1">&laquo; 처음으로</a></li>
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">이전</a>
-                    </li>
-                {% endif %}
-                {% for page_num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == page_num %}
-                        <li class="page-item active">
-                            {% else %}
-                        <li class="page-item">
-                    {% endif %}
-                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-                </li>
-                {% endfor %}
-                {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">다음</a></li>
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">마지막으로 &raquo;</a></li>
-                {% endif %}
-            </ul>
-        </nav>
+{% include 'survey/components/results_styles.html' %}
+<div class="container survey-results py-4">
+  <a class="btn btn-outline-secondary btn-sm mb-3" href="{{ participant_manage_url }}">← 대상자 관리</a>
+  <header class="results-header mb-4">
+    <div class="results-eyebrow mb-2">설문 결과</div>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <h1 class="mb-2">{{ participant_name }}님의 설문 기록</h1>
+        <p class="text-muted small mb-0">아이디 · {{ participant.username }}</p>
+      </div>
+      <a class="btn results-primary" href="{% url 'accounts:user_survey_download' participant.pk %}">전체 결과 다운로드</a>
     </div>
+    <div class="results-summary">
+      <span>참여 설문 <strong>{{ paginator.count }}종</strong></span>
+      <span>전체 응답 <strong>{{ total_responses }}회</strong></span>
+    </div>
+  </header>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 fw-bold mb-0">참여한 설문</h2>
+    <span class="small text-muted">최근 응답순</span>
+  </div>
+  <div class="row g-3">
+    {% for survey in object_list %}
+    <div class="col-12 col-lg-6">
+      <article class="results-card">
+        <div class="results-card-main">
+          <div class="small text-muted mb-2">응답 {{ survey.response_count }}회</div>
+          <h2>{{ survey.title }}</h2>
+          {% if survey.description %}<p class="results-description mb-0">{{ survey.description }}</p>{% endif %}
+          <dl class="results-card-meta mb-0">
+            <div><dt>최근 응답</dt><dd>{{ survey.last_submission|date:'Y.m.d H:i' }}</dd></div>
+            <div><dt>최근 점수</dt><dd>{% if survey.latest_score != None %}{{ survey.latest_score }}점{% else %}저장된 점수 없음{% endif %}</dd></div>
+          </dl>
+        </div>
+        <div class="results-card-actions">
+          <a class="btn results-primary btn-sm" href="{% url 'survey:user-survey-list-admin' survey.pk participant.pk %}" aria-label="{{ survey.title }} 응답 보기">응답 보기 →</a>
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'survey:user-survey-csv' survey.pk participant.pk %}" aria-label="{{ survey.title }} CSV 다운로드">CSV 다운로드</a>
+        </div>
+      </article>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="results-empty"><h3 class="h5">아직 제출된 설문이 없습니다.</h3><p class="text-muted mb-0">대상자가 설문을 제출하면 이곳에 기록이 표시됩니다.</p></div></div>
+    {% endfor %}
+  </div>
+  {% include 'survey/components/results_pagination.html' %}
+</div>
 {% endblock content %}
