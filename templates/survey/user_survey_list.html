@@ -16,11 +16,15 @@
             <div id="{{ user_survey.pk }}" class="accordion-collapse collapse show"
                 data-bs-parent="#accordionUserSurvey">
                 <div class="accordion-body">
+                    {% if user_survey.score != None %}
+                        <p class="fw-bold">총점: {{ user_survey.score }}점</p>
+                    {% endif %}
                     {% for reply in user_survey.replies.all %}
                         <p>
                             <mark>{{ reply.title }}</mark>
                             <br>
                             <small>{{ reply.content }}</small>
+                            {% if reply.score != None %}<small class="text-muted">({{ reply.score }}점)</small>{% endif %}
                         </p> 
                     {% endfor %}
                 </div>

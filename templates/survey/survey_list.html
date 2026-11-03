@@ -49,6 +49,7 @@
         .label-pregnant  { background-color: #90BE6D; }
         .label-checklist { background-color: #43AA8B; }
         .label-satisfy   { background-color: #577590; }
+        .label-epds      { background-color: #B39BC8; }
         .label-default   { background-color: #ccc; }
     </style>
 
@@ -58,12 +59,14 @@
             class="text-decoration-none w-100 d-flex justify-content-center"
             data-survey-title="{{ survey.title }}"
             onclick="saveClickLog('survey_click', this.dataset.surveyTitle)">
+            <div class="survey-card">
                 <div class="survey-label 
                     {% if survey.title == "[상시]QUIPP" %}label-quipp
                     {% elif survey.title == "[상시]임신스트레스 10문항" %}label-stress
                     {% elif survey.title == "[상시]조기진통위험 10문항" %}label-pregnant
                     {% elif survey.title == "[연구시작시]연구 참여자 기초 건강 설문" %}label-checklist
                     {% elif survey.title == "[연구종료시]만족도 조사" %}label-satisfy
+                    {% elif 'EPDS' in survey.title|upper %}label-epds
                     {% else %}label-default{% endif %}">
                 </div>
 
@@ -79,6 +82,8 @@
                             <img src="{% static 'checklist.png' %}" class="img-fluid survey-img" alt="기초건강"/>
                         {% elif survey.title == "[연구종료시]만족도 조사" %}
                             <img src="{% static 'satisfy.png' %}" class="img-fluid survey-img" alt="만족도"/>
+                        {% elif 'EPDS' in survey.title|upper %}
+                            <img src="{% static 'epds.png' %}" class="img-fluid survey-img" alt="아기를 안은 엄마와 마음 돌봄을 상징하는 하트 — 에딘비러 산후 우울 검사"/>
                         {% endif %}
                     </div>
 

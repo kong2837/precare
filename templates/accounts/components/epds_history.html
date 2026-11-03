@@ -1,0 +1,20 @@
+<script>
+function renderEpdsHistory(item) {
+  const escapeText = value => {
+    const span = document.createElement('span');
+    span.textContent = value == null ? '' : String(value);
+    return span.innerHTML;
+  };
+  const answers = (item.answers || []).map(answer => `
+    <li class="mb-2">
+      <div class="fw-semibold">${escapeText(answer.order)}. ${escapeText(answer.question)}</div>
+      <div>${escapeText(answer.content)}
+        <span class="text-muted">(${answer.score == null ? '미채점' : escapeText(answer.score) + '점'})</span>
+      </div>
+    </li>`).join('');
+  return `<div class="mb-4 pb-2 border-bottom">
+    <div class="fw-bold mb-2">${escapeText(item.created_at)} · K-EPDS ${item.score == null ? '미채점' : escapeText(item.score) + ' / 30점'}</div>
+    <ol class="list-unstyled small">${answers}</ol>
+  </div>`;
+}
+</script>

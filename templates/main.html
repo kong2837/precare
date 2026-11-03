@@ -362,6 +362,23 @@
             </div>
 
 
+            <!-- K-EPDS -->
+            <div class="col-12 col-lg-4">
+                <div class="survey-chart-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>산후 우울척도 (K-EPDS)</h5>
+                        <div class="chart-range-btns">
+                            <button type="button" class="chart-range-btn active" data-chart="epds" data-range="weekly">주간</button>
+                            <button type="button" class="chart-range-btn" data-chart="epds" data-range="monthly">월간</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="epdsChart"></canvas>
+                        <div id="epdsEmpty" class="chart-empty d-none">아직 K-EPDS 설문 기록이 없습니다.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- QUIPP -->
             <div class="col-12 col-lg-4">
                 <div class="survey-chart-card">
@@ -540,6 +557,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const charts = {};
 
     const chartConfig = {
+        epds: {
+            canvasId: "epdsChart",
+            emptyId: "epdsEmpty",
+            title: "K-EPDS 점수"
+        },
         stress: {
             canvasId: "stressChart",
             emptyId: "stressEmpty",
@@ -667,7 +689,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                             y: {
                                 beginAtZero: true,
-                                max: 40,
+                                max: data.scale_max || 40,
 
                                 ticks: {
                                     stepSize: 5
@@ -736,11 +758,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
      * 페이지 처음 진입했을 때
-     * 3개 모두 주간 그래프 표시
+     * 모든 설문의 주간 그래프 표시
      */
     loadChart("stress", "weekly");
     loadChart("preterm", "weekly");
     loadChart("quipp", "weekly");
+    loadChart("epds", "weekly");
 
 });
 </script>

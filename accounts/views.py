@@ -1166,6 +1166,7 @@ SURVEY_FILTERS = {
     "stress":  Q(survey__title__icontains="임신스트레스"),
     "quipp":   Q(survey__title__icontains="QUIPP"),
     "preterm": Q(survey__title__icontains="조기진통"),
+    "epds": Q(survey__title__icontains="EPDS"),
 }
 
 class ScoreChartData(
@@ -1226,6 +1227,7 @@ class ScoreChartData(
         ).lower()
 
         survey_filter = SURVEY_FILTERS.get(metric)
+        scale_max = 30 if metric == "epds" else 40
 
         if survey_filter is None:
             return JsonResponse(
@@ -1273,7 +1275,7 @@ class ScoreChartData(
                 "labels": [],
                 "values": [],
                 "meta": [],
-                "scale_max": 40,
+                "scale_max": scale_max,
             })
 
         first_data_date = timezone.localtime(
@@ -1374,7 +1376,7 @@ class ScoreChartData(
                 "labels": labels,
                 "values": values,
                 "meta": meta,
-                "scale_max": 40,
+                "scale_max": scale_max,
             })
 
         # ============================================================
@@ -1513,7 +1515,7 @@ class ScoreChartData(
                 )
 
                 if not week_groups:
-                    values.append(0.0)
+                    values.append(None if metric == "epds" else 0.0)
                     continue
 
                 # 각 주의 평균
@@ -1537,10 +1539,15 @@ class ScoreChartData(
             return JsonResponse({
                 "labels": labels,
                 "values": values,
+                "periods": [
+                    {"start": month.isoformat(),
+                     "end": (_add_months(month, 1) - timedelta(days=1)).isoformat()}
+                    for month in months
+                ],
                 "meta": {
-                    "scale_max": 40
+                    "scale_max": scale_max
                 },
-                "scale_max": 40,
+                "scale_max": scale_max,
             })
 
         # ============================================================
@@ -1639,6 +1646,7 @@ class WeeklyScoreDetailView(
             )
             .filter(local_date__range=(start, end))
             .select_related("survey")
+            .prefetch_related("replies__survey_question__question")
             .order_by("-create_at")
         )
 
@@ -1660,7 +1668,12 @@ class WeeklyScoreDetailView(
                     if user_survey.survey
                     else "설문"
                 ),
-                "score": user_survey.score or 0,
+                "score": user_survey.score if metric == "epds" else (user_survey.score or 0),
+                "answers": [
+                    {"order": reply.order, "question": reply.title,
+                     "content": reply.content, "score": reply.score}
+                    for reply in sorted(user_survey.replies.all(), key=lambda reply: (reply.order, reply.pk))
+                ] if metric == "epds" else [],
                 "has_feedback": bool(feedback),
                 "action_code": (
                     feedback.action_code

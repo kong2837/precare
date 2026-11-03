@@ -8,6 +8,7 @@
         </div>
         <form method="post" onsubmit="return validateCheckBoxes()">
             {% csrf_token %}
+            {% if form_error %}<div class="alert alert-danger" role="alert">{{ form_error }}</div>{% endif %}
             {% for survey_question in survey_questions %}
                 {% include 'survey/components/question.html' %}
             {% endfor %}

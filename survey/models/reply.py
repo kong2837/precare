@@ -15,6 +15,11 @@ class Reply(models.Model):
         help_text="답변",
         max_length=255,
     )
+    score = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="제출 당시 선택한 응답의 점수",
+    )
 
     @property
     def title(self) -> str:
@@ -30,4 +35,4 @@ class Reply(models.Model):
         verbose_name_plural = "답변"
         ordering = ["user_survey"]
 
-    
+

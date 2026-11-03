@@ -60,6 +60,14 @@ class Question(models.Model):
         help_text="질문 타입",
         default=2
     )
+    @property
+    def ordered_answers(self):
+        links = (
+            self.questionanswer_set
+            .select_related("answer")
+            .order_by("order", "pk")
+        )
+        return [link.answer for link in links]
 
     class Meta:
         db_table = "question"

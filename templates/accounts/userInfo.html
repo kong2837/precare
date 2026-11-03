@@ -88,6 +88,7 @@
             <p id="pretermEmpty" class="text-muted small d-none">표시할 데이터가 없습니다.</p>
           </div>
         </div>
+        {% include 'accounts/components/epds_chart.html' %}
       </div>
     </div>
 
@@ -129,6 +130,7 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% include 'accounts/components/epds_history.html' %}
 <script>
 (function(){
   const uid  = Number("{{ userInfo.pk }}");
@@ -203,6 +205,10 @@
         }
 
         data.history.forEach(item => {
+            if (metric === 'epds') {
+                actionArea.innerHTML += renderEpdsHistory(item);
+                return;
+            }
             const isDone = item.performed === 1;
             const statusBadge = item.has_feedback 
                 ? `<span class="badge ${isDone ? 'bg-success' : 'bg-secondary'}">${isDone ? '수행' : '미수행'}</span>`
@@ -265,7 +271,8 @@
       weeklyCV.classList.add('d-none');
 
       if (hasData) {
-        drawLine(monthlyCV, 'monthly', data.labels, data.values, title, data.scale_max || 40, null);
+        const periods = (data.periods || []).map((period, i) => ({...period, label: data.labels[i]}));
+        drawLine(monthlyCV, 'monthly', data.labels, data.values, title, data.scale_max || 40, periods);
       }
     }
 
@@ -279,6 +286,7 @@
   }
 
   initSection({ metric: 'stress', title: '스트레스 점수', tabsId: 'stressTabs', weeklyId: 'stressWeekly', monthlyId: 'stressMonthly', emptyId: 'stressEmpty' });
+  initSection({ metric: 'epds', title: 'K-EPDS 점수', tabsId: 'epdsTabs', weeklyId: 'epdsWeekly', monthlyId: 'epdsMonthly', emptyId: 'epdsEmpty' });
   initSection({ metric: 'quipp', title: 'QUIPP 점수', tabsId: 'quippTabs', weeklyId: 'quippWeekly', monthlyId: 'quippMonthly', emptyId: 'quippEmpty' });
   initSection({ metric: 'preterm', title: '조기진통 위험 점수', tabsId: 'pretermTabs', weeklyId: 'pretermWeekly', monthlyId: 'pretermMonthly', emptyId: 'pretermEmpty' });
 })();

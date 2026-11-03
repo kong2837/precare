@@ -13,6 +13,9 @@
         </h1>
 
         <!-- 결과 문구 -->
+        {% if score_label %}
+        <p class="text-center fw-bold">{{ score_label }}: {{ total_score }} / {{ score_max }}점</p>
+        {% endif %}
         <figure class="text-center mb-5">
             {{ result|safe }}
         </figure>
@@ -45,6 +48,9 @@
 
     <!--  돌아가기 버튼 (처음엔 비활성화) -->
     <div class="row justify-content-center mt-3">
+        {% if not action_message %}
+        <a href="{% url 'home' %}" class="btn btn-primary btn-lg mt-3">돌아가기</a>
+        {% else %}
         <a id="backBtn"
         href="javascript:void(0);"
         class="btn btn-secondary btn-lg disabled mt-3"
@@ -53,6 +59,7 @@
         onclick="submitActionFeedback()">
             돌아가기
         </a>
+        {% endif %}
     </div>
 
 </div>

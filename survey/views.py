@@ -7,6 +7,8 @@ from tempfile import NamedTemporaryFile
 from typing import Any
 
 from django.utils import timezone
+from django.db import transaction
+from django.db.models import Prefetch
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
@@ -25,6 +27,7 @@ from openpyxl import Workbook
 import survey.utils as utils
 
 from accounts.views import SuperuserRequiredMixin
+from survey.scoring import epds_answers, is_epds, score_label
 from survey.models import (
     Survey,
     Question,
@@ -109,7 +112,10 @@ class UserSurveyListAdminView(SuperuserRequiredMixin, ListView):
         queryset = UserSurvey.objects.filter(
             user__pk=self.kwargs["user_pk"],
             survey__pk=self.kwargs["survey_pk"],
-        ).order_by("create_at")
+        ).prefetch_related(Prefetch(
+            "replies",
+            queryset=Reply.objects.select_related("survey_question__question").order_by("survey_question__order", "pk"),
+        )).order_by("create_at")
 
         return queryset
 
@@ -206,6 +212,7 @@ class UserSurveyCsvView(SuperuserRequiredMixin, View):
                 "pk",
                 "작성시간",
                 *[question.title for question in questions],
+                *([score_label(survey.title)] if score_label(survey.title) else []),
             ]
         )
 
@@ -227,6 +234,7 @@ class UserSurveyCsvView(SuperuserRequiredMixin, View):
                         reply_dict.get(question.id, "")
                         for question in questions
                     ],
+                    *([user_survey.score] if score_label(survey.title) else []),
                 ]
             )
 
@@ -271,6 +279,31 @@ class UserSurveyListView(MyLoginRequiredMixin, ListView):
 
 class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
     """설문조사 입력 및 저장"""
+
+    def _post_epds(self, request, survey):
+        try:
+            answers = epds_answers(survey, request.POST)
+        except ValueError as error:
+            return render(request, "survey/user_survey_form.html", {
+                "object": survey,
+                "survey_questions": survey.surveyquestion_set.select_related("question").order_by("order"),
+                "form_error": str(error),
+            }, status=400)
+
+        total = sum(score for _, _, score in answers)
+        with transaction.atomic():
+            user_survey = UserSurvey.objects.create(user=request.user, survey=survey, score=total)
+            Reply.objects.bulk_create([
+                Reply(user_survey=user_survey, survey_question=sq, content=content, score=score)
+                for sq, content, score in answers
+            ])
+
+        return render(request, "survey/survey_complete.html", {
+            "user_survey_id": user_survey.pk,
+            "total_score": total,
+            "score_label": "K-EPDS 점수",
+            "score_max": 30,
+        })
 
     def _create_replies(self, user_survey, post_data):
         """사용자가 입력한 설문 응답을 Reply 객체로 생성"""
@@ -367,6 +400,9 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
         survey = Survey.objects.get(
             pk=kwargs["pk"]
         )
+
+        if is_epds(survey.title):
+            return self._post_epds(request, survey)
 
         # ----------------------------------------------------
         # UserSurvey 생성
@@ -586,19 +622,6 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
         # 설문별 점수 라벨
         # ----------------------------------------------------
 
-        def score_label(title: str):
-
-            if "임신스트레스 10문항" in title:
-                return "스트레스 점수"
-
-            if "조기진통위험 10문항" in title:
-                return "조기진통 점수"
-
-            if "QUIPP" in title:
-                return "QUIPP 점수"
-
-            return None
-
         # ----------------------------------------------------
         # Excel 시트명
         # ----------------------------------------------------
@@ -622,17 +645,7 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
 
         def question_titles(survey):
 
-            qs = survey.questions.all()
-
-            try:
-                qs = qs.order_by(
-                    "order"
-                )
-
-            except FieldError:
-                qs = qs.order_by(
-                    "id"
-                )
+            qs = survey.questions.order_by("surveyquestion__order", "surveyquestion__pk")
 
             return list(
                 qs.values_list(

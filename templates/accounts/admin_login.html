@@ -98,6 +98,7 @@ background: linear-gradient(135deg,
             <p>관리자 정보를 입력해주세요!</p>
                 <form method="post" class="form">
                   {% csrf_token %}
+                  {% bootstrap_form_errors form type='non_fields' %}
                   {% bootstrap_field form.username show_label=False %}
                   {% bootstrap_field form.password show_label=False %}
                   <button class="btn btn-apricot btn-lg mt-3" type="submit">로그인하기</button>
