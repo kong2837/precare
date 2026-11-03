@@ -1,0 +1,47 @@
+<style>
+    .participant-help {
+        padding: 1rem 1.25rem; margin-bottom: 1rem;
+        border: 1px solid #dfe6ee; border-radius: .75rem;
+        background: #f6f9fc; color: #43536a; font-size: .9rem;
+    }
+    .participant-help p { margin-bottom: .35rem; }
+    .participant-help p:last-child { margin-bottom: 0; }
+    .participant-scroll-toolbar {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; font-size: .875rem;
+    }
+    .participant-table-scroll {
+        max-height: 72vh; overflow: auto;
+        border: 1px solid #dfe6ee; border-radius: .75rem;
+    }
+    .participant-table-scroll:focus-visible { outline: 3px solid #3478c9; outline-offset: 3px; }
+    .participant-table { table-layout: fixed; margin-bottom: 0; font-size: .9rem; }
+    .participant-table th, .participant-table td {
+        padding: .85rem .75rem; vertical-align: middle; text-align: center;
+        white-space: normal; overflow-wrap: anywhere;
+    }
+    .participant-table thead th {
+        position: sticky; top: 0; z-index: 1; height: 72px;
+        background: #eef3f8; border-bottom: 2px solid #d7e0eb;
+    }
+    .participant-table th[aria-sort="ascending"],
+    .participant-table th[aria-sort="descending"] { background: #e2edfc; }
+    .participant-sort-button {
+        display: flex; align-items: center; justify-content: center; gap: .4rem;
+        width: 100%; padding: .25rem 0; border: 0; border-radius: .25rem;
+        background: transparent; color: #263d58; font: inherit; font-weight: 700; text-align: center;
+    }
+    .participant-sort-button:hover { color: #0959a8; text-decoration: underline; }
+    .participant-sort-button:focus-visible { outline: 2px solid #3478c9; outline-offset: 2px; }
+    .participant-sort-icon { flex: 0 0 1em; width: 1em; color: #52749b; }
+    .participant-table tr[data-href] { cursor: pointer; }
+    .participant-table tbody tr:hover > td { background-color: #f0f6ff; }
+    .participant-table td .btn { display: block; width: 100%; margin: .2rem 0; font-size: .875rem; white-space: normal; }
+    .participant-table .form-control { min-width: 0; font-size: .875rem; }
+    .participant-table td input[type="date"] { width: 100%; }
+    .participant-table .research-year { width: 100% !important; }
+    @media (max-width: 575px) {
+        .participant-help { padding: .85rem; }
+        .participant-scroll-toolbar { align-items: flex-start; }
+    }
+</style>

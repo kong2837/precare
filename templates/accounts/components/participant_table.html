@@ -1,0 +1,66 @@
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const headers = document.querySelectorAll('th[data-column]');
+    const params = new URLSearchParams(window.location.search);
+    const fields = Array.from(headers, header => header.dataset.column);
+    const requested = params.get('order_by');
+    const active = fields.includes(requested) ? requested : '{{ default_order_by|escapejs }}';
+    const direction = params.get('direction') === 'desc' ? 'desc' : 'asc';
+    const scrollArea = document.getElementById('participant-table-scroll');
+    const scrollKey = 'participant-scroll:' + window.location.pathname;
+    const saveScroll = () => {
+        try { sessionStorage.setItem(scrollKey, String(scrollArea.scrollLeft)); } catch (_) {}
+    };
+
+    headers.forEach(header => {
+        const selected = header.dataset.column === active;
+        header.setAttribute('aria-sort', selected ? (direction === 'asc' ? 'ascending' : 'descending') : 'none');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'participant-sort-button';
+        const label = header.textContent.trim();
+        const text = document.createElement('span');
+        text.textContent = label;
+        const icon = document.createElement('span');
+        icon.className = 'participant-sort-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = selected ? (direction === 'asc' ? '▲' : '▼') : '↕';
+        button.append(text, icon);
+        button.setAttribute('aria-label', label + (selected && direction === 'asc' ? ' 내림차순 정렬' : ' 오름차순 정렬'));
+        if (selected) document.getElementById('participant-sort-status').textContent = label + ' · ' + (direction === 'asc' ? '오름차순' : '내림차순');
+        header.replaceChildren(button);
+        button.addEventListener('click', () => {
+            const next = new URLSearchParams(window.location.search);
+            next.set('order_by', header.dataset.column);
+            next.set('direction', selected && direction === 'asc' ? 'desc' : 'asc');
+            next.set('page', '1');
+            saveScroll();
+            window.location.search = next.toString();
+        });
+    });
+
+    const left = document.querySelector('[data-table-scroll="left"]');
+    const right = document.querySelector('[data-table-scroll="right"]');
+    const updateScroll = () => {
+        const max = scrollArea.scrollWidth - scrollArea.clientWidth;
+        left.disabled = scrollArea.scrollLeft <= 1;
+        right.disabled = scrollArea.scrollLeft >= max - 1;
+        document.getElementById('participant-scroll-status').textContent = max <= 1 ? '전체 항목 표시 중' : right.disabled ? '표의 오른쪽 끝' : '오른쪽에 항목이 더 있습니다';
+        saveScroll();
+    };
+    try { scrollArea.scrollLeft = Number(sessionStorage.getItem(scrollKey)) || 0; } catch (_) {}
+    [left, right].forEach(button => button.addEventListener('click', () => {
+        scrollArea.scrollBy({left: (button === left ? -1 : 1) * scrollArea.clientWidth * .75, behavior: 'smooth'});
+    }));
+    scrollArea.addEventListener('scroll', updateScroll, {passive: true});
+    window.addEventListener('resize', updateScroll);
+    updateScroll();
+
+    document.querySelectorAll('tbody tr[data-href]').forEach(row => {
+        row.addEventListener('click', event => {
+            if (event.target.closest('a, button, input, select, textarea, label')) return;
+            window.location.href = row.dataset.href;
+        });
+    });
+});
+</script>

@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
 {% block content %}
-    {% include "styles/table.html" %}
+    {% include 'accounts/components/participant_table_styles.html' %}
     <div class="container mt-5">
+        <h1 class="h3 fw-bold mb-4">Fitbit 대상자 관리</h1>
         <form method="GET"
-              action="{% url 'accounts:fitbitUserManage' %}?page=1&order_by={{ request.GET.order_by }}&direction={{ request.GET.direction }}"
+              action="{% url 'accounts:fitbitUserManage' %}"
               class="form-inline mb-3 w-100">
             <div class="input-group w-100">
                 <input type="text" name="search" class="form-control" placeholder="이름을 입력하세요."
-                       value="{{ request.GET.search }}">
+                       value="{{ request.GET.search }}" aria-label="대상자 검색">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="order_by" value="{{ request.GET.order_by }}">
                 <input type="hidden" name="direction" value="{{ request.GET.direction }}">
@@ -19,34 +20,41 @@
         </form>
 
         <!-- Fitbit 사용자 테이블 -->
-        <div class="table-responsive">
-            <table class="table table-striped">
+        {% include 'accounts/components/participant_table_help.html' %}
+        <div class="participant-table-scroll" id="participant-table-scroll" tabindex="0" role="region" aria-label="대상자 목록, 좌우로 스크롤 가능">
+            <table class="table table-striped participant-table" style="width: 2220px;">
+                <colgroup>
+                    <col style="width: 180px;">
+                    <col style="width: 150px;">
+                    <col style="width: 120px;">
+                    <col style="width: 160px;">
+                    <col style="width: 150px;">
+                    <col style="width: 140px;">
+                    <col style="width: 170px;">
+                    <col style="width: 240px;">
+                    <col style="width: 170px;">
+                    <col style="width: 170px;">
+                    <col style="width: 260px;">
+                    <col style="width: 140px;">
+                    <col style="width: 170px;">
+                </colgroup>
                 <thead>
                 <tr>
                     <th scope="col">설문</th>
                     <th scope="col">건강 데이터</th>
                     <th scope="col">로그 데이터</th>
-                    <th scope="col" data-column="name">이름</th>
-                    <th scope="col" data-column="age">생년월일</th>
-                    <th scope="col" data-column="research_status">연구 상태</th>
-                    <th scope="col" data-column="research_year">연구 년도 </th>
-                    <th scope="col" data-column="pregnancy_start_date">임신 시작일</th>
-                    <th scope="col" data-column="join_date">연구 시작일</th>    
-                    <th scope="col">연구 시작일 기준 임신 주수</th>
-                    <th scope="col" data-column="end_date">연구 종료일</th>
-                    <th scope="col" data-column="showed_sync_status">마지막 동기화</th>
-                    <th scope="col" data-column="note">노트</th>
+                    <th scope="col" data-column="fitbit__full_name">이름</th>
+                    <th scope="col" data-column="fitbit__birthday">생년월일</th>
+                    <th scope="col" data-column="fitbit__research_status">연구 상태</th>
+
+                    <th scope="col" data-column="fitbit__join_date">연구 시작일</th>
+                    <th scope="col" data-column="fitbit__pregnancy_week_at_join">연구 시작일 기준 임신 주수</th>
+                    <th scope="col" data-column="fitbit__end_date">연구 종료일</th>
+                    <th scope="col" data-column="fitbit__last_synced">마지막 동기화</th>
+                    <th scope="col" data-column="fitbit__note">노트</th>
+                    <th scope="col" data-column="fitbit__research_year">연구 년도 </th>
+                    <th scope="col" data-column="fitbit__pregnancy_start_date">임신 시작일</th>
                 </tr>
-                <!-- <tr>
-                    <th scope="col" data-column="full_name">이름</th>
-                    <th scope="col">성별</th>
-                    <th scope="col">생년월일</th>
-                    <th scope="col">키(cm)</th> 
-                    <th scope="col">몸무게(kg)</th>
-                    <th scope="col">동기화 시간</th>
-                    <th scope="col">설문</th>
-                    <th scope="col">건강 데이터</th>
-                </tr> -->
                 </thead>
                 <tbody id="userTable">
                 {% for user in users %}
@@ -63,10 +71,10 @@
                         </td>
                         <td>{{ user.fitbit.full_name|default:user.username }}</td>
                         <td>{{ user.fitbit.birthday|date:'Y-m-d' }}</td>
-                        <!-- <td>{{ user.fitbit.gender|default:"-" }}</td> -->
-                        <!-- <td>{{ user.fitbit.height }}</td> -->
-                        <!-- <td>{{ user.fitbit.weight }}</td> -->
-                        <!-- <td>{{ user.fitbit.last_synced|date:'Y-m-d H:i' }}</td> -->
+
+
+
+
                         <td><select class="form-control research-status" data-user-id="{{ user.pk }}">
                             <option value="preparing"
                                     {% if user.fitbit.research_status == 'preparing' %}selected{% endif %}>준비
@@ -79,28 +87,7 @@
                             </option>
                         </select></td>
 
-                        <td><select class="form-control research-year" data-user-id="{{ user.pk }}" style="width: 75px;">
-                            <option value="none"
-                                    {% if user.fitbit.research_year == 'none' %}selected{% endif %}> 미확인
-                            </option>
-                            <option value="2023" {% if user.fitbit.research_year == '2023' %}selected{% endif %}>
-                                2023년
-                            </option>
-                            <option value="2024"
-                                    {% if user.fitbit.research_year == '2024' %}selected{% endif %}>
-                                2024년
-                            </option>
-                            <option value="2025"
-                                    {% if user.fitbit.research_year == '2025' %}selected{% endif %}>
-                                2025년
-                            </option>
-                        </select></td>
-                        <td>
-                            <input type="date"
-                                class="form-control pregnancy_start_date"
-                                data-user-id="{{ user.pk }}"
-                                value="{{ user.fitbit.pregnancy_start_date|date:'Y-m-d' }}">
-                        </td>
+
 
                         <td>
                             <input type="date"
@@ -145,6 +132,28 @@
                         <td>{{ user.fitbit.last_synced|date:'Y-m-d' }}</td>
 
                         <td>{{ user.fitbit.note }}</td>
+                        <td><select class="form-control research-year" data-user-id="{{ user.pk }}" style="width: 75px;">
+                            <option value="none"
+                                    {% if user.fitbit.research_year == 'none' %}selected{% endif %}> 미확인
+                            </option>
+                            <option value="2023" {% if user.fitbit.research_year == '2023' %}selected{% endif %}>
+                                2023년
+                            </option>
+                            <option value="2024"
+                                    {% if user.fitbit.research_year == '2024' %}selected{% endif %}>
+                                2024년
+                            </option>
+                            <option value="2025"
+                                    {% if user.fitbit.research_year == '2025' %}selected{% endif %}>
+                                2025년
+                            </option>
+                        </select></td>
+                        <td>
+                            <input type="date"
+                                class="form-control pregnancy_start_date"
+                                data-user-id="{{ user.pk }}"
+                                value="{{ user.fitbit.pregnancy_start_date|date:'Y-m-d' }}">
+                        </td>
                     </tr>
 
                 {% endfor %}
@@ -154,36 +163,9 @@
         {% include "components/page_navigation.html" %}
     </div>
 
+    {% include 'accounts/components/participant_table.html' with default_order_by='fitbit__full_name' %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // 테이블 행 클릭 시 상세페이지 이동
-            const tableRows = document.querySelectorAll('tbody tr[data-href]');
-            tableRows.forEach(row => {
-                row.addEventListener('click', () => {
-                    window.location.href = row.getAttribute('data-href');
-                });
-            });
-
-            // 정렬 기능
-            const headers = document.querySelectorAll('th[data-column]');
-            headers.forEach(header => {
-                header.addEventListener('click', function () {
-                    const column = 'fitbit__' + this.getAttribute('data-column');
-                    let direction = 'asc';
-
-                    const params = new URLSearchParams(window.location.search);
-                    const currentOrderBy = params.get('order_by');
-                    const currentDirection = params.get('direction');
-                    const currentSearch = params.get('search');
-
-                    if (currentOrderBy === column && currentDirection === 'asc') {
-                        direction = 'desc';
-                    }
-
-                    window.location.href = `?page=1&order_by=${column}&direction=${direction}&search=${currentSearch || ''}`;
-                });
-            });
-
             const stopBubbling = (el) => {
                     ['click', 'mousedown', 'keydown'].forEach(ev =>
                     el.addEventListener(ev, e => e.stopPropagation())
@@ -366,6 +348,6 @@
                         });
                     });
         });
-        
+
     </script>
 {% endblock content %}

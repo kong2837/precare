@@ -283,6 +283,14 @@ class UserManageView(
         allowed_order_fields = {
             "huami__name",
             "huami__email",
+            "huami__age",
+            "huami__research_status",
+            "huami__research_year",
+            "huami__pregnancy_start_date",
+            "huami__join_date",
+            "huami__end_date",
+            "huami__showed_sync_status",
+            "huami__note",
             "username",
             "date_joined",
         }
@@ -299,7 +307,7 @@ class UserManageView(
         if direction == "desc":
             order_by = f"-{order_by}"
 
-        return queryset.order_by(order_by)
+        return queryset.order_by(order_by, "pk")
 
 from django.db.models import Q
 class FitbitUserManageView(
@@ -335,6 +343,15 @@ class FitbitUserManageView(
 
         allowed_order_fields = {
             "fitbit__full_name",
+            "fitbit__birthday",
+            "fitbit__research_status",
+            "fitbit__research_year",
+            "fitbit__pregnancy_start_date",
+            "fitbit__join_date",
+            "fitbit__pregnancy_week_at_join",
+            "fitbit__end_date",
+            "fitbit__last_synced",
+            "fitbit__note",
             "username",
             "email",
             "date_joined",
@@ -352,7 +369,10 @@ class FitbitUserManageView(
         if direction == "desc":
             order_by = f"-{order_by}"
 
-        return queryset.order_by(order_by)
+        if order_by.lstrip("-") == "fitbit__pregnancy_week_at_join":
+            day_order = "-fitbit__pregnancy_day_at_join" if direction == "desc" else "fitbit__pregnancy_day_at_join"
+            return queryset.order_by(order_by, day_order, "pk")
+        return queryset.order_by(order_by, "pk")
 
 class UserNoteUpdateView(
     RealResearchDataBlockedForTacMixin,

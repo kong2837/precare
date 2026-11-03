@@ -1,0 +1,11 @@
+<div class="participant-scroll-toolbar">
+    <div>
+        <span class="fw-semibold">전체 {{ paginator.count }}명</span>
+        <span class="text-muted ms-2" id="participant-sort-status" aria-live="polite"></span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-muted" id="participant-scroll-status" aria-live="polite"></span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-table-scroll="left" aria-controls="participant-table-scroll" aria-label="표를 왼쪽으로 이동">← 왼쪽</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-table-scroll="right" aria-controls="participant-table-scroll" aria-label="표를 오른쪽으로 이동">오른쪽 →</button>
+    </div>
+</div>
