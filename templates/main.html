@@ -590,7 +590,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
 
             const response = await fetch(
-                `${scoreDataUrl}?metric=${metric}&range=${range}`
+                `${scoreDataUrl}?metric=${metric}&range=${range}&axis=survey_date`
             );
 
             if (!response.ok) {
@@ -678,7 +678,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                                 callbacks: {
                                     label: function(context) {
-                                        return `${context.parsed.y}점`;
+                                        const aggregation = range === 'weekly' ? '주간 최고점' : '월간 평균';
+                                        return `${aggregation}: ${context.parsed.y}점`;
                                     }
                                 }
                             }
@@ -701,6 +702,11 @@ document.addEventListener("DOMContentLoaded", function () {
                             },
 
                             x: {
+                                ticks: {
+                                    maxTicksLimit: 4,
+                                    maxRotation: 0,
+                                    minRotation: 0
+                                },
                                 grid: {
                                     display: false
                                 }

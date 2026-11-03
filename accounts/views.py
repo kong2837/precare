@@ -1284,6 +1284,7 @@ class ScoreChartData(
 
         survey_filter = SURVEY_FILTERS.get(metric)
         scale_max = 30 if metric == "epds" else 40
+        survey_date_axis = request.GET.get("axis") == "survey_date"
 
         if survey_filter is None:
             return JsonResponse(
@@ -1384,6 +1385,17 @@ class ScoreChartData(
                 )
 
                 value = row["value"]
+
+                if survey_date_axis:
+                    if value is None:
+                        continue
+                    performed_at = qs.filter(
+                        local_date__range=(start, end), score=value
+                    ).order_by("-create_at", "-pk").values_list("create_at", flat=True).first()
+                    labels.append(timezone.localtime(performed_at).strftime("%Y.%m.%d"))
+                    values.append(int(value))
+                    meta.append({"start": start.isoformat(), "end": end.isoformat()})
+                    continue
 
                 label = (
                     f"{start.strftime('%m/%d')}"
@@ -1521,7 +1533,21 @@ class ScoreChartData(
             labels = []
             values = []
 
+            # For the home screen, use the last actual submission date in each month.
+            monthly_dates = {}
+            if survey_date_axis:
+                month_rows = qs.annotate(month=TruncMonth(
+                    "create_at", tzinfo=timezone.get_current_timezone()
+                )).values("month").annotate(performed_at=Max("create_at")).order_by("month")
+                monthly_dates = {
+                    timezone.localtime(row["month"]).date(): row["performed_at"]
+                    for row in month_rows
+                }
+
             for month_start in months:
+
+                if survey_date_axis and month_start not in monthly_dates:
+                    continue
 
                 # ----------------------------------------------------
                 # 월간 라벨의 임신 개월 계산
@@ -1559,7 +1585,10 @@ class ScoreChartData(
                     else:
                         label += " (-)"
 
-                labels.append(label)
+                labels.append(
+                    timezone.localtime(monthly_dates[month_start]).strftime("%Y.%m.%d")
+                    if survey_date_axis else label
+                )
 
                 # ----------------------------------------------------
                 # 해당 월의 점수 계산
@@ -1599,6 +1628,7 @@ class ScoreChartData(
                     {"start": month.isoformat(),
                      "end": (_add_months(month, 1) - timedelta(days=1)).isoformat()}
                     for month in months
+                    if not survey_date_axis or month in monthly_dates
                 ],
                 "meta": {
                     "scale_max": scale_max

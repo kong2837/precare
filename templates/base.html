@@ -6,7 +6,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
     <title>둥지 (NEST-P)</title>
 
@@ -114,7 +114,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<body>
+<body class="app-shell">
     {% include 'header.html' %}
 
     <main>
@@ -123,5 +123,8 @@ if ('serviceWorker' in navigator) {
     </main>
 
     {% include 'footer.html' %}
+    {% include 'components/mobile_app_navigation.html' %}
+    <link rel="stylesheet" href="{% static 'css/mobile_app.css' %}">
+    <script src="{% static 'js/mobile_app.js' %}" defer></script>
 </body>
 </html>

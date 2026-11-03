@@ -124,6 +124,23 @@ class EpdsFlowTests(TestCase):
         self.assertEqual(data["values"], [])
         self.assertEqual(data["scale_max"], 30)
 
+    def test_home_axis_uses_actual_submission_dates_and_keeps_aggregations(self):
+        for day, score in [("2026-10-01T23:30:00", 21), ("2026-10-02T00:30:00", 0), ("2026-12-01T10:00:00", 0)]:
+            self.submit()
+            UserSurvey.objects.filter(pk=UserSurvey.objects.latest("pk").pk).update(
+                score=score, create_at=datetime.fromisoformat(day).replace(tzinfo=ZoneInfo("Asia/Seoul"))
+            )
+        url = f"/accounts/{self.participant.pk}/stress-data/"
+        weekly = self.client.get(url, {"metric": "epds", "range": "weekly", "axis": "survey_date"}).json()
+        self.assertEqual(weekly["labels"], ["2026.10.01", "2026.12.01"])
+        self.assertEqual(weekly["values"], [21, 0])
+        monthly = self.client.get(url, {"metric": "epds", "range": "monthly", "axis": "survey_date"}).json()
+        self.assertEqual(monthly["labels"], ["2026.10.02", "2026.12.01"])
+        self.assertEqual(monthly["values"], [10.5, 0.0])
+        self.assertEqual(len(monthly["periods"]), 2)
+        default = self.client.get(url, {"metric": "epds", "range": "monthly"}).json()
+        self.assertEqual(default["values"], [10.5, None, 0.0])
+
     def test_month_without_epds_is_not_a_zero_score(self):
         self.submit()
         first = UserSurvey.objects.get()
