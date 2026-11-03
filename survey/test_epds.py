@@ -26,7 +26,7 @@ class EpdsFlowTests(TestCase):
             user=cls.participant, fitbit_user_id="epds-test", access_token="test", refresh_token="test",
             expires_at=timezone.now(), scope="", full_name="Test participant",
         )
-        cls.survey = Survey.objects.create(title="에딘비러 산후 우울 검사 (K-EPDS)", description="test")
+        cls.survey = Survey.objects.create(title="[연구종료시]산후우울검사", description="test")
         cls.payload = {}
         cls.expected = []
         # Create in reverse question order to catch exports that sort by question ID.
@@ -39,6 +39,7 @@ class EpdsFlowTests(TestCase):
                 QuestionAnswer.objects.create(question=question, answer=answer, order=index + 1)
             cls.payload[str(question.pk)] = "선택 0"
         cls.expected = [0, 0, 3, 0, 3, 3, 3, 3, 3, 3]
+        cls.payload["postpartum_weeks"] = "6"
 
     def setUp(self):
         self.client.force_login(self.participant)
@@ -50,6 +51,7 @@ class EpdsFlowTests(TestCase):
         self.assertEqual(self.submit().status_code, 200)
         submission = UserSurvey.objects.get()
         self.assertEqual(submission.score, 21)
+        self.assertEqual(submission.postpartum_weeks, 6)
         replies = list(submission.replies.order_by("survey_question__order"))
         self.assertEqual([reply.score for reply in replies], self.expected)
         self.assertEqual([reply.content for reply in replies], ["선택 0"] * 10)
@@ -76,6 +78,26 @@ class EpdsFlowTests(TestCase):
         Answer.objects.update(value=None)
         self.assertEqual(self.submit().status_code, 400)
         self.assertFalse(UserSurvey.objects.exists())
+
+    def test_postpartum_weeks_validation_zero_and_missing_value(self):
+        for invalid in ("-1", "1.5", "abc", "99999999999999"):
+            self.assertEqual(self.submit({**self.payload, "postpartum_weeks": invalid}).status_code, 400)
+            self.assertFalse(UserSurvey.objects.exists())
+        self.assertEqual(self.submit({**self.payload, "postpartum_weeks": "0"}).status_code, 200)
+        self.assertEqual(UserSurvey.objects.latest("pk").postpartum_weeks, 0)
+        self.assertEqual(self.submit({k: v for k, v in self.payload.items() if k != "postpartum_weeks"}).status_code, 200)
+        self.assertIsNone(UserSurvey.objects.latest("pk").postpartum_weeks)
+
+    def test_legacy_title_still_scores_and_appears_in_chart(self):
+        Survey.objects.filter(pk=self.survey.pk).update(title="에딘비러 산후 우울 검사 (K-EPDS)")
+        self.assertEqual(self.submit().status_code, 200)
+        chart = self.client.get(f"/accounts/{self.participant.pk}/stress-data/", {"metric": "epds"}).json()
+        self.assertEqual(chart["values"], [21])
+
+    def test_postpartum_field_is_only_shown_for_postpartum_survey(self):
+        self.assertContains(self.client.get(f"/survey/{self.survey.pk}"), 'name="postpartum_weeks"')
+        other = Survey.objects.create(title="기타 설문", description="test")
+        self.assertNotContains(self.client.get(f"/survey/{other.pk}"), 'name="postpartum_weeks"')
 
     def test_atomic_write(self):
         with patch("survey.views.Reply.objects.bulk_create", side_effect=RuntimeError("write failed")):
@@ -112,6 +134,7 @@ class EpdsFlowTests(TestCase):
         self.assertEqual(len(history), 2)
         self.assertEqual(len(history[0]["answers"]), 10)
         self.assertEqual(history[1]["answers"][0]["score"], 0)
+        self.assertEqual(history[0]["postpartum_weeks"], 6)
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(base, {"metric": "epds"}).status_code, 403)
         self.assertEqual(self.client.get(detail, params).status_code, 403)
@@ -189,20 +212,23 @@ class EpdsFlowTests(TestCase):
         self.assertEqual(headers, ['week', 'year', 'month', 'day', 'hour', 'minute', 'age', 'height',
                                    'weight', 'bmi', 'heart', 'sleep', 'step', 'stress', 'spo2', 'note'])
         rows = self.csv_rows(f"/survey/{self.survey.pk}/user/{self.participant.pk}/csv/")
-        self.assertEqual(rows[0]["K-EPDS 점수"], "21")
+        self.assertEqual(rows[0]["산후우울검사 점수"], "21")
+        self.assertEqual(rows[0]["출산 후 경과(주)"], "6")
         self.assertEqual([rows[0][f"문항 {i}"] for i in range(1, 11)], ["선택 0"] * 10)
         from survey.views import XlsxDownloadView
         workbook = XlsxDownloadView()._create_workbook(UserSurvey.objects.all(), self.participant)
-        sheet = workbook[self.survey.title]
-        self.assertEqual([cell.value for cell in sheet[1]][1:11], [f"문항 {i}" for i in range(1, 11)])
-        self.assertEqual(sheet.cell(1, 12).value, "K-EPDS 점수")
-        self.assertEqual(sheet.cell(2, 12).value, 21)
+        sheet = workbook["산후우울검사"]
+        self.assertEqual([cell.value for cell in sheet[1]][2:12], [f"문항 {i}" for i in range(1, 11)])
+        self.assertEqual(sheet.cell(1, 13).value, "산후우울검사 점수")
+        self.assertEqual(sheet.cell(2, 13).value, 21)
+        self.assertEqual(sheet.cell(1, 2).value, "출산 후 경과(주)")
+        self.assertEqual(sheet.cell(2, 2).value, 6)
         # Check the actual existing survey download button's endpoint, too.
         from openpyxl import load_workbook
         response = self.client.get(f"/accounts/user/{self.participant.pk}/surveys/")
         self.assertEqual(response.status_code, 200)
         download = load_workbook(io.BytesIO(response.content))
-        self.assertEqual(download[self.survey.title].cell(2, 12).value, 21)
+        self.assertEqual(download["산후우울검사"].cell(2, 13).value, 21)
 
     def test_survey_results_view_shows_epds_answers_and_scores(self):
         self.submit()
@@ -212,6 +238,7 @@ class EpdsFlowTests(TestCase):
         self.assertContains(response, f"/survey/{self.survey.pk}/user/{self.participant.pk}/")
         response = self.client.get(f"/survey/{self.survey.pk}/user/{self.participant.pk}/")
         self.assertContains(response, "총점: 21점")
+        self.assertContains(response, "출산 후 경과: 6주")
         self.assertContains(response, "선택 0", count=10)
         self.assertContains(response, "(0점)", count=3)
         self.assertContains(response, "(3점)", count=7)

@@ -3,7 +3,7 @@ from django.db import transaction
 from django.http import QueryDict
 
 from survey.models import UserSurvey
-from survey.scoring import epds_answers
+from survey.scoring import epds_answers, epds_survey_filter
 
 
 class Command(BaseCommand):
@@ -15,7 +15,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         updated = skipped = 0
         for submission in UserSurvey.objects.filter(
-            survey__title__icontains="EPDS", score__isnull=True
+            epds_survey_filter(), score__isnull=True
         ).select_related("survey"):
             replies = list(submission.replies.select_related("survey_question"))
             data = QueryDict(mutable=True)

@@ -82,6 +82,7 @@ from collections import defaultdict
 from django.db.models.functions import TruncDate, TruncMonth
 
 from survey.models import UserSurvey
+from survey.scoring import epds_survey_filter
 from fitbit.models import FitbitMinuteMetric, FitbitAccount
 from django.db.models import Avg, Max, Q
 from survey.models import ActionFeedback
@@ -261,7 +262,7 @@ class ParticipantDetailContextMixin:
             "survey_charts": [
                 {"metric": "stress", "title": "임신 스트레스", "color": "#cc814a"},
                 {"metric": "preterm", "title": "조기진통 위험", "color": "#4e8f7b"},
-                {"metric": "epds", "title": "산후 우울척도 (K-EPDS)", "color": "#8562a1"},
+                {"metric": "epds", "title": "[연구종료시]산후우울검사", "color": "#8562a1"},
                 {"metric": "quipp", "title": "QUIPP", "color": "#547ec2"},
             ],
         })
@@ -1222,7 +1223,7 @@ SURVEY_FILTERS = {
     "stress":  Q(survey__title__icontains="임신스트레스"),
     "quipp":   Q(survey__title__icontains="QUIPP"),
     "preterm": Q(survey__title__icontains="조기진통"),
-    "epds": Q(survey__title__icontains="EPDS"),
+    "epds": epds_survey_filter(),
 }
 
 class ScoreChartData(
@@ -1755,6 +1756,7 @@ class WeeklyScoreDetailView(
                     else "설문"
                 ),
                 "score": user_survey.score if metric == "epds" else (user_survey.score or 0),
+                "postpartum_weeks": user_survey.postpartum_weeks if metric == "epds" else None,
                 "answers": [
                     {"order": reply.order, "question": reply.title,
                      "content": reply.content, "score": reply.score}

@@ -34,6 +34,7 @@
                 const heading = node('div', null, 'd-flex justify-content-between align-items-center gap-2 mb-2');
                 heading.append(node('h3', item.created_at, 'mb-0'), node('span', item.score == null ? '미채점' : `${item.score}점`, 'badge bg-light text-dark border'));
                 article.append(heading, node('p', item.title, 'small text-muted mb-2'));
+                if (item.postpartum_weeks != null) article.append(node('p', `출산 후 경과: ${item.postpartum_weeks}주`, 'small text-muted mb-2'));
                 if (item.has_feedback) {
                     article.append(node('span', item.performed ? '행동 요령 수행 완료' : '행동 요령 미수행', `badge ${item.performed ? 'bg-success' : 'bg-secondary'} mb-2`));
                     article.append(node('p', item.action_msg, 'small mb-0'));

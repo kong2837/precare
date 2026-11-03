@@ -1,18 +1,27 @@
-"""K-EPDS scoring uses configured Answer.value, including reverse scoring."""
+"""Postpartum survey scoring uses configured Answer.value, including reverse scoring."""
+from django.db.models import Q
+
+POSTPARTUM_SURVEY_TITLE = "[연구종료시]산후우울검사"
+
+
+def epds_survey_filter(prefix="survey__"):
+    return (Q(**{prefix + "title__icontains": "EPDS"})
+            | Q(**{prefix + "title__icontains": "산후우울"})
+            | Q(**{prefix + "title__icontains": "산후 우울"}))
 
 
 def is_epds(title):
-    return "EPDS" in title.upper()
+    return "EPDS" in title.upper() or "산후우울" in title.replace(" ", "")
 
 
 def epds_answers(survey, post_data):
     questions = list(survey.surveyquestion_set.select_related("question").order_by("order", "pk"))
     if len(questions) != 10:
-        raise ValueError("K-EPDS 설문은 10개 문항으로 구성되어야 합니다. 관리자에게 문의해주세요.")
+        raise ValueError("산후우울검사는 10개 문항으로 구성되어야 합니다. 관리자에게 문의해주세요.")
 
     expected = {str(sq.question_id) for sq in questions}
     if {key for key in post_data if key.isdigit()} != expected:
-        raise ValueError("K-EPDS의 모든 문항에 하나씩 응답해주세요.")
+        raise ValueError("산후우울검사의 모든 문항에 하나씩 응답해주세요.")
 
     answers = []
     for sq in questions:
@@ -28,7 +37,7 @@ def epds_answers(survey, post_data):
 
 def score_label(title):
     if is_epds(title):
-        return "K-EPDS 점수"
+        return "산후우울검사 점수"
     if "임신스트레스 10문항" in title:
         return "스트레스 점수"
     if "조기진통위험 10문항" in title:

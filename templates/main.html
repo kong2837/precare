@@ -366,7 +366,7 @@
             <div class="col-12 col-lg-4">
                 <div class="survey-chart-card">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5>산후 우울척도 (K-EPDS)</h5>
+                        <h5>[연구종료시]산후우울검사</h5>
                         <div class="chart-range-btns">
                             <button type="button" class="chart-range-btn active" data-chart="epds" data-range="weekly">주간</button>
                             <button type="button" class="chart-range-btn" data-chart="epds" data-range="monthly">월간</button>
@@ -374,7 +374,7 @@
                     </div>
                     <div class="chart-wrapper">
                         <canvas id="epdsChart"></canvas>
-                        <div id="epdsEmpty" class="chart-empty d-none">아직 K-EPDS 설문 기록이 없습니다.</div>
+                        <div id="epdsEmpty" class="chart-empty d-none">아직 산후우울검사 기록이 없습니다.</div>
                     </div>
                 </div>
             </div>
@@ -560,7 +560,7 @@ document.addEventListener("DOMContentLoaded", function () {
         epds: {
             canvasId: "epdsChart",
             emptyId: "epdsEmpty",
-            title: "K-EPDS 점수"
+            title: "산후우울검사 점수"
         },
         stress: {
             canvasId: "stressChart",

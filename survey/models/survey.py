@@ -53,6 +53,11 @@ class Survey(models.Model):
         """        
         return self.title
 
+    @property
+    def is_postpartum(self):
+        from survey.scoring import is_epds
+        return is_epds(self.title)
+
     class Meta:
         db_table = "survey"
         verbose_name = "설문조사"

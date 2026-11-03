@@ -13,7 +13,7 @@ function renderEpdsHistory(item) {
       </div>
     </li>`).join('');
   return `<div class="mb-4 pb-2 border-bottom">
-    <div class="fw-bold mb-2">${escapeText(item.created_at)} · K-EPDS ${item.score == null ? '미채점' : escapeText(item.score) + ' / 30점'}</div>
+    <div class="fw-bold mb-2">${escapeText(item.created_at)} · 산후우울검사 ${item.score == null ? '미채점' : escapeText(item.score) + ' / 30점'}</div>
     <ol class="list-unstyled small">${answers}</ol>
   </div>`;
 }

@@ -9,6 +9,17 @@
         <form method="post" onsubmit="return validateCheckBoxes()">
             {% csrf_token %}
             {% if form_error %}<div class="alert alert-danger" role="alert">{{ form_error }}</div>{% endif %}
+            {% if postpartum_form %}
+            <section class="bg-white border rounded-4 p-3 p-md-4 mb-4" aria-labelledby="postpartum-weeks-label">
+                <label class="form-label fw-semibold" id="postpartum-weeks-label" for="{{ postpartum_form.postpartum_weeks.id_for_label }}">출산 후 경과</label>
+                <div class="input-group" style="max-width: 240px;">
+                    {{ postpartum_form.postpartum_weeks }}
+                    <span class="input-group-text" id="postpartum-weeks-unit">주</span>
+                </div>
+                <p class="form-text mb-0" id="postpartum-weeks-help">출산 후 몇 주가 지났는지 입력해주세요.</p>
+                {{ postpartum_form.postpartum_weeks.errors }}
+            </section>
+            {% endif %}
             {% for survey_question in survey_questions %}
                 {% include 'survey/components/question.html' %}
             {% endfor %}

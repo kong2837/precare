@@ -29,6 +29,7 @@ import survey.utils as utils
 
 from accounts.views import SuperuserRequiredMixin
 from survey.scoring import epds_answers, is_epds, score_label
+from survey.forms import PostpartumContextForm
 from survey.models import (
     Survey,
     Question,
@@ -231,6 +232,7 @@ class UserSurveyCsvView(SuperuserRequiredMixin, View):
             [
                 "pk",
                 "작성시간",
+                *(["출산 후 경과(주)"] if is_epds(survey.title) else []),
                 *[question.title for question in questions],
                 *([score_label(survey.title)] if score_label(survey.title) else []),
             ]
@@ -250,6 +252,7 @@ class UserSurveyCsvView(SuperuserRequiredMixin, View):
                     user_survey.create_at.strftime(
                         "%Y-%m-%d %H:%M:%S"
                     ),
+                    *([user_survey.postpartum_weeks] if is_epds(survey.title) else []),
                     *[
                         reply_dict.get(question.id, "")
                         for question in questions
@@ -301,18 +304,25 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
     """설문조사 입력 및 저장"""
 
     def _post_epds(self, request, survey):
+        postpartum_form = PostpartumContextForm(request.POST)
         try:
+            if not postpartum_form.is_valid():
+                raise ValueError("출산 후 경과 입력값을 확인해주세요.")
             answers = epds_answers(survey, request.POST)
         except ValueError as error:
             return render(request, "survey/user_survey_form.html", {
                 "object": survey,
                 "survey_questions": survey.surveyquestion_set.select_related("question").order_by("order"),
                 "form_error": str(error),
+                "postpartum_form": postpartum_form,
             }, status=400)
 
         total = sum(score for _, _, score in answers)
         with transaction.atomic():
-            user_survey = UserSurvey.objects.create(user=request.user, survey=survey, score=total)
+            user_survey = UserSurvey.objects.create(
+                user=request.user, survey=survey, score=total,
+                postpartum_weeks=postpartum_form.cleaned_data["postpartum_weeks"],
+            )
             Reply.objects.bulk_create([
                 Reply(user_survey=user_survey, survey_question=sq, content=content, score=score)
                 for sq, content, score in answers
@@ -321,7 +331,7 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
         return render(request, "survey/survey_complete.html", {
             "user_survey_id": user_survey.pk,
             "total_score": total,
-            "score_label": "K-EPDS 점수",
+            "score_label": "산후우울검사 점수",
             "score_max": 30,
         })
 
@@ -403,6 +413,8 @@ class SurveyFormView(MyLoginRequiredMixin, ProcessFormView):
             "object": survey,
             "survey_questions": questions,
         }
+        if is_epds(survey.title):
+            context["postpartum_form"] = PostpartumContextForm()
 
         return render(
             request,
@@ -706,6 +718,7 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
 
                 header = [
                     "작성시간",
+                    *(["출산 후 경과(주)"] if is_epds(survey.title) else []),
                     *titles,
                 ]
 
@@ -743,6 +756,7 @@ class XlsxDownloadView(SuperuserRequiredMixin, View):
 
             row = [
                 created_at,
+                *([user_survey.postpartum_weeks] if is_epds(survey.title) else []),
                 *[
                     reply_dict.get(
                         title,

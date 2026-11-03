@@ -12,7 +12,7 @@ class ReplyInline(admin.StackedInline):
 class UserSurveyAdmin(admin.ModelAdmin):
     """UserSurvey 모델 어드민
     """    
-    fields = ['user', 'survey', 'score']
+    fields = ['user', 'survey', 'score', 'postpartum_weeks']
     readonly_fields = ['score']
     list_display = ['user', 'survey', 'score', 'create_at']
     ordering = ['user', 'create_at']

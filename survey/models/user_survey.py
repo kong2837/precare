@@ -44,6 +44,11 @@ class UserSurvey(models.Model):
         db_column='score',
         help_text='설문 점수 총합'
     )
+    postpartum_weeks = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name="출산 후 경과(주)",
+        help_text="산후우울검사 작성 시 출산 후 경과 주수",
+    )
     
     
     @property

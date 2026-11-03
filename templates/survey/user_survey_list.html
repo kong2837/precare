@@ -32,6 +32,7 @@
       <div id="response-{{ user_survey.pk }}" class="accordion-collapse collapse{% if forloop.first %} show{% endif %}" aria-labelledby="response-heading-{{ user_survey.pk }}" data-bs-parent="#accordionUserSurvey">
         <div class="accordion-body">
           {% if user_survey.score != None %}<p class="fw-bold mb-1">총점: {{ user_survey.score }}점</p>{% endif %}
+          {% if user_survey.postpartum_weeks != None %}<p class="small text-muted mb-2">출산 후 경과: {{ user_survey.postpartum_weeks }}주</p>{% endif %}
           {% for reply in user_survey.replies.all %}
           <div class="results-answer">
             <span class="results-question-number" aria-label="문항 {{ reply.order }}">{{ reply.order }}</span>
