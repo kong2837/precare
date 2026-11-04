@@ -1,0 +1,9 @@
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <label for="research-status-filter" class="fw-semibold small">연구 상태</label>
+  <select id="research-status-filter" name="research_status" class="form-select w-auto">
+    <option value="">전체</option>
+    <option value="ongoing"{% if request.GET.research_status == 'ongoing' %} selected{% endif %}>진행 중</option>
+    <option value="preparing"{% if request.GET.research_status == 'preparing' %} selected{% endif %}>준비</option>
+    <option value="completed"{% if request.GET.research_status == 'completed' %} selected{% endif %}>완료</option>
+  </select>
+</div>

@@ -67,6 +67,32 @@ class ParticipantSortingTests(TestCase):
             self.assertEqual(list(qs.values_list("username", flat=True)), ["sorting-01"])
             self.assertEqual(qs.query.order_by[-1], "pk")
 
+    def test_status_filter_preserves_name_date_sort_and_search(self):
+        for model in (FitbitAccount, HuamiAccount):
+            for index, account in enumerate(model.objects.order_by("pk")):
+                account.research_status = ["preparing", "ongoing", "completed"][index % 3]
+                account.save(update_fields=["research_status"])
+        for profile in ("fitbit", "huami"):
+            for status in ("preparing", "ongoing", "completed"):
+                for field in ("full_name" if profile == "fitbit" else "name", "join_date"):
+                    for direction in ("asc", "desc"):
+                        key = f"{profile}__{field}"
+                        qs = self.view_queryset(profile, key, direction, research_status=status, search="Participant")
+                        self.assertEqual(qs.count(), 4)
+                        self.assertEqual(set(qs.values_list(f"{profile}__research_status", flat=True)), {status})
+                        values = list(qs.values_list(key, flat=True))
+                        self.assertEqual(values, sorted(values, reverse=direction == "desc"))
+
+    def test_status_filter_pagination_and_invalid_status(self):
+        self.client.force_login(self.admin)
+        for profile, route, field in [("fitbit", "fitbit_manage", "full_name"), ("huami", "manage", "name")]:
+            response = self.client.get(f"/accounts/{route}/", {"research_status": "preparing", "order_by": f"{profile}__{field}", "direction": "desc", "page": 2})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.context["paginator"].count, 12)
+            self.assertContains(response, "research_status=preparing")
+            self.assertContains(response, 'value="preparing" selected')
+            self.assertEqual(self.view_queryset(profile, f"{profile}__{field}", research_status="invalid").count(), 12)
+
     def test_pages_use_real_fields_and_move_columns_and_cells_together(self):
         self.client.force_login(self.admin)
         for profile, url in [("fitbit", "/accounts/fitbit_manage/"), ("huami", "/accounts/manage/")]:

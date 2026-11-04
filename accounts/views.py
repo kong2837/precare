@@ -309,6 +309,9 @@ class UserManageView(
         )
 
         search_query = self.request.GET.get("search", "").strip()
+        research_status = self.request.GET.get("research_status", "")
+        if research_status in {"preparing", "ongoing", "completed"}:
+            queryset = queryset.filter(huami__research_status=research_status)
         if search_query:
             queryset = queryset.filter(
                 Q(huami__name__icontains=search_query)
@@ -369,6 +372,9 @@ class FitbitUserManageView(
         )
 
         search_query = self.request.GET.get("search", "").strip()
+        research_status = self.request.GET.get("research_status", "")
+        if research_status in {"preparing", "ongoing", "completed"}:
+            queryset = queryset.filter(fitbit__research_status=research_status)
         if search_query:
             queryset = queryset.filter(
                 Q(fitbit__full_name__icontains=search_query)

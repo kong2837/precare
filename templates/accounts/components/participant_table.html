@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const requested = params.get('order_by');
     const active = fields.includes(requested) ? requested : '{{ default_order_by|escapejs }}';
     const direction = params.get('direction') === 'desc' ? 'desc' : 'asc';
+    const statusFilter = document.getElementById('research-status-filter');
+    statusFilter?.addEventListener('change', () => statusFilter.form.requestSubmit());
     const scrollArea = document.getElementById('participant-table-scroll');
     const scrollKey = 'participant-scroll:' + window.location.pathname;
     const saveScroll = () => {

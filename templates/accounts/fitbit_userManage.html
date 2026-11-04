@@ -6,6 +6,7 @@
         <form method="GET"
               action="{% url 'accounts:fitbitUserManage' %}"
               class="form-inline mb-3 w-100">
+            {% include 'accounts/components/research_status_filter.html' %}
             <div class="input-group w-100">
                 <input type="text" name="search" class="form-control" placeholder="이름을 입력하세요."
                        value="{{ request.GET.search }}" aria-label="대상자 검색">
