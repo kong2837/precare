@@ -76,11 +76,24 @@ class ParticipantDetailTests(TestCase):
         self.assertEqual(self.fitbit.full_name, "테스트 대상자")
 
     def test_rename_rejects_unconfirmed_invalid_stale_and_duplicate_changes(self):
-        for new, extra in [("", {}), ("x" * 101, {}), ("줄\n바꿈", {}), ("새 이름", {"confirmed": ""}), ("새 이름", {"profile_kind": "invalid"})]:
+        for new, extra in [("", {}), ("x" * 101, {}), ("줄\n바꿈", {}), ("새 이름", {"profile_kind": "invalid"})]:
             self.assertEqual(self.rename("테스트 대상자", new, **extra).status_code, 400)
         self.assertEqual(self.rename("이전 화면 이름", "새 이름").status_code, 409)
         self.assertEqual(self.rename("테스트 대상자", "테스트 대상자").status_code, 302)
         self.assertFalse(UserNameChange.objects.exists())
+
+    def test_without_javascript_confirmation_page_precedes_saving(self):
+        response = self.rename("테스트 대상자", "새 이름", confirmed="")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "이대로 이름을 변경할까요?")
+        self.assertContains(response, "테스트 대상자")
+        self.assertContains(response, "새 이름")
+        self.assertContains(response, 'name="confirmed" value="yes"')
+        self.fitbit.refresh_from_db()
+        self.assertEqual(self.fitbit.full_name, "테스트 대상자")
+        self.assertFalse(UserNameChange.objects.exists())
+        self.assertEqual(self.rename("테스트 대상자", "새 이름").status_code, 302)
+        self.assertEqual(UserNameChange.objects.count(), 1)
 
     def test_rename_requires_admin_and_post(self):
         url = f"/accounts/{self.user.pk}/updateName/"

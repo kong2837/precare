@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="container py-4" aria-labelledby="nameChangeTitle">
+  <h1 id="nameChangeTitle" class="h4">이대로 이름을 변경할까요?</h1>
+  <p>아이디: {{ participant.username }}</p>
+  <p>기존 이름: <strong>{{ old_name }}</strong><br>변경 이름: <strong>{{ new_name }}</strong></p>
+  <form action="{% url 'accounts:updateName' participant.pk %}" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="profile_kind" value="{{ profile_kind }}">
+    <input type="hidden" name="old_name" value="{{ old_name }}">
+    <input type="hidden" name="name" value="{{ new_name }}">
+    <button class="btn btn-primary" type="submit" name="confirmed" value="yes">확인하고 변경</button>
+    <a class="btn btn-outline-secondary" href="{{ cancel_url }}">취소</a>
+  </form>
+</section>
+{% endblock content %}

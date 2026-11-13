@@ -1,22 +1,6 @@
 (() => {
     const root = document.getElementById('participantDetail');
     if (!root) return;
-    const nameForm = document.getElementById('participantNameForm');
-    if (nameForm) nameForm.addEventListener('submit', event => {
-        const newName = nameForm.elements.name.value.trim();
-        nameForm.elements.confirmed.value = '';
-        if (!newName || newName === nameForm.elements.old_name.value) {
-            event.preventDefault();
-            window.alert(newName ? '기존 이름과 동일합니다.' : '이름을 입력해주세요.');
-            return;
-        }
-        if (!window.confirm(`이대로 이름을 변경할까요?\n\n'${nameForm.elements.old_name.value}' -> '${newName}'`)) {
-            event.preventDefault();
-            return;
-        }
-        nameForm.elements.name.value = newName;
-        nameForm.elements.confirmed.value = 'yes';
-    });
     const config = JSON.parse(document.getElementById('participant-chart-config').textContent);
     const states = new Map();
     let historyRequest = null;

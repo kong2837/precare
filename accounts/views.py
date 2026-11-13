@@ -280,8 +280,6 @@ class UserNameUpdateView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMi
         new_name = request.POST.get("name", "").strip()
         if not new_name or len(new_name) > 100 or any(ord(char) < 32 or ord(char) == 127 for char in new_name):
             return HttpResponse("이름은 줄바꿈 없이 1~100자로 입력해주세요.", status=400)
-        if request.POST.get("confirmed") != "yes":
-            return HttpResponse("이름 변경 확인이 필요합니다.", status=400)
         with transaction.atomic():
             user = get_object_or_404(get_user_model().objects.select_for_update(), pk=pk)
             model = FitbitAccount if kind == "fitbit" else HuamiAccount
@@ -290,6 +288,12 @@ class UserNameUpdateView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMi
             old_name = getattr(target, field) or ""
             if request.POST.get("old_name") != old_name:
                 return HttpResponse("이름이 이미 변경되었습니다. 새로고침 후 다시 확인해주세요.", status=409)
+            if old_name != new_name and request.POST.get("confirmed") != "yes":
+                return render(request, "accounts/confirm_name_change.html", {
+                    "participant": user, "profile_kind": kind,
+                    "old_name": old_name, "new_name": new_name,
+                    "cancel_url": reverse("accounts:fitbit_userInfo" if kind == "fitbit" else "accounts:userInfo", kwargs={"pk": pk}),
+                })
             if old_name != new_name:
                 setattr(target, field, new_name)
                 target.save(update_fields=[field])
