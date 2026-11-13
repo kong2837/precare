@@ -24,6 +24,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.db.models import Avg, Max, Q, Count
+from django.db import transaction
+from accounts.models import UserNameChange
 from django.db.models.functions import TruncDate
 from django.http import (
     Http404,
@@ -257,6 +259,7 @@ class ParticipantDetailContextMixin:
             "profile": target,
             "profile_kind": self.profile_kind,
             "participant_name": research_display_name(user, target),
+            "name_changes": user.name_changes.filter(profile_kind=self.profile_kind),
             "last_synced": getattr(target, "last_synced" if self.profile_kind == "fitbit" else "sync_date", None),
             "manage_url": reverse("accounts:fitbitUserManage" if self.profile_kind == "fitbit" else "accounts:userManage"),
             "survey_charts": [
@@ -267,6 +270,36 @@ class ParticipantDetailContextMixin:
             ],
         })
         return context
+
+
+class UserNameUpdateView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, View):
+    def post(self, request, pk):
+        kind = request.POST.get("profile_kind")
+        if kind not in ("fitbit", "huami"):
+            return HttpResponse("잘못된 프로필입니다.", status=400)
+        new_name = request.POST.get("name", "").strip()
+        if not new_name or len(new_name) > 100 or any(ord(char) < 32 or ord(char) == 127 for char in new_name):
+            return HttpResponse("이름은 줄바꿈 없이 1~100자로 입력해주세요.", status=400)
+        if request.POST.get("confirmed") != "yes":
+            return HttpResponse("이름 변경 확인이 필요합니다.", status=400)
+        with transaction.atomic():
+            user = get_object_or_404(get_user_model().objects.select_for_update(), pk=pk)
+            model = FitbitAccount if kind == "fitbit" else HuamiAccount
+            target = get_object_or_404(model.objects.select_for_update(), user=user)
+            field = "full_name" if kind == "fitbit" else "name"
+            old_name = getattr(target, field) or ""
+            if request.POST.get("old_name") != old_name:
+                return HttpResponse("이름이 이미 변경되었습니다. 새로고침 후 다시 확인해주세요.", status=409)
+            if old_name != new_name:
+                setattr(target, field, new_name)
+                target.save(update_fields=[field])
+                get_user_model().objects.filter(pk=pk).update(first_name=new_name)
+                UserNameChange.objects.create(user=user, changed_by=request.user, profile_kind=kind,
+                                              old_name=old_name, new_name=new_name)
+                messages.success(request, "이름을 변경했습니다.")
+            else:
+                messages.info(request, "기존 이름과 동일합니다.")
+        return redirect("accounts:fitbit_userInfo" if kind == "fitbit" else "accounts:userInfo", pk=pk)
 
 
 class UserInfoView(RealResearchDataBlockedForTacMixin, SuperuserRequiredMixin, ParticipantDetailContextMixin, DetailView,):

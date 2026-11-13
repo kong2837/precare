@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from accounts.models import UserClickLog
+from accounts.models import UserClickLog, UserNameChange
 from fitbit.models import FitbitAccount
 from huami.models import HuamiAccount
 
@@ -45,6 +45,51 @@ class ParticipantDetailTests(TestCase):
         self.huami.refresh_from_db()
         self.assertEqual(self.fitbit.note, "수정한 Fitbit 메모")
         self.assertEqual(self.huami.note, "Huami 메모")
+
+    def rename(self, old, new, kind="fitbit", **extra):
+        return self.client.post(f"/accounts/{self.user.pk}/updateName/", {
+            "profile_kind": kind, "old_name": old, "name": new, "confirmed": "yes", **extra,
+        })
+
+    def test_rename_accumulates_history_and_preserves_notes_and_login(self):
+        self.assertEqual(self.rename("테스트 대상자", "이은진").status_code, 302)
+        self.assertEqual(self.rename("이은진", "서은경").status_code, 302)
+        self.fitbit.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(self.fitbit.full_name, "서은경")
+        self.assertEqual(self.fitbit.note, "Fitbit 메모")
+        self.assertEqual(self.user.first_name, "서은경")
+        self.assertEqual(self.user.username, "detail-user")
+        changes = list(self.user.name_changes.all())
+        self.assertEqual([(c.old_name, c.new_name) for c in changes], [("테스트 대상자", "이은진"), ("이은진", "서은경")])
+        self.assertTrue(all(c.changed_by == self.admin for c in changes))
+        response = self.client.get(f"/accounts/fitbit_info/{self.user.pk}/")
+        self.assertContains(response, "이름 변경 내역")
+        self.assertContains(response, "이은진")
+        self.assertContains(response, "서은경")
+
+    def test_rename_huami(self):
+        self.assertEqual(self.rename("", "새 이름", "huami").status_code, 302)
+        self.huami.refresh_from_db()
+        self.fitbit.refresh_from_db()
+        self.assertEqual(self.huami.name, "새 이름")
+        self.assertEqual(self.fitbit.full_name, "테스트 대상자")
+
+    def test_rename_rejects_unconfirmed_invalid_stale_and_duplicate_changes(self):
+        for new, extra in [("", {}), ("x" * 101, {}), ("줄\n바꿈", {}), ("새 이름", {"confirmed": ""}), ("새 이름", {"profile_kind": "invalid"})]:
+            self.assertEqual(self.rename("테스트 대상자", new, **extra).status_code, 400)
+        self.assertEqual(self.rename("이전 화면 이름", "새 이름").status_code, 409)
+        self.assertEqual(self.rename("테스트 대상자", "테스트 대상자").status_code, 302)
+        self.assertFalse(UserNameChange.objects.exists())
+
+    def test_rename_requires_admin_and_post(self):
+        url = f"/accounts/{self.user.pk}/updateName/"
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.client.force_login(self.user)
+        self.assertEqual(self.rename("테스트 대상자", "차단").status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.rename("테스트 대상자", "차단").status_code, 403)
+        self.assertFalse(UserNameChange.objects.exists())
 
     def test_log_filter_counts_and_timezone_date_boundaries(self):
         one = UserClickLog.objects.create(user=self.user, log_type="survey_click", detail="K-EPDS")

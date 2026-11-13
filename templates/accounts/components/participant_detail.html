@@ -18,6 +18,28 @@
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'accounts:user_survey_download' userInfo.pk %}">결과 다운로드</a>
     </div>
   </header>
+  {% if profile %}
+  <details class="participant-note">
+    <summary><strong>이름 변경</strong></summary>
+    <form id="participantNameForm" action="{% url 'accounts:updateName' userInfo.pk %}" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="profile_kind" value="{{ profile_kind }}">
+      <input type="hidden" name="old_name" value="{% if profile_kind == 'fitbit' %}{{ profile.full_name|default_if_none:'' }}{% else %}{{ profile.name|default_if_none:'' }}{% endif %}">
+      <input type="hidden" name="confirmed" value="">
+      <label for="participantName" class="form-label">사용자 이름</label>
+      <input id="participantName" name="name" class="form-control mb-2" maxlength="100" required value="{% if profile_kind == 'fitbit' %}{{ profile.full_name|default_if_none:'' }}{% else %}{{ profile.name|default_if_none:'' }}{% endif %}">
+      <button class="btn btn-primary btn-sm" type="submit">이름 변경</button>
+    </form>
+    <div class="mt-3">
+      <strong>이름 변경 내역</strong>
+      {% for change in name_changes %}
+      <div>[{{ change.created_at|date:'Y-m-d H:i:s' }}] 이름 변경 ('{{ change.old_name }}' -&gt; '{{ change.new_name }}')</div>
+      {% empty %}
+      <div class="text-muted small">이름 변경 내역이 없습니다.</div>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
   <details class="participant-note">
     <summary><strong>관리 메모</strong><span class="participant-note-preview">{{ profile.note|default:'등록된 메모 없음' }}</span></summary>
     <form action="{% url 'accounts:updateNote' userInfo.pk %}" method="post">

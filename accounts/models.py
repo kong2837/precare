@@ -24,6 +24,18 @@ def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
     
 # 사용 로그 저장 모델
+class UserNameChange(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="name_changes")
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="participant_name_changes")
+    profile_kind = models.CharField(max_length=10)
+    old_name = models.CharField(max_length=100)
+    new_name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+
 class UserClickLog(models.Model):
     LOG_TYPE_CHOICES = (
         ("survey_click", "설문조사 클릭"),

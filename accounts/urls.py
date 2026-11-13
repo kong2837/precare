@@ -13,6 +13,7 @@ from .views import GoogleHealthLoginView, GoogleHealthCallbackView, GoogleHealth
 
 app_name = 'accounts'
 urlpatterns = [
+    path("<int:pk>/updateName/", accounts_views.UserNameUpdateView.as_view(), name="updateName"),
     path("signup/", SignUpView.as_view(), name="signup"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("successSignup/", SuccessSignUpView.as_view(), name="successSignup"),
