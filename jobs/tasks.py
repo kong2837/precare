@@ -13,7 +13,7 @@ from fitbit.google_health.intra_data.heartrate import get_heart_rate
 def sync_intra_data():
     today = datetime.today().strftime("%Y-%m-%d")
 
-    for account in FitbitAccount.objects.all():
+    for account in FitbitAccount.objects.filter(source_account__isnull=True):
         print(f"🩺 {account.user.username}의 실시간 데이터 동기화 중...")
         get_heart_rate(today, account)
         get_step_count(today,account)
@@ -23,7 +23,7 @@ def sync_daily_data():
     today = datetime.today().strftime("%Y-%m-%d")
     yesterday = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")  # skin temp는 수면 후 다음날 생성되지만 '어젯밤 데이터'라서 어제 날짜로 조회해야 함
 
-    for account in FitbitAccount.objects.all():
+    for account in FitbitAccount.objects.filter(source_account__isnull=True):
         print(f"🩺 {account.user.username}의 실시간 데이터 동기화 중...")
         get_sleep_stage(today, account)
         get_respiratory_rate(today, account)

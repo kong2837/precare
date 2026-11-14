@@ -37,6 +37,10 @@ class UserNameChange(models.Model):
 
 
 class UserClickLog(models.Model):
+    def save(self, *args, **kwargs):
+        from fitbit.participants import save_for_participant
+        return save_for_participant(self, super().save, *args, **kwargs)
+
     LOG_TYPE_CHOICES = (
         ("survey_click", "설문조사 클릭"),
         ("mother_fetus_info_click", "산모 및 태아 정보 클릭"),

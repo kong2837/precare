@@ -5,6 +5,7 @@ from fitbit.sync.sync import update_last_synced
 from fitbit.google_health.token import refresh_google_health_token
 from fitbit.google_health.client import google_date_dict_to_str
 from fitbit.models import FitbitMinuteMetric
+from fitbit.participants import participants
 
 
 def get_respiratory_rate(date, account):
@@ -44,7 +45,7 @@ def get_respiratory_rate(date, account):
         target_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
         sleep_metrics = FitbitMinuteMetric.objects.filter(
-            account=account,
+            account__in=participants(account),
             timestamp__date=target_date,
             sleep_stage__isnull=False,
         )

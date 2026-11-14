@@ -23,7 +23,7 @@
         <!-- Fitbit 사용자 테이블 -->
         {% include 'accounts/components/participant_table_help.html' %}
         <div class="participant-table-scroll" id="participant-table-scroll" tabindex="0" role="region" aria-label="대상자 목록, 좌우로 스크롤 가능">
-            <table class="table table-striped participant-table" style="width: 2220px;">
+            <table class="table table-striped participant-table" style="width: 2400px;">
                 <colgroup>
                     <col style="width: 180px;">
                     <col style="width: 150px;">
@@ -38,6 +38,7 @@
                     <col style="width: 260px;">
                     <col style="width: 140px;">
                     <col style="width: 170px;">
+                    <col style="width: 180px;">
                 </colgroup>
                 <thead>
                 <tr>
@@ -55,6 +56,7 @@
                     <th scope="col" data-column="fitbit__note">노트</th>
                     <th scope="col" data-column="fitbit__research_year">연구 년도 </th>
                     <th scope="col" data-column="fitbit__pregnancy_start_date">임신 시작일</th>
+                    <th scope="col">참여자 교체</th>
                 </tr>
                 </thead>
                 <tbody id="userTable">
@@ -70,7 +72,7 @@
                         <td>
                             <a class="btn btn-primary" href="{% url 'accounts:user_click_logs' user.pk %}">로그 보기</a>
                         </td>
-                        <td>{{ user.fitbit.full_name|default:user.username }}</td>
+                        <td>{{ user.fitbit.full_name|default:user.username }}<br><small class="text-muted">ID {{ user.pk }}</small></td>
                         <td>{{ user.fitbit.birthday|date:'Y-m-d' }}</td>
 
 
@@ -154,6 +156,11 @@
                                 class="form-control pregnancy_start_date"
                                 data-user-id="{{ user.pk }}"
                                 value="{{ user.fitbit.pregnancy_start_date|date:'Y-m-d' }}">
+                        </td>
+                        <td>
+                            {% if not user.fitbit.participant_ended_at and not user.huami and not user.is_staff %}
+                            <a class="btn btn-danger" href="{% url 'accounts:fitbit_replace' user.pk %}">참여자 교체하기</a>
+                            {% else %}<span class="text-muted">{% if user.fitbit.participant_ended_at %}교체 완료{% else %}교체 불가{% endif %}</span>{% endif %}
                         </td>
                     </tr>
 

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="container py-4" style="max-width: 640px;">
+  <h1 class="h4">Fitbit 참여자 교체</h1>
+  <p>기존 참여자: <strong>{{ account.full_name }}</strong> · 시스템 사용자 ID {{ account.user_id }}</p>
+  <p>새 참여자에게 새로운 시스템 사용자 ID를 부여합니다. 기존 참여자의 기록은 보존되며, 교체 일시부터의 건강 기록·설문·로그는 새 참여자에게 배정됩니다.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-danger">확인</button>
+    <a href="{% url 'accounts:fitbitUserManage' %}" class="btn btn-outline-secondary">취소</a>
+  </form>
+</section>
+{% endblock %}

@@ -26,9 +26,17 @@ class FitbitAccount(models.Model):
 
     fitbit_user_id = models.CharField(
         max_length=128,
-        unique=True,
+        db_index=True,
         help_text="Fitbit에서 받은 고유 사용자 ID"
     )
+
+    source_account = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT,
+        related_name="participants",
+        help_text="동일한 외부 계정의 최초 연결 (최초 참여자는 비어 있음)",
+    )
+    participant_started_at = models.DateTimeField(null=True, blank=True)
+    participant_ended_at = models.DateTimeField(null=True, blank=True)
 
     access_token = models.TextField(
         help_text="Fitbit API 접근용 액세스 토큰"
@@ -150,3 +158,13 @@ class FitbitAccount(models.Model):
     class Meta:
         verbose_name = "핏빗 계정"
         verbose_name_plural = "핏빗 계정"
+
+
+class ParticipantReplacement(models.Model):
+    previous = models.OneToOneField(FitbitAccount, on_delete=models.PROTECT, related_name="replacement_event")
+    replacement = models.OneToOneField(FitbitAccount, on_delete=models.PROTECT, related_name="creation_event")
+    effective_at = models.DateTimeField()
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    previous_name = models.CharField(max_length=100)
+    replacement_name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)

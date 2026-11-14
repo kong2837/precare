@@ -40,6 +40,24 @@
     </div>
   </details>
   {% endif %}
+  {% if profile_kind == 'fitbit' %}
+  <details class="participant-note">
+    <summary><strong>참여자 교체 기록</strong></summary>
+    {% for event in replacement_history %}
+    <div class="border-bottom py-2">
+      <p class="mb-1">
+        <a href="{% url 'accounts:fitbit_userInfo' event.previous.user_id %}">{{ event.previous_name }} (ID {{ event.previous.user_id }})</a>
+        →
+        <a href="{% url 'accounts:fitbit_userInfo' event.replacement.user_id %}">{{ event.replacement_name }} (ID {{ event.replacement.user_id }})</a>
+      </p>
+      <div>교체 일시 (한국 시간): {{ event.effective_at|date:'Y-m-d H:i:s' }}</div>
+      <div class="small text-muted">처리 관리자: {{ event.changed_by.username|default:'삭제된 관리자' }} · 처리 시각 (한국 시간): {{ event.created_at|date:'Y-m-d H:i:s' }}</div>
+    </div>
+    {% empty %}
+    <p class="text-muted small mt-2">참여자 교체 기록이 없습니다.</p>
+    {% endfor %}
+  </details>
+  {% endif %}
   <details class="participant-note">
     <summary><strong>관리 메모</strong><span class="participant-note-preview">{{ profile.note|default:'등록된 메모 없음' }}</span></summary>
     <form action="{% url 'accounts:updateNote' userInfo.pk %}" method="post">

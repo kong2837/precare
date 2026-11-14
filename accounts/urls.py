@@ -11,8 +11,11 @@ from .views import HealthDataCsvDownloadAPIView, HealthDataCsvDownloadView, Logi
 
 from .views import GoogleHealthLoginView, GoogleHealthCallbackView, GoogleHealthProfileSetupView
 
+from .fitbit_replacement import FitbitParticipantReplaceView
+
 app_name = 'accounts'
 urlpatterns = [
+    path("fitbit/<int:pk>/replace/", FitbitParticipantReplaceView.as_view(), name="fitbit_replace"),
     path("<int:pk>/updateName/", accounts_views.UserNameUpdateView.as_view(), name="updateName"),
     path("signup/", SignUpView.as_view(), name="signup"),
     path("logout/", LogoutView.as_view(), name="logout"),

@@ -105,6 +105,11 @@ class ParticipantSortingTests(TestCase):
             self.assertEqual(columns[-2:], [f"{profile}__research_year", f"{profile}__pregnancy_start_date"])
             row = re.search(r'<tr data-href=.*?</tr>', html, re.S)[0]
             cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
-            self.assertIn("research-year", cells[-2])
-            self.assertIn("pregnancy_start_date", cells[-1])
+            offset = 1 if profile == "fitbit" else 0
+            self.assertIn("research-year", cells[-2 - offset])
+            self.assertIn("pregnancy_start_date", cells[-1 - offset])
+            if profile == "fitbit":
+                self.assertIn("참여자 교체", head)
+            else:
+                self.assertNotIn("참여자 교체", head)
             self.assertEqual(len(cells), head.count("<th "))

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<dialog open id="replacementDialog" class="container p-4 rounded" style="max-width: 640px; border: 1px solid #ccc;" aria-labelledby="replacementTitle">
+  <h1 class="h4" id="replacementTitle">아래 정보로 참여자를 교체하는 게 맞나요?</h1>
+  <p class="alert alert-warning" role="note">fitbit sense 공동 계정을 사용하는 참여자인지 확인해주세요.</p>
+  <dl>
+    <dt>기존 참여자</dt><dd>{{ account.full_name }} (시스템 사용자 ID {{ account.user_id }})</dd>
+    <dt>새 참여자 이름</dt><dd>{{ new_name }}</dd>
+    <dt>교체 일시 (한국 시간)</dt><dd>{{ effective_at|date:'Y년 m월 d일 H:i:s' }}</dd>
+  </dl>
+  <p>기존 참여자는 삭제되지 않습니다. 교체 일시 이전 기록은 기존 참여자에게, 해당 일시부터의 기록은 새 참여자에게 배정됩니다.</p>
+  <p>새 참여자의 생년월일·임신 정보·메모는 별도로 입력해야 합니다.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="confirmation" value="{{ confirmation }}">
+    <button type="submit" class="btn btn-danger">확인하고 교체</button>
+    <a class="btn btn-outline-secondary" href="{% url 'accounts:fitbit_replace' account.user_id %}">다시 입력</a>
+    <a class="btn btn-outline-secondary" href="{% url 'accounts:fitbitUserManage' %}">취소</a>
+  </form>
+</dialog>
+<script>
+  const dialog = document.getElementById('replacementDialog');
+  if (typeof dialog.showModal === 'function') {
+    dialog.close();
+    dialog.showModal();
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      window.location.href = "{% url 'accounts:fitbit_replace' account.user_id %}";
+    });
+  }
+</script>
+{% endblock %}

@@ -12,11 +12,28 @@ from django.utils import timezone
 from .account import FitbitAccount   # 같은 패키지 내 account.py 의 모델
 
 
+class ParticipantMetricManager(models.Manager):
+    def get_or_create(self, defaults=None, **kwargs):
+        # Serialize writes with replacement so an in-flight sync cannot restore
+        # post-boundary measurements to the previous participant.
+        from django.db import transaction
+        from fitbit.participants import source_for, participant_at
+        account = kwargs.get("account")
+        if account is None or "timestamp" not in kwargs:
+            return super().get_or_create(defaults=defaults, **kwargs)
+        with transaction.atomic():
+            source = FitbitAccount.objects.select_for_update().get(pk=source_for(account))
+            kwargs["account"] = participant_at(source, kwargs["timestamp"], lock=True)
+            return super().get_or_create(defaults=defaults, **kwargs)
+
+
 class FitbitMinuteMetric(models.Model):
     """
     ✔ account + timestamp(분) UNIQUE
     ✔ 분단위로 여러 센서 값을 ‘빈 칸 메우기(upsert)’ 방식으로 저장
     """
+
+    objects = ParticipantMetricManager()
 
     # ------------- 공통 키 -------------
     account = models.ForeignKey(

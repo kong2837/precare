@@ -269,6 +269,15 @@ class ParticipantDetailContextMixin:
                 {"metric": "quipp", "title": "QUIPP", "color": "#547ec2"},
             ],
         })
+        if self.profile_kind == "fitbit" and target is not None:
+            from fitbit.models import ParticipantReplacement
+            from fitbit.participants import participants
+            context["replacement_history"] = (
+                ParticipantReplacement.objects
+                .filter(previous__in=participants(target))
+                .select_related("previous__user", "replacement__user", "changed_by")
+                .order_by("effective_at", "pk")
+            )
         return context
 
 
@@ -1229,6 +1238,11 @@ class FitbitCallbackView(View):
             user.set_password(get_random_string(length=12))
             user.save()
 
+        original_account = FitbitAccount.objects.filter(user=user).first()
+        personal_defaults = {} if original_account and original_account.participant_ended_at else {
+            "full_name": full_name, "gender": gender, "birthday": birthday,
+            "height": height, "weight": weight,
+        }
         account, _ = FitbitAccount.objects.update_or_create(
             user=user,
             defaults={
@@ -1238,15 +1252,12 @@ class FitbitCallbackView(View):
                 "expires_at": now() + timedelta(seconds=expires_in),
                 "scope": scope,
                 "token_type": token_type,
-                "full_name": full_name,
-                "gender": gender,
-                "birthday": birthday,
-                "height": height,
-                "weight": weight,
+                **personal_defaults,
             }
         )
 
-        login(request, user)
+        from fitbit.participants import active_participant
+        login(request, active_participant(account).user)
         print("Fitbit OAuth 성공 - 홈으로 리디렉트 시도")
         return redirect(reverse("home"))
 
@@ -2071,6 +2082,9 @@ class GoogleHealthCallbackView(View):
         # print("fitbit_user_id :", account.fitbit_user_id)
         # print("full_name :", account.full_name)
 
+        from fitbit.participants import active_participant
+        account = active_participant(account)
+        user = account.user
         login(request, user)
 
         if account.full_name:

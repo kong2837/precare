@@ -11,6 +11,10 @@ from django.utils import timezone
 from zoneinfo import ZoneInfo
 
 
+from django.db import transaction
+
+
+@transaction.atomic
 def update_last_synced(account, synced_at):
     
     if synced_at is None:
@@ -23,6 +27,10 @@ def update_last_synced(account, synced_at):
             ZoneInfo("Asia/Seoul")
         )
 
+    from fitbit.participants import participant_at, source_for
+    from fitbit.models import FitbitAccount
+    FitbitAccount.objects.select_for_update().get(pk=source_for(account))
+    account = participant_at(account, synced_at, lock=True)
     if (
         account.last_synced is None
         or synced_at > account.last_synced

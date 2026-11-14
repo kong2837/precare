@@ -51,6 +51,10 @@ class UserSurvey(models.Model):
     )
     
     
+    def save(self, *args, **kwargs):
+        from fitbit.participants import save_for_participant
+        return save_for_participant(self, super().save, *args, **kwargs)
+
     @property
     def survey_name(self) -> str:
         return self.survey.title
