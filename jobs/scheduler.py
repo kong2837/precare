@@ -10,6 +10,7 @@ django.setup()
 
 import time
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger  # ✅ ADDED
@@ -28,10 +29,10 @@ def main():
         # 매 2분마다 실시간(인트라데이) 동기화
         scheduler.add_job(
             sync_intra_data,
-            trigger=IntervalTrigger(minutes=2),
+            trigger=IntervalTrigger(minutes=2, timezone="Asia/Seoul"),
             id="sync_intra_data_every_2_minutes",  # (선택) ID 명확히 변경
             replace_existing=True,
-            next_run_time=datetime.now() + timedelta(minutes=1),
+            next_run_time=datetime.now(ZoneInfo("Asia/Seoul")) + timedelta(minutes=1),
             coalesce=True,
             misfire_grace_time=300,
         )
@@ -40,7 +41,7 @@ def main():
         # 매일 10:00, 22:00에 일일 배치 동기화
         scheduler.add_job(
             sync_daily_data,
-            trigger=CronTrigger(hour="10,22", minute=0),  # ✅ 문자열로 변경
+            trigger=CronTrigger(hour="10,22", minute=0, timezone="Asia/Seoul"),
             id="sync_daily_data_10_22_kst",
             replace_existing=True,
             coalesce=True,  # 밀린 실행은 1회로 합치기
